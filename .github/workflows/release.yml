@@ -1,0 +1,128 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    name: Tag, build & publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.out.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check app module ready
+        id: ready
+        run: echo "ready=$([ -f app/build.gradle.kts ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Read version
+        if: steps.ready.outputs.ready == 'true'
+        id: version
+        run: |
+          VERSION=$(grep 'versionName' app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
+          SHA=$(git rev-parse --short HEAD)
+          echo "name=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "artifact_base=coil-v${VERSION}-${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if tag already exists
+        if: steps.ready.outputs.ready == 'true'
+        id: tag_check
+        run: |
+          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract release notes from CHANGELOG.md
+        if: steps.ready.outputs.ready == 'true' && steps.tag_check.outputs.exists == 'false'
+        id: notes
+        run: |
+          VERSION="${{ steps.version.outputs.name }}"
+          NOTES=$(awk "/^## \[$VERSION\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md \
+            | sed '/^[[:space:]]*$/d' | awk 'NR==1{p=1} p')
+          {
+            echo "body<<RELEASE_NOTES_EOF"
+            echo "$NOTES"
+            echo "RELEASE_NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        if: steps.ready.outputs.ready == 'true' && steps.tag_check.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - uses: actions/setup-java@v4
+        if: steps.ready.outputs.ready == 'true' && steps.tag_check.outputs.exists == 'false'
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v3
+        if: steps.ready.outputs.ready == 'true' && steps.tag_check.outputs.exists == 'false'
+
+      - name: Decode keystore
+        if: steps.ready.outputs.ready == 'true' && steps.tag_check.outputs.exists == 'false'
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+
+      - name: Build signed APK and AAB
+        if: steps.ready.outputs.ready == 'true' && steps.tag_check.outputs.exists == 'false'
+        env:
+          KEYSTORE_PATH: keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease bundleRelease
+
+      - name: Rename artifacts
+        if: steps.ready.outputs.ready == 'true' && steps.tag_check.outputs.exists == 'false'
+        run: |
+          BASE="${{ steps.version.outputs.artifact_base }}"
+          mv app/build/outputs/apk/release/app-release.apk "app/build/outputs/apk/release/${BASE}.apk"
+          mv app/build/outputs/bundle/release/app-release.aab "app/build/outputs/bundle/release/${BASE}.aab"
+
+      - name: Create GitHub Release
+        if: steps.ready.outputs.ready == 'true' && steps.tag_check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_BODY: ${{ steps.notes.outputs.body }}
+        run: |
+          BASE="${{ steps.version.outputs.artifact_base }}"
+          EXTRA_ASSETS=""
+          if [ -f "app/build/outputs/mapping/release/mapping.txt" ]; then
+            EXTRA_ASSETS="app/build/outputs/mapping/release/mapping.txt"
+          fi
+          printf '%s\n' "$RELEASE_BODY" > release_notes.txt
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --notes-file release_notes.txt \
+            "app/build/outputs/apk/release/${BASE}.apk" \
+            "app/build/outputs/bundle/release/${BASE}.aab" \
+            $EXTRA_ASSETS
+
+      - name: Output tag for downstream
+        if: steps.ready.outputs.ready == 'true' && steps.tag_check.outputs.exists == 'false'
+        id: out
+        run: echo "tag=${{ steps.version.outputs.tag }}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy to Google Play
+    needs: release
+    if: needs.release.outputs.tag != ''
+    uses: ./.github/workflows/google-play.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+      track: internal
+    secrets: inherit

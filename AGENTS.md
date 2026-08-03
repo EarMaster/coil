@@ -21,11 +21,33 @@ replacement.
 |---|---|
 | `docs/implementation-plan.md` | Full architecture/design spec — tech stack, module layout, transport design, data model, media session, multi-box design, branding, i18n rules, phased build plan. **Read before implementing anything non-trivial.** |
 | `docs/protocol-notes.md` | Condensed Phoniebox v3 ZMQ protocol reference, distilled from the upstream Python source. |
+| `docs/pages/` | The GitHub Pages site (Jekyll), deployed by `pages.yml` — landing page and privacy policy, served at `coilforphoniebox.app` via the `CNAME` file in this folder. Kept separate from the planning docs above so the Pages *site* only contains user-facing content — the planning docs are still public in the repo, just not part of the deployed website. |
 | `spike/` | Standalone Gradle/Kotlin JVM project validating the transport approach (JeroMQ DEALER client) against a real box, independent of Android. |
 | `tools/probe_phoniebox.py` | Python/pyzmq script that does the same validation from the other side (REQ vs DEALER framing, pipelining, PubSub schema dump) — used to sanity-check protocol assumptions against a live box before trusting them in Kotlin. |
 | `android/` | Reference bundle for theme (`theme/Color.kt`, `theme/Theme.kt`) and adaptive icon XML (`res/`) to be dropped into the real `:app` module once it exists. Not a buildable module on its own (no manifest, no build file). |
 | `brand/` | Logo mark SVG. |
 | `mockup/` | Static HTML UI mockup (`coil-mockup.html`) — visual reference only, not implementation. |
+| `CHANGELOG.md` | [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)-format history. **Update the `## [Unreleased]` section as part of any user-facing change** — new feature, fix, or behaviour change. `release.yml` extracts release notes straight from the `## [x.y.z]` heading matching `versionName`, so headings must stay exact and the `Unreleased` section shouldn't go stale. |
+
+## CI/CD
+
+`.github/workflows/` mirrors the setup from a sibling project, adapted for Coil ahead of time:
+
+- `ci.yml` / `codeql.yml` — build/test/lint and CodeQL analysis on PRs to `main`. Both start with a
+  `detect` job that checks for a root `./gradlew` and skip (not fail) everything else until it
+  exists — these are inert no-ops until Phase 1 (module skeleton) lands.
+- `release.yml` — tags `main` from `app/build.gradle.kts`'s `versionName`, builds a signed
+  APK/AAB, and cuts a GitHub Release with notes pulled from `CHANGELOG.md`. Gated the same way:
+  a no-op until `app/build.gradle.kts` exists. Needs `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`,
+  `KEY_ALIAS`, `KEY_PASSWORD` repo secrets before it can actually sign a build. Release notes come
+  from `CHANGELOG.md`'s `## [x.y.z]` heading matching `versionName` — see that file's own note.
+- `google-play.yml` — reusable workflow (`workflow_call`/manual dispatch) that uploads a tagged
+  release's AAB to Google Play, package `app.coilforphoniebox`. Needs a `SERVICE_ACCOUNT_JSON`
+  repo secret and an active Play Console listing.
+- `pages.yml` — deploys `docs/pages/` via Jekyll to GitHub Pages on push to `main` (path-filtered
+  to `docs/pages/**`). GitHub Pages must be enabled in repo settings with source "GitHub Actions",
+  and the `coilforphoniebox.app` DNS must point at GitHub Pages, for the `CNAME` file in
+  `docs/pages/` to actually resolve.
 
 ## Commands
 
@@ -108,3 +130,7 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
 - Scope discipline: Coil is deliberately a playback remote only. Card management, box system
   settings, timers, and shutdown/reboot stay out of scope — see README "What Coil does not do" and
   the implementation plan §1 and §16.
+- Keep `CHANGELOG.md` current: add an entry under `## [Unreleased]` for any user-facing change in
+  the same commit/PR that makes it, not as a follow-up. When cutting a release, rename
+  `[Unreleased]` to the new `[x.y.z]` version heading (matching `versionName`) and start a fresh
+  empty `Unreleased` section above it.

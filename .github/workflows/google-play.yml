@@ -1,0 +1,78 @@
+name: Google Play Deploy
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: GitHub release tag to deploy (e.g. v1.2.3)
+        required: true
+        type: string
+      track:
+        description: Google Play track to upload to
+        required: false
+        default: internal
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: GitHub release tag to deploy (e.g. v1.2.3)
+        required: true
+      track:
+        description: Google Play track to upload to
+        required: false
+        default: internal
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+
+jobs:
+  deploy:
+    name: Upload to Google Play
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag and version
+        id: resolve
+        run: |
+          TAG="${{ inputs.tag || github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download AAB and mapping from GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "${{ steps.resolve.outputs.tag }}" \
+            --repo ${{ github.repository }} \
+            --pattern "*.aab" \
+            --pattern "mapping.txt" \
+            --dir release-assets
+
+      - name: Prepare what's new
+        run: |
+          VERSION="${{ steps.resolve.outputs.version }}"
+          mkdir -p whatsnew
+          for FILE in docs/whatsnew/${VERSION}-*; do
+            if [ -f "$FILE" ]; then
+              LOCALE=$(basename "$FILE" | sed "s/^${VERSION}-//")
+              cp "$FILE" "whatsnew/whatsnew-${LOCALE}"
+            fi
+          done
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: app.coilforphoniebox
+          releaseFiles: release-assets/*.aab
+          track: ${{ inputs.track }}
+          whatsNewDirectory: whatsnew/
+          mappingFile: release-assets/mapping.txt

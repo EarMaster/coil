@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coil — UI mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============ Page ============ */
+:root{
+  --page:#1B211F;
+  --page-2:#232B29;
+  --page-line:#33403C;
+  --page-fg:#E8EEEB;
+  --page-dim:#8C9B96;
+  --brand:#0F6B5C;
+  --mint:#6DDBC3;
+  --amber:#F0C048;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--page);color:var(--page-fg);
+  font-family:"Instrument Sans",system-ui,sans-serif;font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:clamp(26px,5vw,64px) clamp(16px,3vw,28px) 88px}
+
+.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.top svg{width:46px;height:46px;flex:none}
+.top h1{
+  font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
+  font-size:clamp(30px,5vw,44px);letter-spacing:-.04em;margin:0;line-height:1;
+}
+.top h1 span{display:block;font-family:"Instrument Sans";font-weight:400;font-size:13px;letter-spacing:.01em;color:var(--page-dim);margin-top:7px}
+
+.lede{max-width:56ch;margin:22px 0 0;color:var(--page-dim);font-size:15px}
+.lede strong{color:var(--page-fg);font-weight:500}
+
+/* ============ Switcher ============ */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:30px 0 0;padding:5px;background:var(--page-2);border-radius:13px;width:fit-content;max-width:100%}
+.tabs button{
+  appearance:none;border:0;background:transparent;color:var(--page-dim);
+  font:inherit;font-size:13.5px;font-weight:500;padding:8px 15px;border-radius:9px;cursor:pointer;
+  transition:background .16s,color .16s;
+}
+.tabs button:hover{color:var(--page-fg)}
+.tabs button[aria-selected="true"]{background:var(--brand);color:#fff}
+.tabs button:focus-visible{outline:2px solid var(--mint);outline-offset:1px}
+
+/* ============ Stage ============ */
+.stage{display:flex;flex-wrap:wrap;gap:clamp(22px,5vw,60px);justify-content:center;margin-top:40px}
+.slot{display:flex;flex-direction:column;align-items:center;gap:14px}
+.slot-label{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--page-dim)}
+
+/* ============ Phone ============ */
+.phone{
+  width:298px;height:626px;border-radius:38px;padding:9px;
+  background:#0A0C0C;box-shadow:0 26px 60px -18px rgba(0,0,0,.72),0 0 0 1px rgba(255,255,255,.07);
+  flex:none;
+}
+.screen{
+  width:100%;height:100%;border-radius:30px;overflow:hidden;position:relative;
+  background:var(--surface);color:var(--on-surface);
+  display:flex;flex-direction:column;
+  font-size:13px;
+}
+
+/* --- Themes --- */
+.t-light{
+  --surface:#F5FBF7; --on-surface:#171D1B;
+  --s-low:#EFF5F1; --s-con:#E9EFEB; --s-high:#E3E9E5;
+  --s-var:#DBE5E0; --on-s-var:#3F4945;
+  --outline:#6F7975; --outline-v:#BFC9C4;
+  --primary:#0F6B5C; --on-primary:#FFFFFF;
+  --p-con:#A8F2DF; --on-p-con:#00201A;
+  --secondary:#4A635C; --sec-con:#CCE8DF; --on-sec-con:#06201A;
+  --tertiary:#7A5900; --on-tertiary:#FFFFFF;
+  --t-con:#FFDF9B; --on-t-con:#261A00;
+  --error:#BA1A1A;
+  --scrim:rgba(0,0,0,.06);
+}
+.t-dark{
+  --surface:#0E1513; --on-surface:#DDE4E0;
+  --s-low:#141B19; --s-con:#1A2220; --s-high:#242C2A;
+  --s-var:#3F4945; --on-s-var:#BFC9C4;
+  --outline:#899390; --outline-v:#3F4945;
+  --primary:#6DDBC3; --on-primary:#003830;
+  --p-con:#005046; --on-p-con:#8AF8DF;
+  --secondary:#B1CCC3; --sec-con:#334B45; --on-sec-con:#CCE8DF;
+  --tertiary:#F0C048; --on-tertiary:#412D00;
+  --t-con:#5D4200; --on-t-con:#FFDF9B;
+  --error:#FFB4AB;
+  --scrim:rgba(0,0,0,.4);
+}
+
+/* --- Status bar --- */
+.sysbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 20px 3px;font-size:11px;font-weight:600;letter-spacing:.02em;flex:none;
+}
+.sysbar .icons{display:flex;gap:5px;align-items:center}
+.sysbar i{display:block;width:12px;height:11px;background:currentColor;opacity:.8;border-radius:2px}
+.sysbar i.b{width:19px;border-radius:3px}
+
+/* --- App bar --- */
+.appbar{display:flex;align-items:center;gap:10px;padding:8px 16px 12px;flex:none}
+.appbar .title{font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:18px;letter-spacing:-.02em;flex:1}
+.conn{
+  display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 9px;
+  border-radius:999px;background:var(--sec-con);color:var(--on-sec-con);
+  font-size:11px;font-weight:500;flex:1;min-width:0;
+}
+.conn b{width:6px;height:6px;border-radius:50%;background:var(--primary);flex:none}
+.conn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{
+  width:34px;height:34px;border-radius:50%;flex:none;
+  display:grid;place-items:center;color:var(--on-s-var);
+}
+.iconbtn svg{width:19px;height:19px}
+
+/* --- Content --- */
+.body{flex:1;overflow:hidden;padding:0 16px;position:relative}
+.pane{display:none;height:100%;flex-direction:column}
+.pane.on{display:flex}
+
+/* --- Cover --- */
+.cov{border-radius:18px;position:relative;overflow:hidden;flex:none}
+.cov::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 22% 8%,rgba(255,255,255,.3),transparent 62%)}
+.cov-a{background:linear-gradient(138deg,#3D4A8F,#7B4A8E 52%,#C96C57)}
+.cov-b{background:linear-gradient(140deg,#1D5F6C,#3E9B8A 58%,#DAC37B)}
+.cov-c{background:linear-gradient(152deg,#6B3A2E,#B5643C 52%,#E6B46B)}
+.cov-d{background:linear-gradient(135deg,#2C3B4B,#5C7C8D 58%,#A9C5B9)}
+.cov-e{background:linear-gradient(145deg,#4A3560,#8E5C8A 55%,#D79E82)}
+.cov-f{background:linear-gradient(130deg,#24503F,#4E8F63 56%,#C3CE84)}
+
+/* ============ Player ============ */
+.player-cov{width:100%;aspect-ratio:1;margin-top:2px;box-shadow:0 14px 34px -12px var(--scrim)}
+.meta{display:flex;align-items:flex-start;gap:12px;margin-top:20px;flex:none}
+.meta h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:19px;letter-spacing:-.02em;margin:0;line-height:1.2}
+.meta p{margin:4px 0 0;font-size:12.5px;color:var(--on-s-var)}
+.star{width:34px;height:34px;flex:none;display:grid;place-items:center;color:var(--tertiary)}
+.star svg{width:22px;height:22px}
+
+.bar{margin-top:18px;flex:none}
+.track{height:5px;border-radius:99px;background:var(--s-var);position:relative}
+.track b{position:absolute;inset:0 62% 0 0;border-radius:99px;background:var(--primary)}
+.track i{position:absolute;left:38%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--primary)}
+.times{display:flex;justify-content:space-between;margin-top:7px;font-size:10.5px;color:var(--on-s-var);font-family:"IBM Plex Mono",monospace}
+
+.transport{display:flex;align-items:center;justify-content:space-between;margin-top:16px;flex:none}
+.transport .t{width:38px;height:38px;display:grid;place-items:center;color:var(--on-s-var)}
+.transport .t svg{width:21px;height:21px}
+.transport .t.act{color:var(--primary)}
+.playbtn{
+  width:60px;height:60px;border-radius:50%;background:var(--primary);color:var(--on-primary);
+  display:grid;place-items:center;box-shadow:0 8px 20px -6px var(--scrim);
+}
+.playbtn svg{width:26px;height:26px}
+
+.vol{display:flex;align-items:center;gap:11px;margin-top:20px;flex:none}
+.vol svg{width:18px;height:18px;color:var(--on-s-var);flex:none}
+.vol .track b{inset:0 55% 0 0}
+.vol .track i{left:45%}
+.vol .track{flex:1}
+.vol span{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--on-s-var);width:26px;text-align:right}
+
+/* ============ Library ============ */
+.crumb{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--on-s-var);flex:none;padding-bottom:8px}
+.crumb b{color:var(--on-surface);font-weight:500}
+.stamp{
+  display:inline-flex;align-items:center;gap:6px;align-self:flex-start;
+  padding:4px 10px;border-radius:999px;border:1px solid var(--outline-v);
+  font-size:10.5px;color:var(--on-s-var);flex:none;margin-bottom:10px;
+}
+.rows{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:3px}
+.row{display:flex;align-items:center;gap:12px;padding:10px 11px;border-radius:13px;flex:none}
+.row .ic{width:38px;height:38px;border-radius:11px;background:var(--s-con);display:grid;place-items:center;color:var(--on-s-var);flex:none}
+.row .ic svg{width:19px;height:19px}
+.row .tx{flex:1;min-width:0}
+.row .tx b{display:block;font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .tx span{font-size:11px;color:var(--on-s-var)}
+.row.now{background:var(--t-con);color:var(--on-t-con)}
+.row.now .ic{background:rgba(0,0,0,.12);color:var(--on-t-con)}
+.row.now .tx span{color:var(--on-t-con);opacity:.78}
+.eq{display:flex;align-items:flex-end;gap:2.5px;height:16px;flex:none}
+.eq i{width:3px;background:currentColor;border-radius:2px;animation:eq 1.05s ease-in-out infinite}
+.eq i:nth-child(1){height:60%;animation-delay:-.2s}
+.eq i:nth-child(2){height:100%;animation-delay:-.55s}
+.eq i:nth-child(3){height:42%;animation-delay:-.85s}
+@keyframes eq{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+.eq i{transform-origin:bottom}
+
+/* ============ Favourites ============ */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px;flex:1;align-content:start}
+.fav{display:flex;flex-direction:column;gap:7px}
+.fav .cov{width:100%;aspect-ratio:1;position:relative}
+.fav .badge{
+  position:absolute;top:7px;right:7px;z-index:2;width:24px;height:24px;border-radius:50%;
+  background:var(--tertiary);color:var(--on-tertiary);display:grid;place-items:center;
+}
+.fav .badge svg{width:13px;height:13px}
+.fav b{font-weight:500;font-size:12px;line-height:1.3}
+.fav span{font-size:10.5px;color:var(--on-s-var)}
+.pinchip{
+  grid-column:1/-1;display:flex;align-items:center;gap:9px;margin-top:4px;
+  padding:11px 13px;border-radius:13px;background:var(--p-con);color:var(--on-p-con);font-size:11.5px;
+}
+.pinchip svg{width:16px;height:16px;flex:none}
+
+/* ============ Notification ============ */
+.lock{
+  position:absolute;inset:0;padding:0;
+  background:linear-gradient(168deg,#1A2E33,#2E4048 45%,#4A3B36);
+  display:flex;flex-direction:column;
+}
+.lock .clock{text-align:center;color:#fff;padding:44px 0 26px;flex:none}
+.lock .clock b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:52px;letter-spacing:-.04em;line-height:1}
+.lock .clock span{font-size:12px;opacity:.72}
+.notifs{padding:0 12px;display:flex;flex-direction:column;gap:9px}
+.notif{border-radius:19px;padding:13px;background:var(--s-con);color:var(--on-surface)}
+.notif .hd{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--on-s-var);margin-bottom:10px}
+.notif .hd svg{width:13px;height:13px;color:var(--primary)}
+.media{display:flex;gap:12px}
+.media .cov{width:52px;height:52px;border-radius:11px;flex:none}
+.media .tx{flex:1;min-width:0}
+.media .tx b{display:block;font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.media .tx span{font-size:11px;color:var(--on-s-var)}
+.media .ctl{display:flex;align-items:center;gap:14px;margin-top:9px;color:var(--on-surface)}
+.media .ctl svg{width:17px;height:17px}
+.media .ctl .p{color:var(--primary)}
+.notif .mini{height:3px;border-radius:99px;background:var(--s-var);margin-top:11px;position:relative}
+.notif .mini b{position:absolute;inset:0 62% 0 0;border-radius:99px;background:var(--primary)}
+.notif.idle{opacity:.9}
+.notif.idle .row2{display:flex;align-items:center;gap:9px;font-size:12px}
+.notif.idle .row2 b{font-weight:500}
+.notif.idle p{margin:5px 0 0;font-size:10.5px;color:var(--on-s-var)}
+
+/* ============ Bottom-Nav ============ */
+.nav{
+  display:flex;padding:8px 8px 14px;gap:4px;flex:none;
+  background:var(--s-low);border-top:1px solid var(--outline-v);
+}
+.nav div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--on-s-var);font-size:10px}
+.nav div svg{width:20px;height:20px}
+.nav div.on{color:var(--primary)}
+.nav div.on .pill{background:var(--p-con);color:var(--on-p-con)}
+.nav .pill{padding:3px 15px;border-radius:999px;display:grid;place-items:center}
+
+/* ============ Notes ============ */
+.notes{
+  margin-top:56px;padding-top:24px;border-top:1px solid var(--page-line);
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:26px;
+}
+.notes h3{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--mint);margin:0 0 8px}
+.notes p{margin:0;font-size:13.5px;color:var(--page-dim);max-width:36ch}
+.notes p em{color:var(--page-fg);font-style:normal;font-weight:500}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:700px){.phone{width:270px;height:568px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <svg viewBox="0 0 96 96" aria-hidden="true">
+      <rect x="10" y="24" width="76" height="48" rx="11" fill="#0F6B5C"/>
+      <path d="M22 60 V36 H74 V60 H30 V44 H66 V52 H40" fill="none" stroke="#E8EEEB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1>Coil<span>UI mockup · light and dark, side by side</span></h1>
+  </header>
+
+  <p class="lede">Both themes show the same state. What to look for: whether the <strong>amber accent</strong> holds up next to the green, and whether the dark theme stays comfortable in a darkened room.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-s="player">Player</button>
+    <button role="tab" aria-selected="false" data-s="lib">Library</button>
+    <button role="tab" aria-selected="false" data-s="fav">Favourites</button>
+    <button role="tab" aria-selected="false" data-s="lock">Lock screen</button>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+  <section class="notes">
+    <div>
+      <h3>Amber, sparingly</h3>
+      <p>The warm accent marks exactly two things: <em>favourite</em> and <em>currently playing</em>. Any more would dilute the signal.</p>
+    </div>
+    <div>
+      <h3>Cover art leads</h3>
+      <p>In the player the brand colour recedes. It appears only in controls, otherwise it fights every album image.</p>
+    </div>
+    <div>
+      <h3>The second notification</h3>
+      <p>The lock screen also shows the quiet <em>"Connected"</em> notice. It is the price of automatic appearance, which is why it can be switched off.</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const ICON = {
+  prev:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>',
+  next:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>',
+  shuffle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+  repeat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
+  vol:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>',
+  star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 17.3-6.2 3.7 1.7-7L2 9.2l7.1-.6L12 2l2.9 6.6 7.1.6-5.5 4.8 1.7 7z"/></svg>',
+  starO:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 17.3-6.2 3.7 1.7-7L2 9.2l7.1-.6L12 2l2.9 6.6 7.1.6-5.5 4.8 1.7 7z"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>',
+  folder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  disc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 6h6"/></svg>',
+  navPlay:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+  navLib:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 4h4v16H4zM10 4h4v16h-4zM17 5l3 15"/></svg>',
+  navFav:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>',
+  coil:'<svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 60 V36 H74 V60 H30 V44 H66 V52 H40"/></svg>'
+};
+
+const sysbar = `<div class="sysbar"><span>20:14</span><div class="icons"><i></i><i></i><i class="b"></i></div></div>`;
+
+const nav = (on) => `<div class="nav">
+  <div class="${on==='player'?'on':''}"><div class="pill">${ICON.navPlay}</div>Player</div>
+  <div class="${on==='lib'?'on':''}"><div class="pill">${ICON.navLib}</div>Library</div>
+  <div class="${on==='fav'?'on':''}"><div class="pill">${ICON.navFav}</div>Favourites</div>
+</div>`;
+
+const PANES = {
+  player: `
+    ${sysbar}
+    <div class="appbar">
+      <div class="conn"><b></b><span>Bedroom · connected</span></div>
+      <div class="iconbtn">${ICON.more}</div>
+    </div>
+    <div class="body"><div class="pane on">
+      <div class="cov cov-a player-cov"></div>
+      <div class="meta">
+        <div style="flex:1;min-width:0">
+          <h2>The Riddle Cave</h2>
+          <p>Bibi and Tina · Episode 12</p>
+        </div>
+        <div class="star">${ICON.star}</div>
+      </div>
+      <div class="bar">
+        <div class="track"><b></b><i></i></div>
+        <div class="times"><span>12:04</span><span>−22:14</span></div>
+      </div>
+      <div class="transport">
+        <div class="t act">${ICON.shuffle}</div>
+        <div class="t">${ICON.prev}</div>
+        <div class="playbtn">${ICON.pause}</div>
+        <div class="t">${ICON.next}</div>
+        <div class="t">${ICON.repeat}</div>
+      </div>
+      <div class="vol">${ICON.vol}<div class="track"><b></b><i></i></div><span>45</span></div>
+    </div></div>
+    ${nav('player')}`,
+
+  lib: `
+    ${sysbar}
+    <div class="appbar">
+      <div class="title">Library</div>
+      <div class="iconbtn">${ICON.refresh}</div>
+    </div>
+    <div class="body"><div class="pane on">
+      <div class="crumb">All folders ›&nbsp;<b>Audiobooks</b></div>
+      <div class="stamp">Updated 3 days ago</div>
+      <div class="rows">
+        <div class="row now">
+          <div class="ic">${ICON.folder}</div>
+          <div class="tx"><b>Bibi and Tina</b><span>24 folders</span></div>
+          <div class="eq"><i></i><i></i><i></i></div>
+        </div>
+        <div class="row"><div class="ic">${ICON.folder}</div><div class="tx"><b>The Three Investigators</b><span>61 folders</span></div></div>
+        <div class="row"><div class="ic">${ICON.folder}</div><div class="tx"><b>Benjamin the Elephant</b><span>38 folders</span></div></div>
+        <div class="row"><div class="ic">${ICON.folder}</div><div class="tx"><b>Conni</b><span>17 folders</span></div></div>
+        <div class="row"><div class="ic">${ICON.disc}</div><div class="tx"><b>Bedtime Songs</b><span>14 tracks</span></div></div>
+        <div class="row"><div class="ic">${ICON.disc}</div><div class="tx"><b>Summer Kids Songs</b><span>22 tracks</span></div></div>
+      </div>
+    </div></div>
+    ${nav('lib')}`,
+
+  fav: `
+    ${sysbar}
+    <div class="appbar">
+      <div class="title">Favourites</div>
+      <div class="iconbtn">${ICON.more}</div>
+    </div>
+    <div class="body"><div class="pane on">
+      <div class="grid2">
+        <div class="fav"><div class="cov cov-a"><div class="badge">${ICON.star}</div></div><b>The Riddle Cave</b><span>Bibi and Tina</span></div>
+        <div class="fav"><div class="cov cov-c"><div class="badge">${ICON.star}</div></div><b>The Carpathian Hound</b><span>The Three Investigators</span></div>
+        <div class="fav"><div class="cov cov-f"><div class="badge">${ICON.star}</div></div><b>Bedtime Songs</b><span>14 tracks</span></div>
+        <div class="fav"><div class="cov cov-e"><div class="badge">${ICON.star}</div></div><b>The Zoo Moves</b><span>Benjamin the Elephant</span></div>
+        <div class="pinchip">${ICON.pin}<span>Long press a favourite to add it to the home screen</span></div>
+      </div>
+    </div></div>
+    ${nav('fav')}`,
+
+  lock: `
+    <div class="lock">
+      ${sysbar.replace('class="sysbar"','class="sysbar" style="color:#fff"')}
+      <div class="clock"><b>20:14</b><span>Monday, 3 August</span></div>
+      <div class="notifs">
+        <div class="notif">
+          <div class="hd">${ICON.coil}<span>Coil · now</span></div>
+          <div class="media">
+            <div class="cov cov-a"></div>
+            <div class="tx">
+              <b>The Riddle Cave</b>
+              <span>Bibi and Tina · Episode 12</span>
+              <div class="ctl">${ICON.prev}<span class="p">${ICON.pause}</span>${ICON.next}${ICON.starO}</div>
+            </div>
+          </div>
+          <div class="mini"><b></b></div>
+        </div>
+        <div class="notif idle">
+          <div class="hd">${ICON.coil}<span>Coil</span></div>
+          <div class="row2"><b>Connected to Phoniebox</b></div>
+          <p>Waiting for playback · can be switched off in settings</p>
+        </div>
+      </div>
+    </div>`
+};
+
+const stage = document.getElementById('stage');
+
+function render(screen){
+  stage.innerHTML = [['t-light','Light'],['t-dark','Dark']].map(function(t){
+    return '<div class="slot"><div class="phone"><div class="screen '+t[0]+'">'+PANES[screen]+'</div></div>'
+         + '<div class="slot-label">'+t[1]+'</div></div>';
+  }).join('');
+}
+
+document.querySelectorAll('.tabs button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.tabs button').forEach(function(b){ b.setAttribute('aria-selected','false'); });
+    btn.setAttribute('aria-selected','true');
+    render(btn.dataset.s);
+  });
+});
+
+render('player');
+</script>
+</body>
+</html>

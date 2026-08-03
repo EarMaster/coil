@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  res/drawable/ic_launcher_monochrome.xml  (Android 13+, themed icons)
+
+  Outline variant. The system tints the entire layer a single colour, so a
+  knocked-out coil would merge with the card body and disappear.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.9"
+        android:strokeLineJoin="round"
+        android:pathData="M32.7,35 L75.3,35 A8.7,8.7 0 0 1 84,43.7 L84,64.2 A8.7,8.7 0 0 1 75.3,72.9 L32.7,72.9 A8.7,8.7 0 0 1 24,64.2 L24,43.7 A8.7,8.7 0 0 1 32.7,35 Z" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M33.5,63.4 V44.5 H74.5 V63.4 H39.8 V50.8 H68.2 V57.1 H47.7" />
+</vector>

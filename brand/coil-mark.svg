@@ -1,0 +1,30 @@
+<!--
+  Coil - logo mark "Winding"
+  The path matches the layout of a real RFID card antenna.
+
+  Variants:
+  - Full colour: card in Coil Deep, coil knocked out
+  - Monochrome:  coil as outline only (second group), because knocked-out
+                 shapes disappear when Android tints a themed icon.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Coil">
+  <title>Coil</title>
+
+  <!-- Full colour -->
+  <g id="coil-solid">
+    <rect x="10" y="24" width="76" height="48" rx="11" fill="#0F6B5C"/>
+    <path d="M22 60 V36 H74 V60 H30 V44 H66 V52 H40"
+          fill="none" stroke="#FFFFFF" stroke-width="5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Monochrome / themed icon / notification symbol.
+       Only reveal this when the full colour group is removed. -->
+  <g id="coil-mono" display="none">
+    <rect x="10" y="24" width="76" height="48" rx="11"
+          fill="none" stroke="currentColor" stroke-width="5"/>
+    <path d="M22 60 V36 H74 V60 H30 V44 H66 V52 H40"
+          fill="none" stroke="currentColor" stroke-width="5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

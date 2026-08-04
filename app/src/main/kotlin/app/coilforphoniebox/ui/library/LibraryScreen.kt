@@ -1,5 +1,6 @@
 package app.coilforphoniebox.ui.library
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -83,6 +84,12 @@ fun LibraryScreen(
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(TAB_FOLDERS) }
 
+    // Picking the album tab is navigation the user did inside the library too, so back
+    // undoes it rather than dropping out of the library entirely. Registered before the tab
+    // content, which leaves the folder tree's own handler (and any open sheet) taking back
+    // first while they are on screen.
+    BackHandler(enabled = selectedTab != TAB_FOLDERS) { selectedTab = TAB_FOLDERS }
+
     Column(modifier.fillMaxSize()) {
         PrimaryTabRow(selectedTabIndex = selectedTab) {
             Tab(
@@ -110,6 +117,13 @@ private fun FolderTab(viewModel: LibraryViewModel) {
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.content.cachedAt)
     var details by remember { mutableStateOf<DetailsTarget?>(null) }
+
+    // How deep the user is in the folder tree is view model state, not a navigation
+    // destination, so the system back gesture would leave the library altogether from three
+    // levels down. Inside the tree it means "up one level" instead — the same thing the
+    // breadcrumb's arrow does. Registered before the details sheet so that the sheet, when
+    // it is open, still gets back first and closes itself.
+    BackHandler(enabled = state.canGoUp) { viewModel.goUp() }
 
     // Starting playback closes the sheet; favouriting from it does not, because the star
     // filling in is the confirmation — a snackbar would sit behind the sheet unseen.

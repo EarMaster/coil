@@ -314,6 +314,9 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
     val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.cachedAt)
 
+    // Opening the tab is what asks the box for its albums the first time.
+    LaunchedEffect(activeBox?.id) { viewModel.onAlbumsShown() }
+
     if (state.albums.isEmpty() && !state.refreshing) {
         EmptyState(
             icon = Icons.Rounded.Album,

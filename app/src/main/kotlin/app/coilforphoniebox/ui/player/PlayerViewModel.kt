@@ -16,7 +16,9 @@ import app.coilforphoniebox.domain.repository.PlayerRepository
 import app.coilforphoniebox.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +26,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -32,7 +36,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     private val player: PlayerRepository,
@@ -114,7 +118,47 @@ class PlayerViewModel @Inject constructor(
 
     fun previous() = run { player.previous() }
 
-    fun setVolume(level: Int) = run { player.setVolume(level) }
+    /**
+     * Volume the user is currently dragging towards, or null when the slider is simply
+     * showing what the box reports. Same idea as [scrubPosition]: the 4 Hz status stream
+     * must not fight the finger.
+     */
+    private val _volumeTarget = MutableStateFlow<Int?>(null)
+    val volumeTarget: StateFlow<Int?> = _volumeTarget
+
+    init {
+        // A slider drag produces a value per frame; sending each one would put dozens of
+        // commands on the socket the box also uses for card detection (§6). Waiting for
+        // the drag to settle sends one — and still gives audible feedback mid-drag,
+        // because a pause of a few frames is enough to trigger it.
+        viewModelScope.launch {
+            _volumeTarget
+                .filterNotNull()
+                .debounce(VOLUME_SETTLE_MILLIS)
+                .distinctUntilChanged()
+                .collect { level -> send(level) }
+        }
+    }
+
+    fun onVolumeChange(level: Int) {
+        _volumeTarget.value = level
+    }
+
+    /** Lifting the finger sends immediately rather than waiting out the debounce. */
+    fun onVolumeChangeFinished() {
+        val target = _volumeTarget.value ?: return
+        viewModelScope.launch {
+            send(target)
+            // Hold the local value briefly so the slider does not jump back to a status
+            // message that was published before the box applied the change.
+            delay(VOLUME_RELEASE_MILLIS)
+            if (_volumeTarget.value == target) _volumeTarget.value = null
+        }
+    }
+
+    private suspend fun send(level: Int) {
+        player.setVolume(level).onFailure { messageChannel.emit(UiMessage(commandError())) }
+    }
 
     fun toggleShuffle() = run { player.setShuffle(!state.value.status.shuffle) }
 
@@ -167,4 +211,12 @@ class PlayerViewModel @Inject constructor(
     private fun commandError(): Int =
         if (state.value.connection.isUsable) R.string.error_command_failed
         else R.string.error_not_connected
+
+    private companion object {
+        /** Long enough to swallow a drag, short enough to feel like a live control. */
+        const val VOLUME_SETTLE_MILLIS = 150L
+
+        /** Two status publishes at 4 Hz, so the box has certainly reported back. */
+        const val VOLUME_RELEASE_MILLIS = 600L
+    }
 }

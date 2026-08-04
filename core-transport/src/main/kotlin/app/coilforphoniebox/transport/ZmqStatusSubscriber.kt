@@ -93,14 +93,22 @@ class ZmqStatusSubscriber(
 
         /** Prefix subscription: catches `volume.level` and any sibling topic. */
         const val TOPIC_VOLUME = "volume"
+
+        /**
+         * Prefix subscription for the box's own identity topics.
+         *
+         * Deliberately a prefix rather than `core.version`: the daemon publishes
+         * `core.started_at`, `core.git_state` and `core.plugins.*`, and *not* a version —
+         * so subscribing to the family is the only way to pick up whatever it does send.
+         */
+        const val TOPIC_CORE_PREFIX = "core."
         const val TOPIC_VERSION = "core.version"
-        const val TOPIC_STARTED_AT = "core.started_at"
+        const val TOPIC_GIT_STATE = "core.git_state"
 
         val DEFAULT_TOPICS = listOf(
             TOPIC_PLAYER_STATUS,
             TOPIC_VOLUME,
-            TOPIC_VERSION,
-            TOPIC_STARTED_AT,
+            TOPIC_CORE_PREFIX,
         )
     }
 }

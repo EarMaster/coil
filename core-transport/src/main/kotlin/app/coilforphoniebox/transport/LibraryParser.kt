@@ -104,15 +104,43 @@ object LibraryParser {
         return albums.distinctBy { it.albumArtist to it.album }
     }
 
+    /** Outcome of a cover art request. */
+    sealed interface CoverArt {
+        /** A file name in the box's cover cache. */
+        data class Available(val fileName: String) : CoverArt
+
+        /**
+         * The box has queued the extraction on its own worker thread and has nothing to
+         * hand over yet. Ask again shortly — this is what the *first* request for any song
+         * returns, so treating it as a file name means no cover ever appears.
+         */
+        data object Pending : CoverArt
+
+        /** The box looked and there is no artwork for this song. */
+        data object Missing : CoverArt
+    }
+
     /**
-     * `get_single_coverart` and `get_album_coverart` return a bare filename in the
-     * box's cover cache, or nothing when there is no artwork. The image itself is
-     * fetched over HTTP from the box's web server, never over ZMQ (§5).
+     * `get_single_coverart` and `get_album_coverart` return a bare file name in the box's
+     * cover cache. The image itself is fetched over HTTP from the box's web server, never
+     * over ZMQ (§5).
+     *
+     * Two sentinel values matter, both from `coverart_cache_manager.py`: `CACHE_PENDING`
+     * while extraction is queued, and an empty string for "no artwork".
      */
-    fun coverFile(result: JsonElement?): String? =
-        (result as? JsonPrimitive)?.content
-            ?.takeIf { it.isNotBlank() && it != "null" && it != "None" }
-            ?.substringAfterLast('/')
+    fun coverArt(result: JsonElement?): CoverArt {
+        val value = (result as? JsonPrimitive)?.content?.trim()
+            ?: return CoverArt.Missing
+
+        return when {
+            value == CACHE_PENDING -> CoverArt.Pending
+            value.isBlank() || value == "null" || value == "None" -> CoverArt.Missing
+            else -> CoverArt.Available(value.substringAfterLast('/'))
+        }
+    }
+
+    /** `CACHE_PENDING` in `coverart_cache_manager.py`. */
+    private const val CACHE_PENDING = "CACHE_PENDING"
 
     private fun JsonArray?.orEmpty(): List<JsonElement> = this ?: emptyList()
 }

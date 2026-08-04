@@ -13,10 +13,15 @@ import javax.inject.Singleton
 @Singleton
 class BoxProbe @Inject constructor() {
 
+    /**
+     * A reply of any shape means the box is there and its jukebox app is answering, which
+     * is all this needs to establish. The version is not asked for: no RPC returns it — it
+     * arrives over PubSub if the box publishes it at all.
+     */
     suspend fun probe(host: String, rpcPort: Int): ConnectionTestResult =
         ZmqRpcClient(host, rpcPort).use { client ->
-            client.call(Commands.version).fold(
-                onSuccess = { ConnectionTestResult.Reachable(StatusParser.version(it)) },
+            client.call(Commands.ping).fold(
+                onSuccess = { ConnectionTestResult.Reachable(version = null) },
                 onFailure = { ConnectionTestResult.Unreachable },
             )
         }

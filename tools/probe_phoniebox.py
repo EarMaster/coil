@@ -84,7 +84,9 @@ def test_dealer(ctx, host):
     sock.setsockopt(zmq.RCVTIMEO, TIMEOUT_MS)
     sock.connect(f"tcp://{host}:{PUB_PORT - 3}")  # 5555
 
-    req = _payload("core", "version")
+    # player.ctrl.playerstatus, not core.version: `core.*` are published topics only, so
+    # asking for that package over RPC answers with an error.
+    req = _payload("player", "ctrl", "playerstatus")
     # The decisive part: an empty frame BEFORE the payload.
     sock.send(b"", zmq.SNDMORE)
     sock.send_string(json.dumps(req))
@@ -109,7 +111,7 @@ def test_dealer(ctx, host):
         sock.close()
         return False
 
-    _ok(f"Delimiter framing accepted. core.version = {reply.get('result')}")
+    _ok(f"Delimiter framing accepted. playerstatus returned {type(reply.get('result')).__name__}")
     sock.close()
     return True
 
@@ -158,7 +160,9 @@ def test_pubsub(ctx, host, seconds=20):
     sock = ctx.socket(zmq.SUB)
     sock.setsockopt(zmq.LINGER, 0)
     sock.setsockopt(zmq.RCVTIMEO, 1000)
-    for topic in ("playerstatus", "volume.level", "core.version",
+    # "core." is a prefix: the daemon publishes core.git_state and core.started_at, but
+    # no core.version, whatever the older notes claimed.
+    for topic in ("playerstatus", "volume.level", "core.",
                   "rfid.card_id", "host.temperature.cpu"):
         sock.setsockopt_string(zmq.SUBSCRIBE, topic)
     sock.connect(f"tcp://{host}:{PUB_PORT}")

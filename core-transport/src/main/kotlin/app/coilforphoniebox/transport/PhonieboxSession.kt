@@ -86,15 +86,26 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
     /** Called on the subscriber's own thread; every write here is to a StateFlow. */
     private fun onPublished(topic: String, payload: String) {
         when {
-            topic == ZmqStatusSubscriber.TOPIC_PLAYER_STATUS ->
-                StatusParser.playerStatus(payload, SystemClock.elapsedRealtime())
-                    ?.let { _status.value = it }
+            topic == ZmqStatusSubscriber.TOPIC_PLAYER_STATUS -> {
+                val parsed = StatusParser.playerStatus(payload, SystemClock.elapsedRealtime())
+                if (parsed != null) {
+                    _status.value = parsed
+                } else {
+                    // A silent skip here looks exactly like a frozen player, so say so.
+                    Log.w(TAG, "Unparseable playerstatus payload: ${payload.take(200)}")
+                }
+            }
 
             topic.startsWith(ZmqStatusSubscriber.TOPIC_VOLUME) ->
                 StatusParser.volume(payload, _volume.value)?.let { _volume.value = it }
 
             topic == ZmqStatusSubscriber.TOPIC_VERSION ->
                 StatusParser.versionFromTopic(payload)?.let { _version.value = it }
+
+            // What the daemon actually publishes about itself. Used only when no explicit
+            // version arrived, and only when it is a plain string worth showing.
+            topic == ZmqStatusSubscriber.TOPIC_GIT_STATE && _version.value == null ->
+                StatusParser.plainString(payload)?.let { _version.value = it }
         }
 
         if (_connection.value != ConnectionState.CONNECTED) {
@@ -103,14 +114,20 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
     }
 
     /**
-     * No `playerstatus` request here: subscribing is enough. What does need asking for
-     * is the soft volume maximum, which is never published and which the media session
-     * needs as `deviceVolumeMax` (§8.1).
+     * One ping to establish reachability without waiting for the publisher, and one
+     * request for the soft volume maximum, which is never published and which the media
+     * session needs as `deviceVolumeMax` (§8.1).
+     *
+     * The ping is `playerstatus`, so its reply doubles as the initial state — the
+     * last-value cache would deliver that anyway, this just makes it immediate.
      */
     private suspend fun handshake() {
-        val versionResult = call(Commands.version)
-        versionResult
-            .onSuccess { payload -> _version.value = StatusParser.version(payload) }
+        call(Commands.ping)
+            .onSuccess { payload ->
+                (payload as? JsonObject)
+                    ?.let { StatusParser.playerStatus(it, SystemClock.elapsedRealtime()) }
+                    ?.let { _status.value = it }
+            }
             .onFailure {
                 // Nothing published yet either means the box really is not there.
                 if (subscriber.lastMessageAtElapsed == 0L) {
@@ -151,7 +168,7 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
                 _connection.value = ConnectionState.DEGRADED
             }
 
-            if (rpc.call(Commands.version).isSuccess) {
+            if (rpc.call(Commands.ping).isSuccess) {
                 // Sockets are fine, the publisher just went quiet. Ask once.
                 _connection.value = ConnectionState.CONNECTED
                 backoffMillis = INITIAL_BACKOFF_MILLIS

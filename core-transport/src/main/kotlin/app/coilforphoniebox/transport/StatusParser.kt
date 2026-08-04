@@ -77,6 +77,17 @@ object StatusParser {
         else -> null
     }
 
+    /**
+     * A payload that is a bare JSON string, and nothing else. Structured payloads return
+     * null rather than a stringified object, because this ends up on screen.
+     */
+    fun plainString(raw: String): String? =
+        (runCatching { json.parseToJsonElement(raw) }.getOrNull() as? JsonPrimitive)
+            ?.takeIf { it.isString }
+            ?.content
+            ?.trim()
+            ?.takeIf { it.isNotBlank() && it != "null" }
+
     fun versionFromTopic(raw: String): String? =
         runCatching { version(json.parseToJsonElement(raw)) }.getOrNull()
             ?: raw.trim().trim('"').takeIf { it.isNotBlank() }

@@ -143,6 +143,28 @@ server in this repo.
 - Parse `playerstatus` leniently (`ignoreUnknownKeys = true`, tolerate stringified numbers and
   missing fields like `duration`/`album` on web radio streams). Field names are not a stable
   contract upstream.
+- **Never send `as_thread`.** `jukebox/plugs.py` starts a daemon thread and returns the `Thread`
+  object instead of the function's result, so any call carrying it answers with something
+  unusable — it is fire-and-forget only. The implementation plan §6.2 recommends it for slow
+  calls; that advice is wrong for anything whose result you need, which is every call Coil makes.
+  The consequence is that a library call occupies the box's sequential RPC loop, and with it card
+  detection, for as long as it runs — so call them rarely and never on a timer.
+- **Cover art takes two requests.** `get_single_coverart` / `get_album_coverart` answer the first
+  request for a song with `CACHE_PENDING` and queue the extraction on a worker thread
+  (`coverart_cache_manager.py`); an empty string means "no artwork". Only a later request returns a
+  file name, so a single call never yields a cover. `LibraryParser.coverArt` models the three
+  outcomes and both callers retry.
+- **Never let cover art gate other state.** Every screen `combine`s the player state, and `combine`
+  emits nothing until *all* inputs have emitted once — so a cover flow whose first value needs a
+  round trip freezes the title, progress and controls with it. `PlayerRepository.coverUrl` is a
+  `StateFlow` that starts at null and is filled in by a background resolver for exactly this
+  reason. The same caution applies to any future flow that needs the network to produce its first
+  value.
+- **There is no `core` RPC package.** `core.version`, `core.started_at` and `core.git_state` are
+  *published topics*; asking for `core.version` over RPC answers with an error. Use
+  `player.ctrl.playerstatus` as a reachability ping — it returns the poller's cached dict without
+  touching MPD. Note the box does not publish `core.version` at all, only `core.git_state`, so
+  Coil subscribes to the `core.` prefix and shows whichever it gets.
 - Never call `list_all_dirs` (unbounded memory on large libraries) — use `get_folder_content` one
   level at a time instead.
 - The RPC port is unauthenticated and unencrypted. Design is LAN-only; never add or expose
@@ -197,9 +219,12 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
 Phases 1–7 of `docs/implementation-plan.md` §14 are implemented, along with most of phase 8. What
 still needs doing, in rough order of importance:
 
-1. **Nothing has been run against a real box.** The transport was written from the upstream Python
-   source and is covered by unit tests over recorded payload shapes, but no request has ever left a
-   phone. Run `spike/` first, then the app, and expect the first round of surprises here.
+1. **First run against a real box happened and found three bugs** (all fixed): `as_thread`
+   discarding every result, `core.version` not being an RPC, and the volume slider firing a command
+   per frame. What is confirmed working on hardware: the DEALER framing, PubSub status, play/pause/
+   next/prev, `play_folder`, and favourites. Still unconfirmed on hardware: the library views and
+   cover art (both were broken by `as_thread` and have not been retested), the connection test,
+   mDNS discovery, the media session and notification, launcher shortcuts, and multi-box switching.
 2. **The four translations are unreviewed drafts.** `values-de|fr|es|nl/strings.xml` each carry a
    header saying so. Per the rule above they must be read by a fluent speaker before a release —
    missing strings fall back to English, so correcting them incrementally is safe.

@@ -1,5 +1,6 @@
 package app.coilforphoniebox.data.repository
 
+import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
@@ -9,12 +10,18 @@ import app.coilforphoniebox.domain.repository.PlayerRepository
 import app.coilforphoniebox.transport.Commands
 import app.coilforphoniebox.transport.ConnectionManager
 import app.coilforphoniebox.transport.LibraryParser
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import app.coilforphoniebox.transport.di.TransportScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -26,10 +33,10 @@ import javax.inject.Singleton
  * Nothing here touches the database: this is the one class of data that is always live
  * and never persisted (§6.2).
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class PlayerRepositoryImpl @Inject constructor(
     private val transport: ConnectionManager,
+    @TransportScope private val scope: CoroutineScope,
 ) : PlayerRepository {
 
     override val status: Flow<PlayerStatus> = transport.status
@@ -37,29 +44,90 @@ class PlayerRepositoryImpl @Inject constructor(
     override val connectionState: Flow<ConnectionState> = transport.connection
     override val boxVersion: Flow<String?> = transport.boxVersion
 
-    /** Keyed on box and song, because the same file name means different art per box. */
-    private val coverFileCache = ConcurrentHashMap<String, String>()
+    /**
+     * Resolved covers, keyed on box and song because the same file name means different
+     * art on a different box.
+     */
+    private val resolvedCovers = ConcurrentHashMap<String, String>()
+
+    /** Songs the box has told us have no artwork, so they are not asked about again. */
+    private val songsWithoutArt: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    private val _coverUrl = MutableStateFlow<String?>(null)
 
     /**
-     * Cover art is not published: the box hands back a file name for the current song
-     * and the image itself comes over HTTP from its web server (§5). One RPC per song
-     * change, not per status message — the flow only reacts to [PlayerStatus.file].
+     * Deliberately a [StateFlow] with a value from the start, resolved in the background,
+     * rather than a flow that maps the current song to an RPC.
+     *
+     * Every screen combines this with the rest of the player state, and `combine` emits
+     * nothing until *all* of its inputs have emitted once. A cover flow whose first value
+     * needs a network round trip therefore freezes the whole player — title, progress and
+     * controls included — for as long as the lookup takes, or forever if it keeps being
+     * restarted. Cover art is the least important thing on the screen; it must never be
+     * able to hold up the rest.
      */
-    override val coverUrl: Flow<String?> = combine(
-        transport.status.map { it.file }.distinctUntilChanged(),
-        transport.activeBox,
-    ) { file, box -> file to box }
-        .mapLatest { (file, box) ->
-            if (file == null || box == null) return@mapLatest null
-            val key = "${box.id}|$file"
-            val coverFile = coverFileCache[key] ?: transport
-                .call(Commands.singleCoverArt(file))
-                .getOrNull()
-                ?.let { LibraryParser.coverFile(it) }
-                ?.also { coverFileCache[key] = it }
-            coverFile?.let { box.coverUrl(it) }
+    override val coverUrl: StateFlow<String?> = _coverUrl.asStateFlow()
+
+    init {
+        scope.launch { resolveCoversForCurrentSong() }
+    }
+
+    private suspend fun resolveCoversForCurrentSong() {
+        var lastKey: String? = null
+
+        combine(
+            transport.status.map { it.file }.distinctUntilChanged(),
+            transport.activeBox,
+        ) { file, box -> file to box }
+            // Only the newest song matters; a lookup for the previous one is abandoned.
+            .collectLatest { (file, box) ->
+                val key = cacheKey(file, box)
+                if (key != lastKey) {
+                    // Showing the previous song's artwork would be worse than showing none.
+                    _coverUrl.value = null
+                    lastKey = key
+                }
+                if (file != null && box != null) {
+                    _coverUrl.value = resolveCover(file, box)
+                }
+            }
+    }
+
+    /**
+     * The box answers the first request for a song with `CACHE_PENDING` and extracts the
+     * artwork on a worker thread, so a single request never returns a usable name. This
+     * asks again a few times before giving up.
+     */
+    private suspend fun resolveCover(file: String, box: Box): String? {
+        val key = "${box.id}|$file"
+        if (key in songsWithoutArt) return null
+        resolvedCovers[key]?.let { return box.coverUrl(it) }
+
+        repeat(COVER_ATTEMPTS) { attempt ->
+            if (attempt > 0) delay(COVER_RETRY_MILLIS)
+
+            val payload = transport.call(Commands.singleCoverArt(file)).getOrNull() ?: return null
+            when (val art = LibraryParser.coverArt(payload)) {
+                is LibraryParser.CoverArt.Available -> {
+                    resolvedCovers[key] = art.fileName
+                    return box.coverUrl(art.fileName)
+                }
+
+                LibraryParser.CoverArt.Missing -> {
+                    songsWithoutArt += key
+                    return null
+                }
+
+                // Still extracting; fall through to the next attempt.
+                LibraryParser.CoverArt.Pending -> Unit
+            }
         }
-        .distinctUntilChanged()
+        // Not cached as missing: the next song change or reconnect may find it ready.
+        return null
+    }
+
+    private fun cacheKey(file: String?, box: Box?): String? =
+        if (file == null || box == null) null else "${box.id}|$file"
 
     override suspend fun play(): Result<Unit> = transport.call(Commands.play).unit()
 
@@ -100,4 +168,10 @@ class PlayerRepositoryImpl @Inject constructor(
         transport.callOn(boxId, Commands.play(target)).unit()
 
     private fun Result<JsonElement>.unit(): Result<Unit> = map { }
+
+    private companion object {
+        /** Four tries over roughly two seconds, which covers an ordinary extraction. */
+        const val COVER_ATTEMPTS = 4
+        const val COVER_RETRY_MILLIS = 800L
+    }
 }

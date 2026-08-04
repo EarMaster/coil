@@ -76,6 +76,9 @@ class LibraryViewModel @Inject constructor(
     /** Levels already fetched in this session, so revisiting one does not re-fetch. */
     private val visitedLevels = mutableSetOf<String>()
 
+    /** Boxes whose album list has been fetched in this session. */
+    private val loadedAlbumsFor = mutableSetOf<String>()
+
     val activeBox: StateFlow<Box?> =
         boxes.activeBox.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -170,6 +173,26 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Called when the album tab is shown. Loads the list once per box per session if it has
+     * never been loaded.
+     *
+     * Deliberately not gated on the box being idle, unlike the opportunistic refresh at app
+     * start: §6.4's caution is about background and periodic fetches, and opening the tab is
+     * neither. Without this, a first visit while the box was playing showed an empty grid and
+     * never asked the box for anything.
+     */
+    fun onAlbumsShown() {
+        val boxId = activeBox.value?.id ?: return
+        if (!loadedAlbumsFor.add(boxId)) return
+        viewModelScope.launch {
+            albumsRefreshing.value = true
+            library.refreshAlbums(boxId)
+                .onFailure { messageChannel.emit(UiMessage(R.string.error_library_load_failed)) }
+            albumsRefreshing.value = false
+        }
+    }
+
     /** Called as grid items appear; the repository limits how many run at once. */
     fun requestAlbumCover(album: LibraryAlbum) {
         viewModelScope.launch {
@@ -204,6 +227,12 @@ class LibraryViewModel @Inject constructor(
         if (!visitedLevels.add("$boxId|$path")) return
         folderRefreshing.value = true
         library.refreshFolder(boxId, path)
+            // Say so rather than showing an empty folder and leaving the user to guess
+            // whether the box has nothing in it or the request failed.
+            .onFailure {
+                visitedLevels.remove("$boxId|$path")
+                messageChannel.emit(UiMessage(R.string.error_library_load_failed))
+            }
         folderRefreshing.value = false
     }
 

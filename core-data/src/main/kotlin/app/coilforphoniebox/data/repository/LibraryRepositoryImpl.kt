@@ -85,18 +85,36 @@ class LibraryRepositoryImpl @Inject constructor(
         coverPermits.withPermit {
             // Another caller may have resolved it while this one waited for a permit.
             if (dao.findAlbum(boxId, albumArtist, album)?.coverFile != null) return
-            transport.call(Commands.albumCoverArt(albumArtist, album))
-                .getOrNull()
-                ?.let { LibraryParser.coverFile(it) }
-                ?.let { dao.setAlbumCover(boxId, albumArtist, album, it) }
+
+            // The box answers the first request with CACHE_PENDING and extracts the artwork
+            // on a worker thread, so asking once never yields a file name.
+            repeat(COVER_ATTEMPTS) { attempt ->
+                if (attempt > 0) delay(COVER_RETRY_MILLIS)
+
+                val payload = transport.call(Commands.albumCoverArt(albumArtist, album))
+                    .getOrNull() ?: return
+
+                when (val art = LibraryParser.coverArt(payload)) {
+                    is LibraryParser.CoverArt.Available -> {
+                        dao.setAlbumCover(boxId, albumArtist, album, art.fileName)
+                        return
+                    }
+
+                    // Nothing to show, and nothing to gain from asking again.
+                    LibraryParser.CoverArt.Missing -> return
+
+                    LibraryParser.CoverArt.Pending -> Unit
+                }
+            }
         }
     }
 
     override suspend fun rescanBoxLibrary(boxId: String): Result<Unit> =
         transport.call(Commands.updateLibrary).mapCatching {
-            // `update` only starts the scan. `update_wait` would block the box's RPC
-            // loop until it finished, which is exactly what to avoid (§6.4) — so wait a
-            // moment and reload, and let the user pull to refresh if it was too quick.
+            // `update` hands the scan to MPD and returns a job id straight away.
+            // `update_wait` would block the box's RPC loop until the scan finished, which
+            // is exactly what to avoid (§6.4) — so wait a moment and reload, and let the
+            // user pull to refresh if that was too quick.
             delay(RESCAN_SETTLE_MILLIS)
             refreshAlbums(boxId)
             refreshFolder(boxId, FolderContent.ROOT)
@@ -121,6 +139,8 @@ class LibraryRepositoryImpl @Inject constructor(
 
     private companion object {
         const val TAG = "CoilLibrary"
+        const val COVER_ATTEMPTS = 3
+        const val COVER_RETRY_MILLIS = 1_000L
         const val RESCAN_SETTLE_MILLIS = 3_000L
         const val STALE_AFTER_MILLIS = 7L * 24 * 60 * 60 * 1000
     }

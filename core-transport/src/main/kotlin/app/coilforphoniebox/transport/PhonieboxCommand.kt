@@ -21,12 +21,6 @@ data class PhonieboxCommand(
     val plugin: String,
     val method: String? = null,
     val kwargs: Map<String, JsonElement> = emptyMap(),
-    /**
-     * Runs the call on its own thread on the box. Set for anything potentially slow:
-     * the RPC socket is shared with the box's own GPIO and RFID handling, so a
-     * blocking call delays card detection on the box itself (§6).
-     */
-    val asThread: Boolean = false,
     val timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
     /**
      * Whether it is safe to send this command again after a timeout.
@@ -46,13 +40,15 @@ data class PhonieboxCommand(
         put("plugin", plugin)
         method?.let { put("method", it) }
         if (kwargs.isNotEmpty()) put("kwargs", JsonObject(kwargs))
-        if (asThread) put("as_thread", true)
     }
 
     companion object {
         const val DEFAULT_TIMEOUT_MILLIS = 3_000L
 
-        /** Library calls can take a while on a large collection even with `as_thread`. */
+        /**
+         * Library calls run synchronously on the box and can take a while on a large
+         * collection. They cannot be handed off with `as_thread` — see [Commands].
+         */
         const val LIBRARY_TIMEOUT_MILLIS = 15_000L
     }
 }
@@ -68,12 +64,27 @@ data class PhonieboxCommand(
  * `src/jukebox/components/player/playermpd/__init__.py` and
  * `src/jukebox/components/volume/__init__.py` on `future3/main`, not from the web
  * UI's command table, which omits several of them.
+ *
+ * **`as_thread` is never sent.** The implementation plan suggests it for slow calls, but
+ * `jukebox/plugs.py` starts a daemon thread and returns the `Thread` object rather than
+ * the function's result — so any call that carries it answers with something unusable.
+ * It is fire-and-forget only, and every call here needs its result. The cost is that a
+ * library call occupies the box's sequential RPC loop, and with it card detection, for as
+ * long as it runs; the mitigation is to call these rarely and never on a timer (§6).
  */
 object Commands {
 
-    // ------------------------------------------------------------------ core
+    // -------------------------------------------------------------------- ping
 
-    val version = PhonieboxCommand("core", "version", retryable = true)
+    /**
+     * Reachability check, also used as the watchdog's ping.
+     *
+     * There is no `core.version` RPC — the box only *publishes* `core.*` topics, and
+     * asking for that package answers with an error, which used to make every connection
+     * test fail. `playerstatus` returns the poller's cached dict without touching MPD, so
+     * it is both cheap and proof that the jukebox app itself is answering.
+     */
+    val ping = player("playerstatus", retryable = true)
 
     // ---------------------------------------------------------------- player
 
@@ -122,13 +133,13 @@ object Commands {
     )
 
     /**
-     * Returns the current status directly instead of waiting for the next publish.
+     * Same call as [ping], named for the other thing it is used for: pulling the status
+     * once after a rebuilt connection instead of waiting for the next publish.
      *
-     * Never polled — the box publishes at 4 Hz on its own and the last-value cache
-     * covers a fresh subscription (§4.2.1). This exists only for the uncertain case
-     * right after a rebuilt connection.
+     * Never polled — the box publishes at 4 Hz on its own, and the last-value cache
+     * covers a fresh subscription (§4.2.1).
      */
-    val playerStatus = player("playerstatus", retryable = true)
+    val playerStatus = ping
 
     // --------------------------------------------------------------- content
 
@@ -136,14 +147,12 @@ object Commands {
     fun folderContent(folder: String) = player(
         "get_folder_content",
         kwargs = mapOf("folder" to JsonPrimitive(folder)),
-        asThread = true,
         timeoutMillis = PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
         retryable = true,
     )
 
     val listAlbums = player(
         "list_albums",
-        asThread = true,
         timeoutMillis = PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
         retryable = true,
     )
@@ -151,7 +160,6 @@ object Commands {
     fun singleCoverArt(songUrl: String) = player(
         "get_single_coverart",
         kwargs = mapOf("song_url" to JsonPrimitive(songUrl)),
-        asThread = true,
         retryable = true,
     )
 
@@ -161,7 +169,6 @@ object Commands {
             "albumartist" to JsonPrimitive(albumArtist),
             "album" to JsonPrimitive(album),
         ),
-        asThread = true,
         retryable = true,
     )
 
@@ -169,7 +176,7 @@ object Commands {
      * Starts the box's MPD database scan. `update_wait` blocks until the scan is
      * finished and is avoided for that reason (§6.4).
      */
-    val updateLibrary = player("update", asThread = true, retryable = true)
+    val updateLibrary = player("update", retryable = true)
 
     fun play(target: PlayTarget): PhonieboxCommand = when (target) {
         is PlayTarget.Folder -> player(
@@ -229,10 +236,9 @@ object Commands {
     private fun player(
         method: String,
         kwargs: Map<String, JsonElement> = emptyMap(),
-        asThread: Boolean = false,
         timeoutMillis: Long = PhonieboxCommand.DEFAULT_TIMEOUT_MILLIS,
         retryable: Boolean = false,
-    ) = PhonieboxCommand("player", "ctrl", method, kwargs, asThread, timeoutMillis, retryable)
+    ) = PhonieboxCommand("player", "ctrl", method, kwargs, timeoutMillis, retryable)
 
     private fun volume(
         method: String,

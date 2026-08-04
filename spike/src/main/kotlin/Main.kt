@@ -114,7 +114,9 @@ suspend fun listenPubSub(ctx: ZContext, host: String, seconds: Int) {
     val socket = ctx.createSocket(SocketType.SUB).apply {
         linger = 0
         receiveTimeOut = 500
-        listOf("playerstatus", "volume.level", "core.version", "rfid.card_id")
+        // "core." is a prefix subscription: the daemon publishes core.git_state and
+        // core.started_at, but not core.version, whatever the docs suggest.
+        listOf("playerstatus", "volume.level", "core.", "rfid.card_id")
             .forEach { subscribe(it.toByteArray()) }
         connect("tcp://$host:$PUB_PORT")
     }
@@ -164,8 +166,10 @@ fun main(args: Array<String>) = runBlocking {
         RpcClient(ctx, host).use { rpc ->
 
             println("\n[1] Single DEALER request")
-            val version = rpc.call("core", "version")
-            if (version != null) ok("core.version = $version")
+            // player.ctrl.playerstatus, not core.version: there is no `core` RPC package,
+            // so asking for one answers with an error and a healthy box looks dead.
+            val status = rpc.call("player", "ctrl", "playerstatus")
+            if (status != null) ok("playerstatus answered")
             else {
                 fail("No reply. Check the delimiter framing (see probe_phoniebox.py).")
                 return@runBlocking
@@ -177,10 +181,14 @@ fun main(args: Array<String>) = runBlocking {
             if (good == 5) ok("All 5 replies correlated correctly.")
             else fail("Only $good/5 replies - serialise requests.")
 
-            println("\n[3] Potentially slow call with as_thread")
-            val albums = rpc.call("player", "ctrl", "list_albums", asThread = true)
-            if (albums != null) ok("list_albums returned ${albums.jsonArray.size} entries.")
-            else fail("list_albums gave no reply.")
+            println("\n[3] Slow call, deliberately without as_thread")
+            // as_thread hands the call to a daemon thread and returns the Thread object
+            // instead of the result, so a library call carrying it comes back unusable.
+            // It is fire-and-forget only — never use it for a call you read.
+            val albums = rpc.call("player", "ctrl", "list_albums")
+            val albumCount = albums?.let { runCatching { it.jsonArray.size }.getOrNull() }
+            if (albumCount != null) ok("list_albums returned $albumCount entries.")
+            else fail("list_albums gave no usable array: $albums")
 
             println("\n[4] Playback test: toggle, wait 3s, toggle back")
             rpc.call("player", "ctrl", "toggle")

@@ -38,11 +38,46 @@ class CommandsTest {
         assertNull(json["as_thread"])
     }
 
+    /**
+     * `jukebox/plugs.py` starts a daemon thread for an `as_thread` call and returns the
+     * Thread object instead of the function's result, so a call that carries it answers
+     * with something unusable. Every command here needs its result.
+     */
     @Test
-    fun `library calls run on their own thread on the box`() {
-        assertTrue(Commands.listAlbums.asThread)
-        assertTrue(Commands.folderContent("Audiobooks").asThread)
-        assertTrue(Commands.folderContent("Audiobooks").toJson("id")["as_thread"] != null)
+    fun `as_thread is never sent, because it discards the result`() {
+        val commands = listOf(
+            Commands.ping,
+            Commands.listAlbums,
+            Commands.folderContent("Audiobooks"),
+            Commands.singleCoverArt("A/01.mp3"),
+            Commands.albumCoverArt("X", "A"),
+            Commands.updateLibrary,
+            Commands.play(PlayTarget.Folder("x")),
+        )
+        commands.forEach { command ->
+            assertNull("${command.name} must not set as_thread", command.toJson("id")["as_thread"])
+        }
+    }
+
+    /**
+     * There is no `core` RPC package — `core.*` are published topics only — so asking for
+     * `core.version` answers with an error and every connection test failed.
+     */
+    @Test
+    fun `the reachability ping is playerstatus, not core version`() {
+        assertEquals("player.ctrl.playerstatus", Commands.ping.name)
+        assertEquals("player", Commands.ping.pkg)
+        assertTrue(Commands.ping.retryable)
+    }
+
+    @Test
+    fun `library calls get a longer timeout than the rest`() {
+        assertEquals(PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS, Commands.listAlbums.timeoutMillis)
+        assertEquals(
+            PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
+            Commands.folderContent("Audiobooks").timeoutMillis,
+        )
+        assertEquals(PhonieboxCommand.DEFAULT_TIMEOUT_MILLIS, Commands.play.timeoutMillis)
     }
 
     @Test
@@ -89,7 +124,7 @@ class CommandsTest {
         assertTrue(Commands.play.retryable)
         assertTrue(Commands.setVolume(30).retryable)
         assertTrue(Commands.play(PlayTarget.Folder("x")).retryable)
-        assertTrue(Commands.version.retryable)
+        assertTrue(Commands.ping.retryable)
 
         assertFalse(Commands.next.retryable)
         assertFalse(Commands.previous.retryable)
@@ -100,6 +135,6 @@ class CommandsTest {
     @Test
     fun `command name is the dotted plugin path`() {
         assertEquals("player.ctrl.play_folder", Commands.play(PlayTarget.Folder("x")).name)
-        assertEquals("core.version", Commands.version.name)
+        assertEquals("volume.ctrl.set_volume", Commands.setVolume(30).name)
     }
 }

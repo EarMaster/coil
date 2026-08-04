@@ -63,6 +63,7 @@ fun PlayerScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scrub by viewModel.scrubPosition.collectAsStateWithLifecycle()
+    val volumeTarget by viewModel.volumeTarget.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -149,10 +150,13 @@ fun PlayerScreen(
         Spacer(Modifier.height(20.dp))
 
         VolumeRow(
-            level = state.volume.level,
+            // The dragged value wins while a drag is in progress, so the slider follows the
+            // finger instead of the box's four-per-second reports.
+            level = volumeTarget ?: state.volume.level,
             maxLevel = state.volume.maxLevel,
             muted = state.volume.muted,
-            onChange = viewModel::setVolume,
+            onChange = viewModel::onVolumeChange,
+            onChangeFinished = viewModel::onVolumeChangeFinished,
         )
 
         Spacer(Modifier.height(24.dp))
@@ -287,6 +291,7 @@ private fun VolumeRow(
     maxLevel: Int,
     muted: Boolean,
     onChange: (Int) -> Unit,
+    onChangeFinished: () -> Unit,
 ) {
     val percent = if (maxLevel <= 0) 0 else (level * 100) / maxLevel
     val spokenVolume = stringResource(R.string.volume_percent, percent)
@@ -308,6 +313,7 @@ private fun VolumeRow(
         Slider(
             value = level.toFloat(),
             onValueChange = { onChange(it.toInt()) },
+            onValueChangeFinished = onChangeFinished,
             valueRange = 0f..maxLevel.coerceAtLeast(1).toFloat(),
             modifier = Modifier
                 .weight(1f)

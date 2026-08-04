@@ -90,11 +90,33 @@ class LibraryParserTest {
     }
 
     @Test
-    fun `cover art returns a bare file name and rejects the empty answers`() {
-        assertEquals("abc123.jpg", LibraryParser.coverFile(parse("\"abc123.jpg\"")))
-        assertEquals("abc123.jpg", LibraryParser.coverFile(parse("\"/cache/abc123.jpg\"")))
-        assertNull(LibraryParser.coverFile(parse("\"\"")))
-        assertNull(LibraryParser.coverFile(parse("null")))
-        assertNull(LibraryParser.coverFile(null))
+    fun `cover art returns a bare file name`() {
+        assertEquals(
+            LibraryParser.CoverArt.Available("abc123.jpg"),
+            LibraryParser.coverArt(parse("\"abc123.jpg\"")),
+        )
+        assertEquals(
+            LibraryParser.CoverArt.Available("abc123.jpg"),
+            LibraryParser.coverArt(parse("\"/cache/abc123.jpg\"")),
+        )
+    }
+
+    /**
+     * The box queues extraction on a worker thread and answers the *first* request for any
+     * song with this sentinel. Treating it as a file name is why no cover ever appeared.
+     */
+    @Test
+    fun `CACHE_PENDING is a retry signal, not a file name`() {
+        assertEquals(
+            LibraryParser.CoverArt.Pending,
+            LibraryParser.coverArt(parse("\"CACHE_PENDING\"")),
+        )
+    }
+
+    @Test
+    fun `an empty answer means there is no artwork`() {
+        assertEquals(LibraryParser.CoverArt.Missing, LibraryParser.coverArt(parse("\"\"")))
+        assertEquals(LibraryParser.CoverArt.Missing, LibraryParser.coverArt(parse("null")))
+        assertEquals(LibraryParser.CoverArt.Missing, LibraryParser.coverArt(null))
     }
 }

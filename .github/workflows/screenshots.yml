@@ -1,0 +1,55 @@
+name: Record screenshots
+
+# Manual only, and deliberately so: re-recording goldens is how a visual change is *accepted*,
+# which is a decision rather than something that should happen on a push.
+#
+# Dispatch it on the branch that carries the UI change — `develop` or a feature branch. It
+# cannot be used on `main`: that branch takes pull requests only, so the push would be
+# rejected.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    name: Record and commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      # This runner is the reference environment. Text rendering differs enough between hosts
+      # that a golden recorded on Windows or macOS can fail here on nothing but antialiasing,
+      # so the baseline is always made where it is checked.
+      - name: Record screenshots
+        run: ./gradlew :app:recordRoborazziDebug
+
+      - name: Commit updated goldens
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/testDebug/screenshots
+          if git diff --cached --quiet; then
+            echo "Goldens unchanged — nothing to commit."
+            exit 0
+          fi
+          git commit -m "test(screenshots): re-record goldens on the CI runner"
+          git push
+
+      # Uploaded whether or not anything changed, so the run itself is reviewable: the images
+      # are the result here, and a commit hash does not show you what the app looks like.
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: app/src/testDebug/screenshots/
+          retention-days: 14

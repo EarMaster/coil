@@ -24,6 +24,8 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 | `core-data/` | Room database and DAOs, DataStore settings, repository implementations, settings export/import. |
 | `feature-media/` | `PhonieboxPlayer` (`SimpleBasePlayer`), `PhonieboxMediaService` (`MediaSessionService`), notification handling, `AutoSessionStarter`, `BootReceiver`, `MediaSessionBinder`. |
 | `feature-shortcuts/` | `ShortcutPublisher` (dynamic and pinned shortcuts), `ShortcutSynchronizer`, `PlayDeepLink` (`coil://play?box=…`). |
+| `app/src/testDebug/` | Screenshot tests and their golden PNGs — the app module's only tests. In the *debug* unit test source set, not `test`, because they compose into a debug-only activity. See "Screenshot tests". |
+| `app/src/debug/` | `HiltTestActivity` and the manifest entry for it: an empty, unexported Hilt entry point the screenshot tests compose into. Debug builds only. |
 | `docs/implementation-plan.md` | Full architecture/design spec — tech stack, module layout, transport design, data model, media session, multi-box design, branding, i18n rules, phased build plan. **Read before implementing anything non-trivial.** |
 | `docs/protocol-notes.md` | Condensed Phoniebox v3 ZMQ protocol reference, distilled from the upstream Python source. |
 | `docs/pages/` | The GitHub Pages site (Jekyll), deployed by `pages.yml` — landing page and privacy policy, served at `coilforphoniebox.app` via the `CNAME` file in this folder. Kept separate from the planning docs above so the Pages *site* only contains user-facing content — the planning docs are still public in the repo, just not part of the deployed website. |
@@ -40,9 +42,11 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 
 `.github/workflows/` mirrors the setup from a sibling project, adapted for Coil ahead of time:
 
-- `ci.yml` / `codeql.yml` — build/test/lint and CodeQL analysis on PRs to `main` or `develop`. Both
-  start with a `detect` job that checks for a root `./gradlew`; that gate is now satisfied, so these
-  actually build, test and lint.
+- `ci.yml` / `codeql.yml` — build/test/lint/screenshot verification and CodeQL analysis on PRs to
+  `main` or `develop`. Both start with a `detect` job that checks for a root `./gradlew`; that gate
+  is now satisfied, so these actually build, test and lint.
+- `screenshots.yml` — manual (`workflow_dispatch`) re-recording of the golden screenshots on the
+  Linux runner, committed back to the branch it was dispatched on. See "Screenshot tests".
 - `release.yml` — tags `main` from `app/build.gradle.kts`'s `versionName`, builds a signed
   APK/AAB, and cuts a GitHub Release with notes pulled from `CHANGELOG.md`. Its gate
   (`app/build.gradle.kts` exists) is now satisfied too. Needs `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`,
@@ -96,9 +100,12 @@ initiate unprompted.
 
 ```bash
 ./gradlew assembleDebug     # debug APK
-./gradlew test              # unit tests (core-domain, core-transport)
+./gradlew test              # unit tests (core-domain, core-transport, :app screenshot tests)
 ./gradlew lint              # lint; HardcodedText is an error, MissingTranslation a warning
 ./gradlew assembleRelease   # minified APK; unsigned unless KEYSTORE_PATH and friends are set
+
+./gradlew :app:verifyRoborazziDebug   # compare the UI against the committed screenshots
+./gradlew :app:recordRoborazziDebug   # overwrite them with what the UI looks like now
 ```
 
 Requires JDK 17 (CI uses Temurin 17) and Android SDK 36. `local.properties` with `sdk.dir` is
@@ -258,6 +265,93 @@ box switched off — and is not a thin wrapper around something the box does.
   accent folding cannot be expressed in SQL and that cache is the one disposable thing in the
   database.
 
+## Screenshot tests
+
+The UI is captured as PNGs and compared on every PR. The tests live in
+`app/src/testDebug/kotlin/.../screenshot/`, the goldens in `app/src/testDebug/screenshots/`,
+one PNG per state, committed so a review sees the picture next to the diff that changed it.
+
+They run **on the JVM** — Robolectric renders the real Compose UI with native graphics, and
+Roborazzi writes and compares the files. No emulator, no device, no box.
+
+Three levels, and the distinction matters:
+
+- **`app/`** — the whole `CoilApp` scaffold with a screen inside it: top bar with the box
+  indicator, bottom navigation, mini player, offline banner. This is what the app looks like.
+  Captured on **three device profiles** (`_phone`, `_small`, `_tablet`), so the goldens say
+  something about layout and not only about colour.
+- **`player/`, `library/`** — one screen on its own, for states that would be tedious to reach
+  through the whole app: web radio with no duration, a running sleep timer, search with and
+  without results.
+- **`chrome/`** — the scaffold's own components in isolation, mainly the box indicator's four
+  connection states, where the difference is one small coloured dot.
+
+- **The reason it is Robolectric and not an emulator is the clock.** This UI interpolates
+  elapsed time, counts a sleep timer down and debounces the search field. Robolectric's looper
+  is paused, so all of that holds still and a golden is the same picture every run; on a device
+  it would not be. Anything that genuinely has to advance does so deliberately, via
+  `ScreenshotTest.advanceTime` — the search results are the only case so far.
+- **Nothing is written during `./gradlew test`.** `captureRoboImage` is inert unless Roborazzi's
+  own tasks set its system property, so an ordinary test run only checks that every screen still
+  composes — which is worth having on its own, since none of this used to be covered at all.
+- **Goldens are recorded on CI, not locally.** Text rendering differs between hosts, so a file
+  recorded on Windows can fail the Linux runner on antialiasing alone. `screenshots.yml` is a
+  manual workflow that records on the runner and commits the result; dispatch it on the branch
+  carrying the UI change (never on `main` — the push would be rejected). Recording locally is
+  for *looking* at, and `verifyRoborazziDebug` locally may disagree with CI for the same reason.
+  When a change is meant to alter the UI, that workflow *is* the way you accept the new look.
+- **A failing verify uploads what it saw.** `_actual` and `_compare` images land in
+  `app/build/outputs/roborazzi/` and the `Screenshots` CI job uploads them. That directory is
+  flat, so **golden file names must stay unique across subfolders** — two `folders_light.png`
+  in different directories would overwrite each other's diff.
+- **The screens take a ViewModel, not a state object**, so the tests build the real ViewModel on
+  fake repositories (`FakeRepositories.kt`) rather than a stateless copy of the screen. That
+  keeps the ViewModel's own flow wiring inside the picture: if `combine` stalls because
+  something never emitted, the golden shows an empty screen and the test fails.
+- **The whole-app goldens need Hilt**, because `CoilApp`'s screens resolve their view models
+  through `hiltViewModel()`. `FakeRepositoryModule` replaces `:core-data`'s `RepositoryModule`
+  via `@TestInstallIn`, so nothing opens a socket, a database or a DataStore file;
+  `DatabaseModule` is left in place and simply never asked for anything. The content is composed
+  into `HiltTestActivity` (debug source set — Robolectric will not launch an activity that is
+  not in the merged manifest), and `robolectric.properties` names `HiltTestApplication`. Every
+  concrete test class needs `@HiltAndroidTest`, which is what generates the component the rule
+  installs. Fakes are singletons exposed under their own type too, so a test can inject one and
+  change what the box appears to be doing before composing.
+- **Destinations are reached by clicking the navigation bar**, not by composing a screen
+  directly, so the navigation is covered as well: a destination that stopped being reachable
+  fails the test rather than quietly keeping its old picture.
+- **Devices are `@Config(qualifiers = …)` on a subclass** of `AppScreenshotTest` — a new size is
+  a three-line class. It has to be an annotation: the qualifiers must be set before the host
+  activity exists, and `RuntimeEnvironment.setQualifiers` inside a test body is too late (the
+  same trap as the locale). Note this simulates the *window*, not the device: there are no
+  system bars, no rounded corners and no notch in a golden.
+- **Cover art never reaches the network.** The image loader is replaced with a fake engine that
+  answers every URL with a flat colour, instantly; the box's HTTP cover cache is not reachable
+  from CI, and an image arriving a frame late would make the golden depend on timing.
+- **Roborazzi captures the window, not the node**, whichever node it is handed — so a component
+  golden shortens the window instead, via `@Config(qualifiers = "+h200dp")` on the class, rather
+  than being a 40 dp chip above a screenful of background.
+- **The screenshot tests are debug-only**, and live in the `testDebug` source set for it:
+  `HiltTestActivity` is a debug class, so the release unit test variant could not even compile
+  them. Their dependencies are declared `testDebugImplementation` to match, which leaves
+  `testReleaseUnitTest` empty rather than broken.
+- **Roborazzi is pinned at 1.60.0** because 1.61.0 and later carry Kotlin 2.3 metadata that
+  Kotlin 2.0.21 cannot read. Upgrading it means upgrading Kotlin and the Compose compiler too.
+
+Covered so far: the whole app on three devices (player light and dark, library, favourites,
+settings, offline, onboarding), the player screen (playing, paused, idle, web radio, sleep
+timer, light and dark), the library screen (folders, tracks, albums, search, no results, empty,
+light and dark) and the chrome components.
+
+The tablet goldens are worth looking at rather than skipping past: the UI is single-column
+everywhere, and `app/library_tablet.png` is what that means on 1280 dp. They document the gap
+in "Implementation status" item 5 instead of pretending it is handled.
+
+The locale axis is one German golden rather than all five launch locales —
+`library/folders_de.png`, which is also the only place the translations can be *seen* without a
+phone. It shows the drift honestly: 43 of the 163 strings have no German at all yet and fall
+back to English on screen.
+
 ## The `coil://play` deep link
 
 `PlayDeepLink` in `:feature-shortcuts` owns the format; `PlayShortcutActivity` in `:app` answers it.
@@ -314,8 +408,10 @@ still needs doing, in rough order of importance:
 2. **The four translations are unreviewed drafts.** `values-de|fr|es|nl/strings.xml` each carry a
    header saying so. Per the rule above they must be read by a fluent speaker before a release —
    missing strings fall back to English, so correcting them incrementally is safe.
-3. **No instrumented or UI tests.** Unit tests cover the parsers, the command catalogue and the
-   domain models; everything above that is untested.
+3. **No instrumented tests.** Unit tests cover the parsers, the command catalogue and the domain
+   models, and the screenshot tests cover what the player and library screens look like (see
+   "Screenshot tests"). Nothing runs on a device, and nothing tests behaviour above the
+   ViewModel — a screenshot proves a screen composes and looks right, not that tapping works.
 4. **Automatic mode is best-effort by design**, and its boot path is the weakest part: Android may
    refuse to start a foreground service from `BootReceiver`, which `AutoSessionStarter` treats as a
    normal outcome. In practice the mode becomes reliable once the app has been opened after a

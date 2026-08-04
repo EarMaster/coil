@@ -21,6 +21,15 @@ junit = "4.13.2"
 lifecycle = "2.8.7"
 media3 = "1.5.1"
 navigationCompose = "2.8.4"
+# Screenshot testing runs on the JVM: Robolectric renders the real Compose UI with the
+# native graphics backend, Roborazzi writes and compares the PNGs (see AGENTS.md).
+#
+# Roborazzi stops at 1.60.0 deliberately: 1.61.0 and later ship Kotlin 2.3 metadata, which
+# this project's Kotlin 2.0.21 refuses to read ("expected version is 2.0.0"). Upgrading it
+# means upgrading Kotlin and the Compose compiler with it, which is a separate exercise —
+# the same reasoning that keeps AGP on 8.x.
+robolectric = "4.16.1"
+roborazzi = "1.60.0"
 room = "2.6.1"
 serialization = "1.7.3"
 
@@ -42,16 +51,22 @@ androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "
 # coil.* / coil.compose.* — always qualify it in review to keep the two apart.
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilImage" }
 coil-core = { module = "io.coil-kt:coil", version.ref = "coilImage" }
+# Serves a canned image for every request, so a screenshot never waits on the box's HTTP
+# cover cache — or on a network that is not there.
+coil-test = { module = "io.coil-kt:coil-test", version.ref = "coilImage" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 
@@ -66,6 +81,10 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }
 
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
@@ -75,3 +94,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }

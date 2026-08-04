@@ -3,3 +3,6 @@
 gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
+# Golden screenshots. Marking them binary keeps Git from trying to diff or convert them, and
+# keeps a merge conflict in one from producing an unopenable file.
+*.png binary

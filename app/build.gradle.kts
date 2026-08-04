@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -85,6 +86,18 @@ android {
     packaging {
         resources.excludes += setOf("/META-INF/{AL2.0,LGPL2.1}")
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric renders the real UI, so the unit tests need the real resources —
+            // strings, colours and all five locales included.
+            isIncludeAndroidResources = true
+            all {
+                // Rendering a full screen at 420dpi needs more heap than the 512 MB default.
+                it.maxHeapSize = "2g"
+            }
+        }
+    }
 }
 
 dependencies {
@@ -118,4 +131,23 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Screenshot tests. They run as ordinary unit tests and stay inert during `./gradlew test`
+    // — Roborazzi only writes or compares files when its Gradle tasks set the system property,
+    // so the plain test task neither records nor fails on a golden.
+    //
+    // They live in the `testDebug` source set, not `test`: the activity they compose into is
+    // `HiltTestActivity` from the debug source set, which the release unit test variant cannot
+    // see. Scoping the dependencies the same way keeps `testReleaseUnitTest` empty rather than
+    // broken.
+    testDebugImplementation(platform(libs.compose.bom))
+    testDebugImplementation(libs.compose.ui.test.junit4)
+    testDebugImplementation(libs.robolectric)
+    testDebugImplementation(libs.roborazzi)
+    testDebugImplementation(libs.roborazzi.compose)
+    testDebugImplementation(libs.coil.test)
+    // Whole-app goldens compose CoilApp, whose screens resolve their view models through
+    // `hiltViewModel()` — so the graph has to exist, with fakes in place of the repositories.
+    testDebugImplementation(libs.hilt.android.testing)
+    kspTestDebug(libs.hilt.compiler)
 }

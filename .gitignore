@@ -1,7 +1,12 @@
 .gradle/
 build/
 .idea/
+.kotlin/
 local.properties
 *.iml
 *.jks
 *.keystore
+
+# JVM crash dumps
+hs_err_pid*.log
+replay_pid*.log

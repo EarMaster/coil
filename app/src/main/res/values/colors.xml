@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- md_light_surface; the dark variant lives in values-night. -->
+    <color name="window_background">#F5FBF7</color>
+</resources>

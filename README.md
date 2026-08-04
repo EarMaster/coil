@@ -42,7 +42,7 @@ Coil keeps everything on your device and your network. No account, no telemetry,
 
 ## What Coil does not do
 
-Card management, system settings, timers and shutdown stay in the Phoniebox web UI. Coil covers the thing you do twenty times a day — putting something on — and deliberately leaves administration alone. Beyond keeping the app focused, it means Coil never sends a command that could take the box down.
+Card management, system settings and shutdown stay in the Phoniebox web UI. Coil covers the thing you do twenty times a day — putting something on — and deliberately leaves administration alone. Beyond keeping the app focused, it means Coil never sends a command that could take the box down.
 
 ## Requirements
 
@@ -76,7 +76,9 @@ cd coil
 ./gradlew assembleDebug
 ```
 
-Requires JDK 17 and Android SDK 35. No API keys, no proprietary dependencies, no extra setup.
+Requires JDK 17 and Android SDK 36, plus a `local.properties` with `sdk.dir` pointing at your SDK
+(escape a Windows drive letter as `sdk.dir=C\:/Android/Sdk`). No API keys, no proprietary
+dependencies, no extra setup.
 
 Architecture and protocol notes are in [`docs/`](docs/) — worth a look before touching the transport layer, since the Phoniebox RPC socket has some sharp edges.
 

@@ -1,0 +1,5 @@
+# The wrapper script must stay LF whatever a contributor's core.autocrlf is set to: CRLF
+# line endings make it unrunnable on the Linux CI runner.
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary

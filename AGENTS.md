@@ -9,22 +9,27 @@ Coil is a planned native Android remote control for [Phoniebox](https://github.c
 v3 (`future3/main`), talking to the box over its ZeroMQ RPC/PubSub interface on the local
 network. See `README.md` for the user-facing pitch and feature list.
 
-**Current state: pre-implementation.** There is no `:app` module and no root Gradle build yet.
-The repo currently holds: the full design/architecture spec, a standalone JVM transport spike,
-a Python protocol probe, brand assets, and a static HTML mockup. Treat `docs/implementation-plan.md`
-as the detailed spec for anything not covered below — this file is a condensed map of it, not a
-replacement.
+**Current state: implemented through the plan's phase 7, with most of phase 8 done.** The app
+builds, tests and lints; what it has not had is a run against a real box. Treat
+`docs/implementation-plan.md` as the detailed spec for anything not covered below — this file is a
+condensed map of it, not a replacement. See "Implementation status" for what is and is not done.
 
 ## Repo layout
 
 | Path | Contents |
 |---|---|
+| `app/` | Compose UI, navigation, screens, string resources for all five locales, adaptive and notification icons, `PlayShortcutActivity`. All translatable strings live here, in one file per locale. |
+| `core-domain/` | Plain JVM module: models, repository interfaces, `PlayFavoriteUseCase`. No Android dependency. |
+| `core-transport/` | ZeroMQ client: `ZmqRpcClient` (DEALER), `ZmqStatusSubscriber` (SUB), `PhonieboxSession` (watchdog, reconnect), `ConnectionManager` (active box, reference-counted lifetime), `Commands`, the payload parsers, `HostDiscovery` (mDNS), `BoxProbe`. |
+| `core-data/` | Room database and DAOs, DataStore settings, repository implementations, settings export/import. |
+| `feature-media/` | `PhonieboxPlayer` (`SimpleBasePlayer`), `PhonieboxMediaService` (`MediaSessionService`), notification handling, `AutoSessionStarter`, `BootReceiver`, `MediaSessionBinder`. |
+| `feature-shortcuts/` | `ShortcutPublisher` (dynamic and pinned shortcuts), `ShortcutSynchronizer`, `PlayDeepLink` (`coil://play?box=…`). |
 | `docs/implementation-plan.md` | Full architecture/design spec — tech stack, module layout, transport design, data model, media session, multi-box design, branding, i18n rules, phased build plan. **Read before implementing anything non-trivial.** |
 | `docs/protocol-notes.md` | Condensed Phoniebox v3 ZMQ protocol reference, distilled from the upstream Python source. |
 | `docs/pages/` | The GitHub Pages site (Jekyll), deployed by `pages.yml` — landing page and privacy policy, served at `coilforphoniebox.app` via the `CNAME` file in this folder. Kept separate from the planning docs above so the Pages *site* only contains user-facing content — the planning docs are still public in the repo, just not part of the deployed website. |
 | `spike/` | Standalone Gradle/Kotlin JVM project validating the transport approach (JeroMQ DEALER client) against a real box, independent of Android. |
 | `tools/probe_phoniebox.py` | Python/pyzmq script that does the same validation from the other side (REQ vs DEALER framing, pipelining, PubSub schema dump) — used to sanity-check protocol assumptions against a live box before trusting them in Kotlin. |
-| `android/` | Reference bundle for theme (`theme/Color.kt`, `theme/Theme.kt`) and adaptive icon XML (`res/`) to be dropped into the real `:app` module once it exists. Not a buildable module on its own (no manifest, no build file). |
+| `android/` | Original reference bundle for theme and adaptive icon XML. Now **copied into `app/`** and kept only as the source of those files' provenance; edit the copies under `app/src/main/`, not these. |
 | `brand/` | Logo mark SVG. |
 | `mockup/` | Static HTML UI mockup (`coil-mockup.html`) — visual reference only, not implementation. |
 | `CHANGELOG.md` | [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)-format history. **Update the `## [Unreleased]` section as part of any user-facing change** — new feature, fix, or behaviour change. `release.yml` extracts release notes straight from the `## [x.y.z]` heading matching `versionName`, so headings must stay exact and the `Unreleased` section shouldn't go stale. |
@@ -33,12 +38,12 @@ replacement.
 
 `.github/workflows/` mirrors the setup from a sibling project, adapted for Coil ahead of time:
 
-- `ci.yml` / `codeql.yml` — build/test/lint and CodeQL analysis on PRs to `main` or `develop`. Both start with a
-  `detect` job that checks for a root `./gradlew` and skip (not fail) everything else until it
-  exists — these are inert no-ops until Phase 1 (module skeleton) lands.
+- `ci.yml` / `codeql.yml` — build/test/lint and CodeQL analysis on PRs to `main` or `develop`. Both
+  start with a `detect` job that checks for a root `./gradlew`; that gate is now satisfied, so these
+  actually build, test and lint.
 - `release.yml` — tags `main` from `app/build.gradle.kts`'s `versionName`, builds a signed
-  APK/AAB, and cuts a GitHub Release with notes pulled from `CHANGELOG.md`. Gated the same way:
-  a no-op until `app/build.gradle.kts` exists. Needs `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`,
+  APK/AAB, and cuts a GitHub Release with notes pulled from `CHANGELOG.md`. Its gate
+  (`app/build.gradle.kts` exists) is now satisfied too. Needs `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`,
   `KEY_ALIAS`, `KEY_PASSWORD` repo secrets before it can actually sign a build. Release notes come
   from `CHANGELOG.md`'s `## [x.y.z]` heading matching `versionName` — see that file's own note.
 - `google-play.yml` — reusable workflow (`workflow_call`/manual dispatch) that uploads a tagged
@@ -75,12 +80,25 @@ initiate unprompted.
 - `/release` — bumps `versionName`/`versionCode` in `app/build.gradle.kts`, stamps the
   `CHANGELOG.md` `Unreleased` section with the new version, and generates
   `docs/whatsnew/X.Y.Z-{locale}` files for `en-US`/`de-DE`/`fr-FR`/`es-ES`/`nl-NL` (the format
-  `google-play.yml` expects). Gated on `app/build.gradle.kts` existing — a no-op until Phase 1.
+  `google-play.yml` expects). Gated on `app/build.gradle.kts` existing, which it now does.
 
 ## Commands
 
-There is no root build yet, so the README's `./gradlew assembleDebug` is aspirational until
-Phase 1 (module skeleton) lands — see the phase plan in `docs/implementation-plan.md` §14.
+```bash
+./gradlew assembleDebug     # debug APK
+./gradlew test              # unit tests (core-domain, core-transport)
+./gradlew lint              # lint; HardcodedText is an error, MissingTranslation a warning
+./gradlew assembleRelease   # minified APK; unsigned unless KEYSTORE_PATH and friends are set
+```
+
+Requires JDK 17 (CI uses Temurin 17) and Android SDK 36. `local.properties` with `sdk.dir` is
+needed for a local build and is deliberately not checked in — note that lint rejects an unescaped
+Windows drive letter there, so write `sdk.dir=C\:/Android/Sdk`, not `C:/Android/Sdk`.
+
+**Toolchain:** Gradle 8.13, AGP 8.13.2, `compileSdk`/`targetSdk` 36, `minSdk` 26. AGP 8.13 is the
+newest 8.x and still takes Gradle 8.13, which is why `targetSdk` 36 needed no Gradle upgrade.
+Moving to AGP 9.x would require Gradle 9.5 plus a DSL migration (`kotlinOptions` → `compilerOptions`
+among others) and is deliberately a separate exercise.
 
 **Transport spike** (validates the DEALER/empty-delimiter approach against a real box):
 ```bash
@@ -127,8 +145,9 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
 
 - **Stack:** Kotlin + Jetpack Compose, MVVM/unidirectional state flow, JeroMQ for transport,
   androidx.media3 (`SimpleBasePlayer`) for the media session, kotlinx.serialization, Hilt, Room +
-  DataStore for persistence. Planned module split: `:app`, `:core-transport`, `:core-domain`,
-  `:core-data`, `:feature-media`, `:feature-shortcuts`.
+  DataStore for persistence. Module split: `:app`, `:core-transport`, `:core-domain`, `:core-data`,
+  `:feature-media`, `:feature-shortcuts`. Versions are pinned exactly in `gradle/libs.versions.toml`
+  — lint reports newer ones as warnings, and that is fine; reproducibility is the point (§13.3).
 - **No Google Play Services / proprietary dependencies, anywhere.** This is deliberate (keeps the
   F-Droid option open at effectively zero cost) and must hold even when a convenient library
   appears later.
@@ -147,7 +166,7 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
 - **No custom fonts** — Material 3 default type scale only (keeps full Latin-1 coverage for all
   launch locales without APK cost).
 - **Dynamic colour (Material You) is off by default**, toggle in settings; brand colours are fixed
-  regardless of theme (see `android/theme/Color.kt` for the token set).
+  regardless of theme (the token set now lives in `app/src/main/kotlin/.../ui/theme/Color.kt`).
 
 ## Project conventions
 
@@ -162,3 +181,49 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
   the same commit/PR that makes it, not as a follow-up. When cutting a release, rename
   `[Unreleased]` to the new `[x.y.z]` version heading (matching `versionName`) and start a fresh
   empty `Unreleased` section above it.
+
+## Implementation status
+
+Phases 1–7 of `docs/implementation-plan.md` §14 are implemented, along with most of phase 8. What
+still needs doing, in rough order of importance:
+
+1. **Nothing has been run against a real box.** The transport was written from the upstream Python
+   source and is covered by unit tests over recorded payload shapes, but no request has ever left a
+   phone. Run `spike/` first, then the app, and expect the first round of surprises here.
+2. **The four translations are unreviewed drafts.** `values-de|fr|es|nl/strings.xml` each carry a
+   header saying so. Per the rule above they must be read by a fluent speaker before a release —
+   missing strings fall back to English, so correcting them incrementally is safe.
+3. **No instrumented or UI tests.** Unit tests cover the parsers, the command catalogue and the
+   domain models; everything above that is untested.
+4. **Automatic mode is best-effort by design**, and its boot path is the weakest part: Android may
+   refuse to start a foreground service from `BootReceiver`, which `AutoSessionStarter` treats as a
+   normal outcome. In practice the mode becomes reliable once the app has been opened after a
+   reboot. The settings screen says so in plain language.
+5. **Tablet layout** is untouched — the UI is single-column everywhere.
+6. **Android 16's local network restriction will eventually break Coil outright.** Access to
+   local-network addresses — which is every socket this app opens, plus `NsdManager` discovery and
+   the HTTP cover fetches — will require the `NEARBY_WIFI_DEVICES` permission, granted by the user
+   as "Nearby devices". It is opt-in during Android 16, so nothing is broken today and no
+   permission is declared yet. Test the enforced behaviour with
+   `adb shell am compat enable RESTRICT_LOCAL_NETWORK app.coilforphoniebox.debug` (then reboot).
+   When enforcement lands, the permission needs declaring *and* requesting — the natural place is
+   just before the mDNS scan in the add-box flow, where the reason is self-evident.
+
+### Deviations from the plan worth knowing about
+
+- **`shuffle` and `repeat` take an `option` string**, not MPD-style flags, and `mute` sets an
+  absolute state rather than toggling. The plan and the web UI's command table both suggested
+  otherwise; the plugin signatures in the upstream Python source are what the code follows. Same
+  for `get_folder_content`, which returns both an absolute `path` and a `relpath` — only `relpath`
+  is usable, because that is what `play_folder` expects.
+- **`PlayShortcutActivity` lives in `:app`, not `:feature-shortcuts`**, so that its failure toast
+  stays in the single `strings.xml`. `:feature-shortcuts` therefore has no string resources at all.
+  For the same reason the media notification's text reaches `:feature-media` through the
+  `MediaNotificationTexts` interface, implemented in `:app`.
+- **`LibraryFolderEntity` has one column the plan's schema does not**: `contentCachedAt`, recording
+  when a folder's *own* contents were last fetched, as opposed to when the row was written by its
+  parent's listing. It is what drives the "Updated 3 days ago" hint per level.
+- **The connection is reference counted** (`ConnectionManager.acquire/release`) rather than tied to
+  the process, which is what makes "only while Coil is open" true rather than approximate.
+- **`app/lint.xml` suppresses one `ObsoleteSdkInt` warning.** Following lint's advice there (merging
+  `mipmap-anydpi-v26` into `mipmap-anydpi`) makes AAPT2 stop resolving the launcher icon.

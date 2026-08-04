@@ -10,8 +10,28 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 ## [Unreleased]
 
 ### Added
+- **Player**: cover art, title and album, progress with seek, transport controls, volume slider,
+  shuffle and repeat, and a star that saves what is playing as a favourite
+- **Library browsing** by folder and by album, with folders loaded one level at a time, album covers
+  fetched as they come into view, pull-to-refresh per level and a "last updated" hint
+- **Lock screen and notification controls** that appear on their own when the box starts playing,
+  including control of the box from the phone's hardware volume buttons; switchable between "only
+  while Coil is open" and "whenever the box plays"
+- **Favourites** with launcher shortcuts — up to four dynamic ones plus pinned ones using cover art
+  as their icon, each starting its own box with a single command and without opening the app
+- **Multiple boxes**: a switcher in the top bar showing each box's reachability, an add flow with an
+  mDNS scan and a connection test, per-box settings, and a collapsed presentation when only one box
+  is configured
+- **Settings**: theme, wallpaper colours, language shortcut, per-box address and rescan, background
+  mode with a plain-language note about its limits, and settings export and import
+- **Five locales**: English as the source, plus German, French, Spanish and Dutch. The four
+  translations are unreviewed drafts and are marked as such in their files
 - Project scaffolding: architecture and protocol documentation (`docs/`), brand assets (`brand/`),
   Android theme reference bundle (`android/`), static UI mockup (`mockup/`)
+
+### Changed
+- Targets Android 16 (API 36), which the Play Store requires for new apps from 31 August 2026.
+  Supported devices are unchanged: Android 8.0 and newer
 - Transport validation: standalone JeroMQ spike (`spike/`) and Python protocol probe
   (`tools/probe_phoniebox.py`) against a live Phoniebox v3 box
 - CI/CD scaffolding: build/test/lint, CodeQL, release, Google Play deploy, and GitHub Pages

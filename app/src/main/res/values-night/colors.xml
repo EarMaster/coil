@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- md_dark_surface: very dark, slightly green tinted — built for bedtime. -->
+    <color name="window_background">#0E1513</color>
+</resources>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  res/drawable/ic_launcher_foreground.xml
+
+  The artwork sits inside the adaptive icon safe zone (66dp centred = 21..87).
+  Card body: 24..84 horizontally, 35..72.9 vertically.
+
+  The coil is stroked in the background colour. VectorDrawable has no true
+  knockout; because the background layer is a flat fill, the result is visually
+  identical. If the background colour ever changes, strokeColor here must
+  change with it.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32.7,35 L75.3,35 A8.7,8.7 0 0 1 84,43.7 L84,64.2 A8.7,8.7 0 0 1 75.3,72.9 L32.7,72.9 A8.7,8.7 0 0 1 24,64.2 L24,43.7 A8.7,8.7 0 0 1 32.7,35 Z" />
+
+    <path
+        android:strokeColor="#0F6B5C"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M33.5,63.4 V44.5 H74.5 V63.4 H39.8 V50.8 H68.2 V57.1 H47.7" />
+</vector>

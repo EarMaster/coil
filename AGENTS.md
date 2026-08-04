@@ -33,7 +33,7 @@ replacement.
 
 `.github/workflows/` mirrors the setup from a sibling project, adapted for Coil ahead of time:
 
-- `ci.yml` / `codeql.yml` — build/test/lint and CodeQL analysis on PRs to `main`. Both start with a
+- `ci.yml` / `codeql.yml` — build/test/lint and CodeQL analysis on PRs to `main` or `develop`. Both start with a
   `detect` job that checks for a root `./gradlew` and skip (not fail) everything else until it
   exists — these are inert no-ops until Phase 1 (module skeleton) lands.
 - `release.yml` — tags `main` from `app/build.gradle.kts`'s `versionName`, builds a signed
@@ -52,6 +52,18 @@ replacement.
 `main` is branch-protected: PRs required (enforced for admins too, 0 required approvals), plus
 `Build`/`Unit Tests`/`Lint`/`Analyze (Kotlin)` as required status checks (these currently pass
 by skipping, per the gate above). `ci.yml`/`codeql.yml` also trigger on PRs into `develop`.
+
+## Branching model
+
+`main` represents **the released state of the app** — nothing else. `develop` is where all
+ongoing work lands first: commits, feature branches, PRs, all of it. `develop` is intentionally
+left unprotected (direct pushes are fine — the maintainer is a solo developer and doesn't want
+extra ceremony there). `main` only ever advances by merging `develop` into it at release time,
+which is what triggers `release.yml`'s tag/build/publish.
+
+**Never open a pull request targeting `main`.** Base every branch and PR on `develop` instead.
+Promoting `develop` to `main` for a release is the maintainer's call to make, not something to
+initiate unprompted.
 
 ## Slash commands
 

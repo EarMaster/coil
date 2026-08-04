@@ -30,7 +30,7 @@ Screenshots go here once captured. Suggested layout:
 ## Features
 
 - **Player** with cover art, scrubbing, transport controls and volume
-- **Library browsing** by folder or album, play anything you find
+- **Library browsing** by folder or album, play anything you find, and search that ignores case and accents
 - **Lock screen and notification controls** that appear on their own when the box starts playing, and can be switched off entirely
 - **Favourites** for a folder, an album or a single track, with home screen shortcuts, so one tap starts an audiobook without opening the app — or as a link, for an automation app or an NFC tag
 - **Multiple boxes** — one per room, switched from the top bar, each with its own favourites

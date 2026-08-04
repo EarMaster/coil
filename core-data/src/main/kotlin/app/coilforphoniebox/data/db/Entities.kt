@@ -1,5 +1,6 @@
 package app.coilforphoniebox.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -50,6 +51,8 @@ data class LibraryFolderEntity(
     val parentPath: String?,
     val displayName: String,
     val hasChildren: Boolean,
+    /** Folded name for searching; see [SearchText]. Not indexed — `LIKE '%x%'` cannot use one. */
+    @ColumnInfo(defaultValue = "") val searchText: String,
     /** When this row was written, i.e. when its parent level was last scanned. */
     val cachedAt: Long,
     /**
@@ -82,6 +85,8 @@ data class LibraryTrackEntity(
     val album: String?,
     val trackNo: Int?,
     val durationSeconds: Double?,
+    /** Folded title, artist, album and file name; see [SearchText]. */
+    @ColumnInfo(defaultValue = "") val searchText: String,
 )
 
 @Entity(
@@ -102,6 +107,8 @@ data class LibraryAlbumEntity(
     val albumArtist: String,
     val album: String,
     val coverFile: String?,
+    /** Folded album and album artist; see [SearchText]. */
+    @ColumnInfo(defaultValue = "") val searchText: String,
     val cachedAt: Long,
 )
 

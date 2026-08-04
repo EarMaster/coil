@@ -18,4 +18,24 @@ internal val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
-internal val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2)
+/**
+ * Adds the folded search columns.
+ *
+ * The existing library rows are dropped rather than backfilled: folding needs accent removal,
+ * which SQLite cannot do, and the library cache is the one thing in this database that *is*
+ * disposable — the next visit to a folder or the albums tab fetches it again. Boxes and
+ * favourites are untouched, which is the part that matters.
+ */
+internal val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE library_folders ADD COLUMN searchText TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE library_tracks ADD COLUMN searchText TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE library_albums ADD COLUMN searchText TEXT NOT NULL DEFAULT ''")
+
+        db.execSQL("DELETE FROM library_tracks")
+        db.execSQL("DELETE FROM library_folders")
+        db.execSQL("DELETE FROM library_albums")
+    }
+}
+
+internal val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)

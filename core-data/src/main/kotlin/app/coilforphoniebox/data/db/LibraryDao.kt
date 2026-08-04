@@ -39,6 +39,44 @@ interface LibraryDao {
     @Query("SELECT MAX(cachedAt) FROM library_albums WHERE boxId = :boxId")
     suspend fun albumsCachedAt(boxId: String): Long?
 
+    // ---------------------------------------------------------------- search
+
+    /**
+     * Searches the cache, never the box: there is no search RPC in the Phoniebox protocol,
+     * and the alternative — walking the tree on every keystroke — is precisely the traffic
+     * that delays card detection (§6).
+     *
+     * [pattern] is a folded `LIKE` pattern from `SearchText.pattern`; a contains-match cannot
+     * use an index, so [limit] is what keeps a one-letter query cheap.
+     */
+    @Query(
+        "SELECT * FROM library_folders WHERE boxId = :boxId AND searchText LIKE :pattern ESCAPE '\\' " +
+            "ORDER BY displayName COLLATE NOCASE ASC LIMIT :limit",
+    )
+    fun searchFolders(boxId: String, pattern: String, limit: Int): Flow<List<LibraryFolderEntity>>
+
+    @Query(
+        "SELECT * FROM library_tracks WHERE boxId = :boxId AND searchText LIKE :pattern ESCAPE '\\' " +
+            "ORDER BY title COLLATE NOCASE ASC LIMIT :limit",
+    )
+    fun searchTracks(boxId: String, pattern: String, limit: Int): Flow<List<LibraryTrackEntity>>
+
+    @Query(
+        "SELECT * FROM library_albums WHERE boxId = :boxId AND searchText LIKE :pattern ESCAPE '\\' " +
+            "ORDER BY album COLLATE NOCASE ASC LIMIT :limit",
+    )
+    fun searchAlbums(boxId: String, pattern: String, limit: Int): Flow<List<LibraryAlbumEntity>>
+
+    /** Folders whose own contents have never been fetched — the crawl's work list. */
+    @Query(
+        "SELECT * FROM library_folders WHERE boxId = :boxId AND contentCachedAt IS NULL " +
+            "ORDER BY path ASC LIMIT :limit",
+    )
+    suspend fun foldersNeedingContent(boxId: String, limit: Int): List<LibraryFolderEntity>
+
+    @Query("SELECT COUNT(*) FROM library_folders WHERE boxId = :boxId")
+    suspend fun folderCount(boxId: String): Int
+
     // ----------------------------------------------------------------- write
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -90,6 +128,7 @@ interface LibraryDao {
                             .takeIf { it != path },
                         displayName = path.substringAfterLast('/'),
                         hasChildren = folders.isNotEmpty(),
+                        searchText = SearchText.haystack(path.substringAfterLast('/')),
                         cachedAt = at,
                         contentCachedAt = at,
                     ),

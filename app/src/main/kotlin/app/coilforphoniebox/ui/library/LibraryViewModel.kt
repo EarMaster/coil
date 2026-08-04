@@ -7,6 +7,7 @@ import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
+import app.coilforphoniebox.domain.model.LibrarySearchResults
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.FavoriteRepository
@@ -15,14 +16,17 @@ import app.coilforphoniebox.domain.repository.PlayerRepository
 import app.coilforphoniebox.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -38,7 +42,7 @@ import javax.inject.Inject
  * browsable with the box switched off. A level is fetched on first visit and then only
  * when the user asks for it again.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val library: LibraryRepository,
@@ -116,6 +120,32 @@ class LibraryViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AlbumState())
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    /**
+     * Results for [searchQuery], from the cache only — the box has no search command (§6).
+     *
+     * Debounced so a five-letter word is three queries rather than five, but with no delay on
+     * clearing: leaving search should feel instant, and an empty query costs nothing anyway.
+     */
+    val searchResults: StateFlow<LibrarySearchResults> = combine(
+        activeBoxId,
+        _searchQuery.debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MILLIS },
+    ) { boxId, query -> boxId to query }
+        .flatMapLatest { (boxId, query) ->
+            if (boxId == null) flowOf(LibrarySearchResults()) else library.search(boxId, query)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibrarySearchResults())
+
+    fun onSearchQueryChange(value: String) {
+        _searchQuery.value = value
+    }
+
+    fun clearSearch() {
+        _searchQuery.value = ""
+    }
+
     /** Favourited targets on the active box, so the list can mark what is already saved. */
     val favoriteKeys: StateFlow<Set<String>> = activeBoxId
         .flatMapLatest { boxId ->
@@ -136,6 +166,9 @@ class LibraryViewModel @Inject constructor(
             activeBoxId.collectLatest { boxId ->
                 if (boxId == null) return@collectLatest
                 currentPath.value = FolderContent.ROOT
+                // Results are per box as well — leaving a query up would show hits from the
+                // box the user just switched away from.
+                _searchQuery.value = ""
                 currentPath.collect { path -> loadLevelOnce(boxId, path) }
             }
         }
@@ -251,5 +284,10 @@ class LibraryViewModel @Inject constructor(
         is PlayTarget.Folder -> "folder:${target.path}"
         is PlayTarget.Album -> "album:${target.albumArtist}/${target.album}"
         is PlayTarget.Track -> "track:${target.url}"
+    }
+
+    private companion object {
+        /** Short enough to feel live while typing, long enough to skip intermediate words. */
+        const val SEARCH_DEBOUNCE_MILLIS = 200L
     }
 }

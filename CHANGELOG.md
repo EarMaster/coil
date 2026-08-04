@@ -16,6 +16,10 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 - **Library browsing** by folder and by album, with folders loaded one level at a time, album covers
   fetched as they come into view, pull-to-refresh per level and a "last updated" hint. The back
   gesture goes up one folder, and leaves the library only from the top level
+- **Library search**: a field above the tabs finds folders, albums and tracks in one list,
+  ignoring case and accents — "bar" finds "Bär". It searches what Coil has loaded from the box,
+  since the Phoniebox interface has no search of its own; settings can walk the whole library once
+  to make all of it searchable
 - **A menu on every library item** — reachable from its ⋮ button or by a long press — offering
   Play, saving it as a favourite, and a details panel with what Coil knows about it: path, artist,
   album, track number, length, file name and when it was last read from the box

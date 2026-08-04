@@ -43,6 +43,7 @@ import app.coilforphoniebox.BuildConfig
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
+import app.coilforphoniebox.ui.components.formatNumber
 import androidx.compose.foundation.text.KeyboardOptions
 import kotlinx.coroutines.launch
 
@@ -214,6 +215,27 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_rescan),
                 subtitle = stringResource(R.string.settings_rescan_summary),
                 onClick = viewModel::rescanLibrary,
+            )
+
+            // Says plainly what it costs. A crawl shares the socket the box uses for its card
+            // reader, so this is the user's decision to make, not something to slip in (§6).
+            val indexState by viewModel.indexState.collectAsStateWithLifecycle()
+            ActionRow(
+                title = stringResource(
+                    if (indexState.running) R.string.settings_index_stop
+                    else R.string.settings_index,
+                ),
+                subtitle = if (indexState.running) {
+                    stringResource(
+                        R.string.settings_index_progress,
+                        formatNumber(indexState.foldersScanned),
+                    )
+                } else {
+                    stringResource(R.string.settings_index_summary)
+                },
+                onClick = {
+                    if (indexState.running) viewModel.stopIndexing() else viewModel.indexLibrary()
+                },
             )
 
             ActionRow(

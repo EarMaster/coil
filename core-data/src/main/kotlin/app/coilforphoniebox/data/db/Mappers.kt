@@ -48,6 +48,8 @@ internal fun LibraryFolder.toEntity(contentCachedAt: Long? = null) = LibraryFold
     parentPath = parentPath,
     displayName = displayName,
     hasChildren = hasChildren,
+    // Folded once, on the way in, so a query never has to scan unfolded text.
+    searchText = SearchText.haystack(displayName),
     cachedAt = cachedAt,
     contentCachedAt = contentCachedAt,
 )
@@ -72,6 +74,9 @@ internal fun LibraryTrack.toEntity() = LibraryTrackEntity(
     album = album,
     trackNo = trackNo,
     durationSeconds = durationSeconds,
+    // The file name is in the haystack because an untagged track is shown by it, and what
+    // is on screen is what a user expects to be able to search for.
+    searchText = SearchText.haystack(title, artist, album, url.substringAfterLast('/')),
 )
 
 internal fun LibraryAlbumEntity.toDomain() = LibraryAlbum(
@@ -87,6 +92,7 @@ internal fun LibraryAlbum.toEntity() = LibraryAlbumEntity(
     albumArtist = albumArtist,
     album = album,
     coverFile = coverFile,
+    searchText = SearchText.haystack(album, albumArtist),
     cachedAt = cachedAt,
 )
 

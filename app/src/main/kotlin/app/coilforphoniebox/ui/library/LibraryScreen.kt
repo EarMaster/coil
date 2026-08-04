@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.ArrowUpward
@@ -31,14 +32,18 @@ import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.FolderOff
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -54,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -83,14 +89,31 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(TAB_FOLDERS) }
+    val query by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val searching = query.isNotEmpty()
 
+    // Back leaves search before it does anything else, so a query is never something the user
+    // has to undo by hand. The two handlers are mutually exclusive, so their order is moot.
+    BackHandler(enabled = searching) { viewModel.clearSearch() }
     // Picking the album tab is navigation the user did inside the library too, so back
-    // undoes it rather than dropping out of the library entirely. Registered before the tab
-    // content, which leaves the folder tree's own handler (and any open sheet) taking back
-    // first while they are on screen.
-    BackHandler(enabled = selectedTab != TAB_FOLDERS) { selectedTab = TAB_FOLDERS }
+    // undoes it rather than dropping out of the library entirely.
+    BackHandler(enabled = !searching && selectedTab != TAB_FOLDERS) { selectedTab = TAB_FOLDERS }
 
     Column(modifier.fillMaxSize()) {
+        SearchField(
+            query = query,
+            onQueryChange = viewModel::onSearchQueryChange,
+            onClear = viewModel::clearSearch,
+        )
+
+        // The tabs are a way of browsing, and searching is not browsing: with a query up,
+        // folders, albums and tracks all appear in one list and the tab row would only pose a
+        // question with no answer.
+        if (searching) {
+            SearchResults(viewModel)
+            return@Column
+        }
+
         PrimaryTabRow(selectedTabIndex = selectedTab) {
             Tab(
                 selected = selectedTab == TAB_FOLDERS,
@@ -112,9 +135,144 @@ fun LibraryScreen(
 }
 
 @Composable
+private fun SearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text(stringResource(R.string.library_search_hint)) },
+        leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = onClear) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.action_search_clear),
+                    )
+                }
+            }
+        },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+    )
+}
+
+/**
+ * One list for all three kinds, each under its own heading.
+ *
+ * Everything here comes from the cache, which is why the empty state explains what has been
+ * loaded rather than claiming the library holds nothing: the box has no search command, so
+ * Coil can only search what it has already seen (§6).
+ */
+@Composable
+private fun SearchResults(viewModel: LibraryViewModel) {
+    val results by viewModel.searchResults.collectAsStateWithLifecycle()
+    val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
+    val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
+    var details by remember { mutableStateOf<DetailsTarget?>(null) }
+
+    details?.let { target ->
+        LibraryDetailsSheet(
+            target = target,
+            box = activeBox,
+            favouriteKeys = favouriteKeys,
+            viewModel = viewModel,
+            onDismiss = { details = null },
+        )
+    }
+
+    if (results.isEmpty) {
+        EmptyState(
+            icon = Icons.Rounded.SearchOff,
+            title = stringResource(R.string.library_search_empty_title),
+            body = stringResource(R.string.library_search_empty_body),
+        )
+        return
+    }
+
+    LazyColumn(
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        if (results.folders.isNotEmpty()) {
+            item { ResultHeading(stringResource(R.string.library_tab_folders)) }
+            items(results.folders, key = { "folder:${it.path}" }) { folder ->
+                FolderRow(
+                    folder = folder,
+                    favourite = "folder:${folder.path}" in favouriteKeys,
+                    // Opening the folder that was found is the point of having found it, so
+                    // this leaves search and lands in the browser at that level.
+                    onOpen = {
+                        viewModel.openFolder(folder.path)
+                        viewModel.clearSearch()
+                    },
+                    onPlay = { viewModel.play(PlayTarget.Folder(folder.path)) },
+                    onToggleFavourite = {
+                        viewModel.toggleFavorite(folder.displayName, PlayTarget.Folder(folder.path))
+                    },
+                    onDetails = { details = DetailsTarget.Folder(folder) },
+                )
+            }
+        }
+
+        if (results.albums.isNotEmpty()) {
+            item { ResultHeading(stringResource(R.string.library_tab_albums)) }
+            items(results.albums, key = { "album:${it.albumArtist}|${it.album}" }) { album ->
+                AlbumRow(
+                    album = album,
+                    box = activeBox,
+                    favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
+                    onPlay = { viewModel.play(PlayTarget.Album(album.albumArtist, album.album)) },
+                    onToggleFavourite = {
+                        viewModel.toggleFavorite(
+                            label = album.album,
+                            target = PlayTarget.Album(album.albumArtist, album.album),
+                            coverFile = album.coverFile,
+                        )
+                    },
+                    onDetails = { details = DetailsTarget.Album(album) },
+                )
+            }
+        }
+
+        if (results.tracks.isNotEmpty()) {
+            item { ResultHeading(stringResource(R.string.library_search_tracks)) }
+            items(results.tracks, key = { "track:${it.url}" }) { track ->
+                TrackRow(
+                    track = track,
+                    favourite = "track:${track.url}" in favouriteKeys,
+                    onPlay = { viewModel.play(PlayTarget.Track(track.url)) },
+                    onToggleFavourite = {
+                        viewModel.toggleFavorite(track.displayTitle, PlayTarget.Track(track.url))
+                    },
+                    onDetails = { details = DetailsTarget.Track(track) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResultHeading(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
 private fun FolderTab(viewModel: LibraryViewModel) {
     val state by viewModel.folderState.collectAsStateWithLifecycle()
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
+    val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.content.cachedAt)
     var details by remember { mutableStateOf<DetailsTarget?>(null) }
 
@@ -125,42 +283,14 @@ private fun FolderTab(viewModel: LibraryViewModel) {
     // it is open, still gets back first and closes itself.
     BackHandler(enabled = state.canGoUp) { viewModel.goUp() }
 
-    // Starting playback closes the sheet; favouriting from it does not, because the star
-    // filling in is the confirmation — a snackbar would sit behind the sheet unseen.
-    when (val target = details) {
-        is DetailsTarget.Folder -> FolderDetailsSheet(
-            folder = target.folder,
-            favourite = "folder:${target.folder.path}" in favouriteKeys,
-            onPlay = {
-                details = null
-                viewModel.play(PlayTarget.Folder(target.folder.path))
-            },
-            onToggleFavourite = {
-                viewModel.toggleFavorite(
-                    target.folder.displayName,
-                    PlayTarget.Folder(target.folder.path),
-                )
-            },
+    details?.let { target ->
+        LibraryDetailsSheet(
+            target = target,
+            box = activeBox,
+            favouriteKeys = favouriteKeys,
+            viewModel = viewModel,
             onDismiss = { details = null },
         )
-
-        is DetailsTarget.Track -> TrackDetailsSheet(
-            track = target.track,
-            favourite = "track:${target.track.url}" in favouriteKeys,
-            onPlay = {
-                details = null
-                viewModel.play(PlayTarget.Track(target.track.url))
-            },
-            onToggleFavourite = {
-                viewModel.toggleFavorite(
-                    target.track.displayTitle,
-                    PlayTarget.Track(target.track.url),
-                )
-            },
-            onDismiss = { details = null },
-        )
-
-        null -> Unit
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -419,6 +549,90 @@ private fun TrackRow(
     }
 }
 
+/** An album as a list row, for search results — the album tab shows a grid of covers instead. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AlbumRow(
+    album: LibraryAlbum,
+    box: PhonieBox?,
+    favourite: Boolean,
+    onPlay: () -> Unit,
+    onToggleFavourite: () -> Unit,
+    onDetails: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    val coverUrl = remember(album.coverFile, box?.host) {
+        album.coverFile?.let { file -> box?.coverUrl(file) }
+    }
+
+    Surface(
+        shape = RoundedCornerShape(13.dp),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onPlay,
+                onLongClick = { menuOpen = true },
+                onLongClickLabel = stringResource(R.string.action_more),
+            ),
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 11.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // No cover request here: search results scroll past quickly, and one RPC per row
+            // is exactly what the album grid is careful not to do (§6).
+            CoverArt(
+                url = coverUrl,
+                contentDescription = null,
+                modifier = Modifier.size(38.dp),
+                cornerRadius = 11.dp,
+                placeholderIconSize = 20.dp,
+            )
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = album.album.ifBlank { stringResource(R.string.library_unknown_album) },
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = album.albumArtist.ifBlank {
+                        stringResource(R.string.library_unknown_artist)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (favourite) {
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = stringResource(R.string.action_favourite_remove),
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+            }
+            ItemMenu(
+                expanded = menuOpen,
+                onExpandedChange = { menuOpen = it },
+                playLabel = stringResource(R.string.action_play),
+                favouriteLabel = stringResource(
+                    if (favourite) R.string.action_favourite_remove_album
+                    else R.string.action_favourite_add_album,
+                ),
+                favourite = favourite,
+                onPlay = onPlay,
+                onToggleFavourite = onToggleFavourite,
+                onDetails = onDetails,
+            )
+        }
+    }
+}
+
 /**
  * The ⋮ button and the menu behind it, shared by folders, tracks and albums. Its three
  * entries are the same everywhere; only the wording of the first two changes with the kind
@@ -498,27 +712,17 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.cachedAt)
-    var details by remember { mutableStateOf<LibraryAlbum?>(null) }
+    var details by remember { mutableStateOf<DetailsTarget?>(null) }
 
     // Opening the tab is what asks the box for its albums the first time.
     LaunchedEffect(activeBox?.id) { viewModel.onAlbumsShown() }
 
-    details?.let { album ->
-        AlbumDetailsSheet(
-            album = album,
+    details?.let { target ->
+        LibraryDetailsSheet(
+            target = target,
             box = activeBox,
-            favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
-            onPlay = {
-                details = null
-                viewModel.play(PlayTarget.Album(album.albumArtist, album.album))
-            },
-            onToggleFavourite = {
-                viewModel.toggleFavorite(
-                    label = album.album,
-                    target = PlayTarget.Album(album.albumArtist, album.album),
-                    coverFile = album.coverFile,
-                )
-            },
+            favouriteKeys = favouriteKeys,
+            viewModel = viewModel,
             onDismiss = { details = null },
         )
     }
@@ -554,7 +758,7 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
                         coverFile = album.coverFile,
                     )
                 },
-                onDetails = { details = album },
+                onDetails = { details = DetailsTarget.Album(album) },
             )
         }
 
@@ -656,11 +860,81 @@ private fun AlbumCell(
     }
 }
 
-/** What the folder tab is currently showing details for. */
+/** What a tab or the search results are currently showing details for. */
 private sealed interface DetailsTarget {
     data class Folder(val folder: LibraryFolder) : DetailsTarget
 
     data class Track(val track: LibraryTrack) : DetailsTarget
+
+    data class Album(val album: LibraryAlbum) : DetailsTarget
+}
+
+/**
+ * Wires a [DetailsTarget] to its sheet, so the folder tab, the album tab and the search
+ * results all get the same behaviour from one place.
+ *
+ * Starting playback closes the sheet; favouriting from it does not, because the star filling
+ * in is the confirmation — a snackbar would sit behind the sheet unseen.
+ */
+@Composable
+private fun LibraryDetailsSheet(
+    target: DetailsTarget,
+    box: PhonieBox?,
+    favouriteKeys: Set<String>,
+    viewModel: LibraryViewModel,
+    onDismiss: () -> Unit,
+) {
+    when (target) {
+        is DetailsTarget.Folder -> FolderDetailsSheet(
+            folder = target.folder,
+            favourite = "folder:${target.folder.path}" in favouriteKeys,
+            onPlay = {
+                onDismiss()
+                viewModel.play(PlayTarget.Folder(target.folder.path))
+            },
+            onToggleFavourite = {
+                viewModel.toggleFavorite(
+                    target.folder.displayName,
+                    PlayTarget.Folder(target.folder.path),
+                )
+            },
+            onDismiss = onDismiss,
+        )
+
+        is DetailsTarget.Track -> TrackDetailsSheet(
+            track = target.track,
+            favourite = "track:${target.track.url}" in favouriteKeys,
+            onPlay = {
+                onDismiss()
+                viewModel.play(PlayTarget.Track(target.track.url))
+            },
+            onToggleFavourite = {
+                viewModel.toggleFavorite(
+                    target.track.displayTitle,
+                    PlayTarget.Track(target.track.url),
+                )
+            },
+            onDismiss = onDismiss,
+        )
+
+        is DetailsTarget.Album -> AlbumDetailsSheet(
+            album = target.album,
+            box = box,
+            favourite = "album:${target.album.albumArtist}/${target.album.album}" in favouriteKeys,
+            onPlay = {
+                onDismiss()
+                viewModel.play(PlayTarget.Album(target.album.albumArtist, target.album.album))
+            },
+            onToggleFavourite = {
+                viewModel.toggleFavorite(
+                    label = target.album.album,
+                    target = PlayTarget.Album(target.album.albumArtist, target.album.album),
+                    coverFile = target.album.coverFile,
+                )
+            },
+            onDismiss = onDismiss,
+        )
+    }
 }
 
 /**

@@ -6,6 +6,8 @@ import androidx.media3.common.util.UnstableApi
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.AppSettings
 import app.coilforphoniebox.domain.model.Box
+import app.coilforphoniebox.domain.model.LibraryIndexResult
+import app.coilforphoniebox.domain.model.LibraryIndexState
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
 import app.coilforphoniebox.domain.repository.BackupRepository
@@ -16,6 +18,7 @@ import app.coilforphoniebox.domain.repository.SettingsRepository
 import app.coilforphoniebox.media.AutoSessionStarter
 import app.coilforphoniebox.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -94,6 +97,49 @@ class SettingsViewModel @Inject constructor(
             boxes.update(box.copy(autoSessionEnabled = enabled))
             if (enabled) autoSession.startIfEnabled()
         }
+    }
+
+    /** Progress of the library crawl, so the row can show a count and a way to stop. */
+    val indexState: StateFlow<LibraryIndexState> = library.indexState
+
+    private var indexJob: Job? = null
+
+    /**
+     * Walks the whole folder tree so that search covers folders nobody has opened.
+     *
+     * Started by hand and never on its own: it occupies the box's sequential RPC loop, which
+     * its card reader shares, so the user decides when that is acceptable (§6). Every outcome
+     * is reported — including a library too large for the crawl's cap, which leaves search
+     * genuinely incomplete and must not look like success.
+     */
+    fun indexLibrary() {
+        val boxId = state.value.activeBox?.id ?: return
+        if (indexJob?.isActive == true) return
+
+        indexJob = viewModelScope.launch {
+            when (val result = library.indexLibrary(boxId)) {
+                is LibraryIndexResult.Finished -> messageChannel.emit(
+                    if (result.stoppedAtCap) {
+                        UiMessage(R.string.settings_index_capped, result.foldersScanned.toString())
+                    } else {
+                        UiMessage(R.string.settings_index_done, result.foldersScanned.toString())
+                    },
+                )
+
+                LibraryIndexResult.BoxBusy ->
+                    messageChannel.emit(UiMessage(R.string.settings_index_box_busy))
+
+                is LibraryIndexResult.Interrupted -> messageChannel.emit(
+                    UiMessage(R.string.settings_index_interrupted, result.foldersScanned.toString()),
+                )
+            }
+        }
+    }
+
+    /** Stops the crawl. Whatever it reached is already cached and stays searchable. */
+    fun stopIndexing() {
+        indexJob?.cancel()
+        indexJob = null
     }
 
     /**

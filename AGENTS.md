@@ -200,6 +200,33 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
 - **Dynamic colour (Material You) is off by default**, toggle in settings; brand colours are fixed
   regardless of theme (the token set now lives in `app/src/main/kotlin/.../ui/theme/Color.kt`).
 
+## Library search
+
+**There is no search command in the Phoniebox protocol.** The content RPCs are
+`get_folder_content`, `list_albums` and `list_songs_by_artist_and_album`; `list_all_dirs` is off
+limits. Search therefore runs entirely against the Room cache — instant, free, and working with the
+box switched off — and is not a thin wrapper around something the box does.
+
+- **Matching is done on a folded column, not with `LIKE` on the raw text.** SQLite's `LIKE`, `lower()`
+  and `COLLATE NOCASE` are case-insensitive for ASCII only, so `bär` would not find `Bär` — and the
+  launch locales are full of umlauts. `SearchText` (in `:core-data`) lower-cases and strips accents
+  with `Locale.ROOT`, once on the way into `searchText` on every folder, track and album row, and
+  again for the query. Both sides must always use the same fold, which is why it is one object.
+  Known limit: `ß` is not decomposed, so "Strasse" does not find "Straße".
+- Contains-matching cannot use an index, so the DAO queries carry a `LIMIT` instead of an index.
+  Wildcards in the query are escaped — `100%` is a search, not a match-everything.
+- **What is searchable is what has been fetched**: all albums once the album tab has loaded, plus
+  folders and tracks from levels that were opened. The empty state says so rather than implying the
+  library is empty.
+- **`indexLibrary` closes that gap and is opt-in for a reason.** It walks the tree one level at a
+  time with a pause between levels, refuses to start while the box is playing, is cancellable, and
+  reports every outcome — including hitting its own 5000-folder cap, which leaves search incomplete
+  and must not be presented as success. Never call it on a timer, at app start, or after a rescan:
+  unattended traffic on the shared RPC socket is exactly what §6 rules out. Schema version 3 added
+  the folded columns and **cleared the cached library rows** rather than backfilling them, since
+  accent folding cannot be expressed in SQL and that cache is the one disposable thing in the
+  database.
+
 ## The `coil://play` deep link
 
 `PlayDeepLink` in `:feature-shortcuts` owns the format; `PlayShortcutActivity` in `:app` answers it.

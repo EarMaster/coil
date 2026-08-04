@@ -78,6 +78,14 @@
     <string name="action_up">Up one level</string>
     <string name="action_refresh">Refresh</string>
 
+    <!-- Library search. It looks through what Coil has already loaded from the box: the
+         Phoniebox interface has no search command, so there is nothing to ask it. -->
+    <string name="library_search_hint">Search the library</string>
+    <string name="action_search_clear">Clear search</string>
+    <string name="library_search_tracks">Tracks</string>
+    <string name="library_search_empty_title">Nothing found</string>
+    <string name="library_search_empty_body">Coil searches what it has loaded from the box. Albums are all there once the Albums tab has been opened; folders and tracks arrive as you open them. Settings can go through the whole library once and make everything searchable.</string>
+
     <!-- Details sheet. Labels for what Coil already knows about an item; nothing here
          asks the box for anything. -->
     <string name="action_details">Details</string>
@@ -168,6 +176,17 @@
     <string name="settings_rescan_started">Rescan started on the box.</string>
     <string name="settings_add_box">Add another box</string>
     <string name="settings_add_box_summary">Coil controls one box at a time. Once a second box is set up, the name at the top of the screen switches between them.</string>
+    <!-- Walks the whole folder tree so search covers everything. Deliberately blunt about
+         the cost: while it runs, RFID cards on the box can be slow to register. -->
+    <string name="settings_index">Make the whole library searchable</string>
+    <string name="settings_index_summary">Goes through every folder once so search finds all of it. Takes a while on a large library, and cards on the box can be slow to register meanwhile. Keep this screen open while it runs.</string>
+    <string name="settings_index_stop">Stop</string>
+    <!-- %1$s is a number of folders. -->
+    <string name="settings_index_progress">%1$s folders read so far. Tap to stop; what has been read stays searchable.</string>
+    <string name="settings_index_done">Library searchable: %1$s folders read.</string>
+    <string name="settings_index_capped">Stopped after %1$s folders — this library is larger than Coil indexes in one go, so search may still miss some of it.</string>
+    <string name="settings_index_interrupted">The box stopped answering after %1$s folders. What was read stays searchable.</string>
+    <string name="settings_index_box_busy">The box is playing. Try again when it is idle, so cards keep registering promptly.</string>
     <string name="settings_remove_box">Remove this box</string>
     <string name="settings_remove_box_confirm">Remove %1$s? Its favourites and cached library are removed with it. The box itself is not touched.</string>
 

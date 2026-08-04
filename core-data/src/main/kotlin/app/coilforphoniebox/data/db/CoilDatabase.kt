@@ -11,7 +11,7 @@ import androidx.room.RoomDatabase
         LibraryAlbumEntity::class,
         FavoriteEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class CoilDatabase : RoomDatabase() {

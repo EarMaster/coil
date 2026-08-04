@@ -16,9 +16,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.VolumeMute
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
@@ -28,14 +31,21 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,7 +54,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -74,6 +86,23 @@ fun PlayerScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scrub by viewModel.scrubPosition.collectAsStateWithLifecycle()
     val volumeTarget by viewModel.volumeTarget.collectAsStateWithLifecycle()
+    val timerRemaining by viewModel.sleepTimerRemaining.collectAsStateWithLifecycle()
+    var timerSheetOpen by remember { mutableStateOf(false) }
+
+    if (timerSheetOpen) {
+        SleepTimerSheet(
+            remainingSeconds = timerRemaining,
+            onPick = { minutes ->
+                timerSheetOpen = false
+                viewModel.startSleepTimer(minutes)
+            },
+            onCancel = {
+                timerSheetOpen = false
+                viewModel.cancelSleepTimer()
+            },
+            onDismiss = { timerSheetOpen = false },
+        )
+    }
 
     Column(
         modifier = modifier
@@ -148,12 +177,35 @@ fun PlayerScreen(
             isPlaying = state.status.state == PlaybackState.PLAY,
             shuffle = state.status.shuffle,
             repeat = state.status.repeat,
+            timerRunning = state.sleepTimer.running,
+            anyOptionActive = state.anyOptionActive,
             onToggle = viewModel::toggle,
             onNext = viewModel::next,
             onPrevious = viewModel::previous,
             onShuffle = viewModel::toggleShuffle,
             onRepeat = viewModel::cycleRepeat,
+            onOpenTimer = {
+                // One RPC on opening, so the sheet shows the truth even if the timer was set
+                // from the box's own web UI before Coil connected.
+                viewModel.refreshSleepTimer()
+                timerSheetOpen = true
+            },
         )
+
+        // Only while a timer is running: a countdown to something stopping is worth a line of
+        // its own, and there is nothing to say when nothing is scheduled.
+        timerRemaining?.let { seconds ->
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(
+                    R.string.player_sleep_timer_remaining,
+                    formatDuration(seconds.toDouble()),
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+        }
 
         Spacer(Modifier.height(20.dp))
 
@@ -285,27 +337,41 @@ private fun ProgressRow(
     }
 }
 
+/**
+ * Previous, play and next, with everything else behind one button.
+ *
+ * Shuffle, repeat and the sleep timer used to be — and, for a timer, would have been —
+ * separate icons flanking the transport controls. Three modes competing with the play button
+ * is more than this screen can carry, so they live in a menu whose button is tinted when any
+ * of them is on. The empty slot at the end keeps the play button centred.
+ */
 @Composable
 private fun TransportRow(
     isPlaying: Boolean,
     shuffle: Boolean,
     repeat: RepeatMode,
+    timerRunning: Boolean,
+    anyOptionActive: Boolean,
     onToggle: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
+    onOpenTimer: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ToggleIcon(
-            icon = Icons.Rounded.Shuffle,
-            description = stringResource(R.string.action_shuffle),
-            active = shuffle,
-            onClick = onShuffle,
+        PlaybackOptionsMenu(
+            shuffle = shuffle,
+            repeat = repeat,
+            timerRunning = timerRunning,
+            anyOptionActive = anyOptionActive,
+            onShuffle = onShuffle,
+            onRepeat = onRepeat,
+            onOpenTimer = onOpenTimer,
         )
 
         IconButton(onClick = onPrevious) {
@@ -341,37 +407,185 @@ private fun TransportRow(
             )
         }
 
-        ToggleIcon(
-            icon = if (repeat == RepeatMode.ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
-            description = stringResource(
-                if (repeat == RepeatMode.ONE) R.string.action_repeat_one else R.string.action_repeat,
-            ),
-            active = repeat != RepeatMode.OFF,
-            onClick = onRepeat,
-        )
+        // Balances the options button on the other side; an IconButton's own footprint.
+        Spacer(Modifier.size(48.dp))
     }
 }
 
+/**
+ * Shuffle, repeat and the sleep timer in one menu.
+ *
+ * Shuffle and repeat leave the menu open, because seeing the state change *is* the feedback
+ * for a toggle. The timer opens a sheet instead, so it closes.
+ */
 @Composable
-private fun ToggleIcon(
+private fun PlaybackOptionsMenu(
+    shuffle: Boolean,
+    repeat: RepeatMode,
+    timerRunning: Boolean,
+    anyOptionActive: Boolean,
+    onShuffle: () -> Unit,
+    onRepeat: () -> Unit,
+    onOpenTimer: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(
+            onClick = { menuOpen = true },
+            colors = IconButtonDefaults.iconButtonColors(
+                contentColor = if (anyOptionActive) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            ),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Tune,
+                contentDescription = stringResource(R.string.action_playback_options),
+            )
+        }
+
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            OptionMenuItem(
+                text = stringResource(R.string.action_shuffle),
+                icon = Icons.Rounded.Shuffle,
+                active = shuffle,
+                onClick = onShuffle,
+            )
+            OptionMenuItem(
+                text = stringResource(
+                    when (repeat) {
+                        RepeatMode.OFF -> R.string.action_repeat
+                        RepeatMode.ALL -> R.string.action_repeat_all
+                        RepeatMode.ONE -> R.string.action_repeat_one
+                    },
+                ),
+                icon = if (repeat == RepeatMode.ONE) {
+                    Icons.Rounded.RepeatOne
+                } else {
+                    Icons.Rounded.Repeat
+                },
+                active = repeat != RepeatMode.OFF,
+                onClick = onRepeat,
+            )
+            OptionMenuItem(
+                text = stringResource(
+                    if (timerRunning) R.string.action_sleep_timer_on
+                    else R.string.action_sleep_timer,
+                ),
+                icon = Icons.Rounded.Bedtime,
+                active = timerRunning,
+                onClick = {
+                    menuOpen = false
+                    onOpenTimer()
+                },
+            )
+        }
+    }
+}
+
+/** A menu row whose icon and colour carry whether the option is currently on. */
+@Composable
+private fun OptionMenuItem(
+    text: String,
     icon: ImageVector,
-    description: String,
     active: Boolean,
     onClick: () -> Unit,
 ) {
-    IconButton(
+    val colour = if (active) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    DropdownMenuItem(
+        text = { Text(text = text, color = if (active) colour else Color.Unspecified) },
+        leadingIcon = { Icon(imageVector = icon, contentDescription = null, tint = colour) },
         onClick = onClick,
-        colors = IconButtonDefaults.iconButtonColors(
-            contentColor = if (active) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-        ),
-    ) {
-        Icon(imageVector = icon, contentDescription = description)
+    )
+}
+
+/**
+ * Durations for the timer that stops playback.
+ *
+ * It says out loud that the box stays on. The Phoniebox also has shutdown timers, and someone
+ * setting a bedtime timer deserves to know which of the two this is — Coil never switches the
+ * box off (§16).
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun SleepTimerSheet(
+    remainingSeconds: Int?,
+    onPick: (Int) -> Unit,
+    onCancel: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            Modifier
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.player_sleep_timer_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.player_sleep_timer_explainer),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (remainingSeconds != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(
+                        R.string.player_sleep_timer_remaining,
+                        formatDuration(remainingSeconds.toDouble()),
+                    ),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Wraps rather than scrolls: a row of durations that runs off the edge hides the
+            // longest one, and German labels are the widest of the five locales (§12.3).
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TIMER_PRESETS.forEach { minutes ->
+                    AssistChip(
+                        onClick = { onPick(minutes) },
+                        label = {
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.duration_minutes,
+                                    minutes,
+                                    formatNumber(minutes),
+                                ),
+                            )
+                        },
+                    )
+                }
+            }
+
+            if (remainingSeconds != null) {
+                Spacer(Modifier.height(16.dp))
+                OutlinedButton(onClick = onCancel) {
+                    Text(stringResource(R.string.action_sleep_timer_cancel))
+                }
+            }
+        }
     }
 }
+
+/** Bedtime-shaped: fifteen minutes to two hours, which is one audiobook either way. */
+private val TIMER_PRESETS = listOf(15, 30, 45, 60, 90, 120)
 
 @Composable
 private fun VolumeRow(

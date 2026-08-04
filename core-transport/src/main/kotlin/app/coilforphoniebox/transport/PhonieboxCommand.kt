@@ -231,6 +231,32 @@ object Commands {
         retryable = true,
     )
 
+    // ----------------------------------------------------------- sleep timer
+
+    /**
+     * The box's timer that *stops the player*, and none of its siblings.
+     *
+     * `timers` also holds `timer_shutdown`, `timer_idle_shutdown` and `timer_fade_volume`.
+     * The two shutdown timers are deliberately unreachable from here: they switch the box
+     * off, which is exactly what Coil promises never to do (§1, §16). Adding them would also
+     * mean an unauthenticated LAN port could power down the box on a delay.
+     *
+     * `wait_seconds` it is — the plugin's own default is `default_timeout_sec`.
+     */
+    fun startSleepTimer(seconds: Int) = timer(
+        "start",
+        kwargs = mapOf("wait_seconds" to JsonPrimitive(seconds)),
+    )
+
+    val cancelSleepTimer = timer("cancel")
+
+    /**
+     * Asked once when the timer UI opens. The state *is* published, but only when it
+     * changes, so a box that has not touched its timer since booting has nothing in the
+     * last-value cache to hand over on subscribe.
+     */
+    val sleepTimerState = timer("get_state", retryable = true)
+
     // --------------------------------------------------------------- helpers
 
     private fun player(
@@ -245,4 +271,17 @@ object Commands {
         kwargs: Map<String, JsonElement> = emptyMap(),
         retryable: Boolean = false,
     ) = PhonieboxCommand("volume", "ctrl", method, kwargs, retryable = retryable)
+
+    /** Hard-wired to `timer_stop_player`: no other timer plugin is addressable from here. */
+    private fun timer(
+        method: String,
+        kwargs: Map<String, JsonElement> = emptyMap(),
+        retryable: Boolean = false,
+    ) = PhonieboxCommand(TIMER_PACKAGE, TIMER_STOP_PLAYER, method, kwargs, retryable = retryable)
+
+    private const val TIMER_PACKAGE = "timers"
+    private const val TIMER_STOP_PLAYER = "timer_stop_player"
+
+    /** The topic that plugin publishes its state on: `<package>.<plugin>`. */
+    const val TIMER_STOP_PLAYER_TOPIC = "$TIMER_PACKAGE.$TIMER_STOP_PLAYER"
 }

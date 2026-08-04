@@ -5,6 +5,7 @@ import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
 import app.coilforphoniebox.domain.model.RepeatMode
+import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
 import app.coilforphoniebox.domain.repository.PlayerRepository
 import app.coilforphoniebox.transport.Commands
@@ -43,6 +44,7 @@ class PlayerRepositoryImpl @Inject constructor(
     override val volume: Flow<VolumeStatus> = transport.volume
     override val connectionState: Flow<ConnectionState> = transport.connection
     override val boxVersion: Flow<String?> = transport.boxVersion
+    override val sleepTimer: Flow<SleepTimerStatus> = transport.sleepTimer
 
     /**
      * Resolved covers, keyed on box and song because the same file name means different
@@ -161,6 +163,23 @@ class PlayerRepositoryImpl @Inject constructor(
     override suspend fun toggleMute(): Result<Unit> =
         transport.call(Commands.mute(!transport.currentVolume().muted)).unit()
 
+    override suspend fun startSleepTimer(minutes: Int): Result<Unit> {
+        // `GenericTimerClass.start` logs "Ignoring start command" and returns when its timer
+        // is already alive, so setting 30 minutes over a running 60 would silently keep the
+        // 60. Cancel first, and only then start.
+        if (transport.currentSleepTimer().running) {
+            transport.call(Commands.cancelSleepTimer)
+                .onFailure { return Result.failure(it) }
+        }
+        val seconds = minutes.coerceAtLeast(1) * SECONDS_PER_MINUTE
+        return transport.call(Commands.startSleepTimer(seconds)).unit()
+    }
+
+    override suspend fun cancelSleepTimer(): Result<Unit> =
+        transport.call(Commands.cancelSleepTimer).unit()
+
+    override suspend fun refreshSleepTimer(): Result<Unit> = transport.refreshSleepTimer()
+
     override suspend fun play(target: PlayTarget): Result<Unit> =
         transport.call(Commands.play(target)).unit()
 
@@ -173,5 +192,8 @@ class PlayerRepositoryImpl @Inject constructor(
         /** Four tries over roughly two seconds, which covers an ordinary extraction. */
         const val COVER_ATTEMPTS = 4
         const val COVER_RETRY_MILLIS = 800L
+
+        /** The timer plugin takes `wait_seconds`; the UI offers whole minutes. */
+        const val SECONDS_PER_MINUTE = 60
     }
 }

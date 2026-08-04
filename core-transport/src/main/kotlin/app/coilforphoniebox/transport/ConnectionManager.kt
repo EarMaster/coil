@@ -4,6 +4,7 @@ import android.util.Log
 import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.PlayerStatus
+import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.transport.di.TransportScope
@@ -64,6 +65,11 @@ class ConnectionManager @Inject constructor(
     val boxVersion: StateFlow<String?> = _session
         .flatMapLatest { it?.version ?: flowOf(null) }
         .stateIn(scope, SharingStarted.Eagerly, null)
+
+    /** A timer belongs to a box, so switching box drops back to "no timer". */
+    val sleepTimer: StateFlow<SleepTimerStatus> = _session
+        .flatMapLatest { it?.sleepTimer ?: flowOf(SleepTimerStatus.Off) }
+        .stateIn(scope, SharingStarted.Eagerly, SleepTimerStatus.Off)
 
     init {
         scope.launch {
@@ -143,6 +149,12 @@ class ConnectionManager @Inject constructor(
     fun currentStatus(): PlayerStatus = status.value
 
     fun currentVolume(): VolumeStatus = volume.value
+
+    fun currentSleepTimer(): SleepTimerStatus = sleepTimer.value
+
+    /** Asks the active box for its timer state; no session means nothing to ask. */
+    suspend fun refreshSleepTimer(): Result<Unit> =
+        _session.value?.refreshSleepTimer() ?: Result.failure(NotConnectedException())
 
     private companion object {
         const val TAG = "CoilConnection"

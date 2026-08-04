@@ -4,6 +4,7 @@ import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
 import app.coilforphoniebox.domain.model.RepeatMode
+import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
 import kotlinx.coroutines.flow.Flow
 
@@ -27,6 +28,12 @@ interface PlayerRepository {
     /** Absolute HTTP URL of the current song's cover, or null when there is none. */
     val coverUrl: Flow<String?>
 
+    /**
+     * The box's stop-player timer. Its shutdown timers are deliberately not represented
+     * here at all — Coil never sends a command that switches the box off (§16).
+     */
+    val sleepTimer: Flow<SleepTimerStatus>
+
     suspend fun play(): Result<Unit>
     suspend fun pause(): Result<Unit>
     suspend fun toggle(): Result<Unit>
@@ -39,6 +46,23 @@ interface PlayerRepository {
     suspend fun setVolume(level: Int): Result<Unit>
     suspend fun changeVolume(step: Int): Result<Unit>
     suspend fun toggleMute(): Result<Unit>
+
+    /**
+     * Sets the timer that stops playback after [minutes], replacing a running one.
+     *
+     * The box ignores `start` while its timer is already alive, so changing the duration
+     * means cancelling first — which the implementation does, rather than leaving the user
+     * wondering why the new duration did not take.
+     */
+    suspend fun startSleepTimer(minutes: Int): Result<Unit>
+
+    suspend fun cancelSleepTimer(): Result<Unit>
+
+    /**
+     * Pulls the timer state once, for when the timer UI opens. Later changes arrive on the
+     * published topic, so this is never called on a schedule.
+     */
+    suspend fun refreshSleepTimer(): Result<Unit>
 
     suspend fun play(target: PlayTarget): Result<Unit>
 

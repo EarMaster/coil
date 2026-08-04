@@ -105,10 +105,20 @@ class ZmqStatusSubscriber(
         const val TOPIC_VERSION = "core.version"
         const val TOPIC_GIT_STATE = "core.git_state"
 
+        /**
+         * The stop-player timer's state topic, and only it.
+         *
+         * Subscribing to the `timers.` family would also deliver the shutdown timers'
+         * state. Coil has no business showing a countdown to something it refuses to
+         * trigger, so the subscription names the one timer it supports (§16).
+         */
+        const val TOPIC_SLEEP_TIMER = Commands.TIMER_STOP_PLAYER_TOPIC
+
         val DEFAULT_TOPICS = listOf(
             TOPIC_PLAYER_STATUS,
             TOPIC_VOLUME,
             TOPIC_CORE_PREFIX,
+            TOPIC_SLEEP_TIMER,
         )
     }
 }

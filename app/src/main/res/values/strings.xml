@@ -28,8 +28,27 @@
     <string name="action_next">Next track</string>
     <string name="action_shuffle">Shuffle</string>
     <string name="action_repeat">Repeat</string>
+    <string name="action_repeat_all">Repeat all</string>
     <string name="action_repeat_one">Repeat one track</string>
     <string name="action_volume">Volume</string>
+    <!-- Opens the menu holding shuffle, repeat and the sleep timer. -->
+    <string name="action_playback_options">Playback options</string>
+
+    <!-- Sleep timer. It stops playback; it does not switch the box off. The box has
+         shutdown timers too, and Coil deliberately offers none of them, so the wording
+         has to make clear which one this is. -->
+    <string name="action_sleep_timer">Sleep timer</string>
+    <string name="action_sleep_timer_on">Sleep timer is on</string>
+    <string name="action_sleep_timer_cancel">Cancel timer</string>
+    <string name="player_sleep_timer_title">Sleep timer</string>
+    <string name="player_sleep_timer_explainer">Stops playback after the time you pick. The box stays switched on — Coil never turns it off.</string>
+    <!-- %1$s is a remaining time such as "23:15". -->
+    <string name="player_sleep_timer_remaining">Stops in %1$s</string>
+    <!-- %1$s is a number of minutes. -->
+    <plurals name="duration_minutes">
+        <item quantity="one">%1$s min</item>
+        <item quantity="other">%1$s min</item>
+    </plurals>
     <string name="action_favourite_remove">Remove from favourites</string>
     <!-- Favourite actions name their target: from a playing song, "save this" could mean
          the single track or the whole folder, and the user picks which. -->

@@ -200,6 +200,37 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
 - **Dynamic colour (Material You) is off by default**, toggle in settings; brand colours are fixed
   regardless of theme (the token set now lives in `app/src/main/kotlin/.../ui/theme/Color.kt`).
 
+## The sleep timer, and the timers Coil refuses
+
+The box's `timers` package holds four: `timer_stop_player`, `timer_shutdown`,
+`timer_idle_shutdown` and `timer_fade_volume`. **Only `timer_stop_player` is reachable from Coil**,
+because it is the only one that does not switch the box off. Coil promises never to send a command
+that can take the box down (§1, §16); a delayed shutdown is still a shutdown, and on an
+unauthenticated LAN port it is one that could be scheduled by anything on the network. That is why
+`Commands.timer` is hard-wired to the `timer_stop_player` plugin rather than taking a plugin name,
+why the SUB socket subscribes to that one topic instead of the `timers.` family, and why
+`CommandsTest` asserts that no command in the catalogue mentions `shutdown`, `host.` or `reboot`.
+Adding a shutdown timer is not a small change to make — it reverses a promise in the README.
+
+Protocol details, distilled from `jukebox/multitimer.py` and `components/timers/__init__.py`:
+
+- `start` takes **`wait_seconds`**, `cancel` takes nothing, `get_state` returns
+  `{enabled, remaining_seconds, wait_seconds, type}`.
+- **`start` on a running timer is ignored** — `GenericTimerClass` logs "Ignoring start command" and
+  returns. Setting 30 minutes over a running 60 would silently keep the 60, so
+  `PlayerRepositoryImpl.startSleepTimer` cancels first when one is already running.
+- State is published on the topic **`timers.timer_stop_player`** (`<package>.<plugin>`), but only
+  when it changes — there is no per-second tick. A box that has not been given a timer since booting
+  therefore has nothing in the last-value cache, which is why the timer sheet asks `get_state` once
+  when it opens, and why the countdown is interpolated locally from `remainingSecondsAt`, the same
+  way the progress bar interpolates elapsed time.
+
+The player screen's shuffle and repeat icons moved into one "playback options" menu alongside the
+timer: three mode toggles flanking the transport controls is more than that screen can carry. The
+menu's button is tinted when any of the three is active, and a running timer also shows a
+"Stops in …" line under the transport row, because a countdown to silence should not be hidden
+behind a tap.
+
 ## Library search
 
 **There is no search command in the Phoniebox protocol.** The content RPCs are
@@ -261,8 +292,9 @@ coil://play?box=<boxId>&type=track&url=<mpd url>
   machine translation (a partial, human-reviewed translation is fine — an unreviewed complete one
   is not).
 - Scope discipline: Coil is deliberately a playback remote only. Card management, box system
-  settings, timers, and shutdown/reboot stay out of scope — see README "What Coil does not do" and
-  the implementation plan §1 and §16.
+  settings and shutdown/reboot stay out of scope — see README "What Coil does not do" and the
+  implementation plan §1 and §16. **One exception, deliberately made: the sleep timer** — see
+  below.
 - Keep `CHANGELOG.md` current: add an entry under `## [Unreleased]` for any user-facing change in
   the same commit/PR that makes it, not as a follow-up. When cutting a release, rename
   `[Unreleased]` to the new `[x.y.z]` version heading (matching `versionName`) and start a fresh

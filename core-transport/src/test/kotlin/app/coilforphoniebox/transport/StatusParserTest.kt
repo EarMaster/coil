@@ -123,6 +123,34 @@ class StatusParserTest {
         assertNull(StatusParser.softMaxVolume(jsonPrimitive("140")))
     }
 
+    /** `wait_seconds` comes back as a float, and the box's own numbers may be strings. */
+    @Test
+    fun `a running sleep timer is read with its remaining seconds`() {
+        val timer = StatusParser.sleepTimer(
+            """{"enabled": true, "remaining_seconds": 1187, "wait_seconds": 1800.0,
+               "type": "GenericTimerClass"}""",
+            receivedAtElapsedMillis = 10_000L,
+        )!!
+
+        assertTrue(timer.running)
+        assertEquals(1187, timer.remainingSeconds)
+        assertEquals(1800, timer.requestedSeconds)
+        // Counted down locally, because the box only publishes on change.
+        assertEquals(1177, timer.remainingSecondsAt(20_000L))
+        assertEquals(0, timer.remainingSecondsAt(10_000L + 1_187_000L + 5_000L))
+    }
+
+    @Test
+    fun `a disabled timer has nothing left, and an unusable payload is not a timer`() {
+        val off = StatusParser.sleepTimer("""{"enabled": false, "remaining_seconds": 42}""", 0L)!!
+
+        assertFalse(off.running)
+        assertEquals(0, off.remainingSecondsAt(60_000L))
+
+        assertNull(StatusParser.sleepTimer("""{"type": "GenericTimerClass"}""", 0L))
+        assertNull(StatusParser.sleepTimer("not json", 0L))
+    }
+
     @Test
     fun `version is read from a topic payload with or without quotes`() {
         assertEquals("v3.6.0", StatusParser.versionFromTopic("\"v3.6.0\""))

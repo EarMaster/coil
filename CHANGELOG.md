@@ -16,6 +16,10 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 - **Library browsing** by folder and by album, with folders loaded one level at a time, album covers
   fetched as they come into view, pull-to-refresh per level and a "last updated" hint. The back
   gesture goes up one folder, and leaves the library only from the top level
+- **Sleep timer**: stops playback after 15 minutes to 2 hours and leaves the box switched on. The
+  box's own shutdown and idle-shutdown timers are deliberately not offered — Coil never switches the
+  box off. Shuffle, repeat and the timer now share one "playback options" menu on the player instead
+  of competing with the transport controls, and a running timer shows the time left
 - **Library search**: a field above the tabs finds folders, albums and tracks in one list,
   ignoring case and accents — "bar" finds "Bär". It searches what Coil has loaded from the box,
   since the Phoniebox interface has no search of its own; settings can walk the whole library once

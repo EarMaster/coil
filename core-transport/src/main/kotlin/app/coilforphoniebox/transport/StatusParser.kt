@@ -3,6 +3,7 @@ package app.coilforphoniebox.transport
 import app.coilforphoniebox.domain.model.PlaybackState
 import app.coilforphoniebox.domain.model.PlayerStatus
 import app.coilforphoniebox.domain.model.RepeatMode
+import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -69,6 +70,31 @@ object StatusParser {
             muted = obj.boolean("mute") ?: obj.boolean("muted") ?: previous.muted,
         )
     }
+
+    /**
+     * `timers.timer_stop_player` publishes, and `get_state` returns,
+     * `{"enabled": true, "remaining_seconds": 1187, "wait_seconds": 1800.0,
+     * "type": "GenericTimerClass"}`.
+     *
+     * Read leniently like every other payload here: `enabled` alone is enough to know
+     * whether a timer is running, and a missing or stringified `remaining_seconds` gives a
+     * running timer with nothing to count down rather than no timer at all.
+     */
+    fun sleepTimer(payload: JsonElement?, receivedAtElapsedMillis: Long): SleepTimerStatus? {
+        val obj = payload as? JsonObject ?: return null
+        val enabled = obj.boolean("enabled") ?: return null
+        if (!enabled) return SleepTimerStatus.Off
+
+        return SleepTimerStatus(
+            running = true,
+            remainingSeconds = (obj.int("remaining_seconds") ?: 0).coerceAtLeast(0),
+            requestedSeconds = obj.int("wait_seconds")?.takeIf { it > 0 },
+            receivedAtElapsedMillis = receivedAtElapsedMillis,
+        )
+    }
+
+    fun sleepTimer(raw: String, receivedAtElapsedMillis: Long): SleepTimerStatus? =
+        sleepTimer(parseObject(raw), receivedAtElapsedMillis)
 
     /** `core.version` arrives as a bare string on the topic and as a string over RPC. */
     fun version(payload: JsonElement?): String? = when (payload) {

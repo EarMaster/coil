@@ -5,6 +5,7 @@ import android.util.Log
 import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.PlayerStatus
+import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +49,15 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
     /** `core.version`: never branched on, but included in bug reports (§1). */
     val version: StateFlow<String?> = _version.asStateFlow()
 
+    private val _sleepTimer = MutableStateFlow(SleepTimerStatus.Off)
+
+    /**
+     * The stop-player timer. Starts at "off" rather than "unknown": the box publishes this
+     * only when it changes, so a box that has not been asked to set one has nothing in the
+     * last-value cache — and "no timer" is what that means.
+     */
+    val sleepTimer: StateFlow<SleepTimerStatus> = _sleepTimer.asStateFlow()
+
     @Volatile
     private var rpc: ZmqRpcClient = ZmqRpcClient(box.host, box.rpcPort)
 
@@ -65,6 +75,17 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
             if (_connection.value != ConnectionState.CONNECTED) {
                 _connection.value = ConnectionState.CONNECTED
             }
+        }
+
+    /**
+     * Asks for the timer's state. Called when the timer UI opens, never on a schedule:
+     * the published topic covers every later change.
+     */
+    suspend fun refreshSleepTimer(): Result<Unit> =
+        call(Commands.sleepTimerState).map { result ->
+            StatusParser.sleepTimer(result, SystemClock.elapsedRealtime())
+                ?.let { _sleepTimer.value = it }
+            Unit
         }
 
     /** Pulls the status over RPC. Only for after a rebuilt connection — never polled. */
@@ -95,6 +116,10 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
                     Log.w(TAG, "Unparseable playerstatus payload: ${payload.take(200)}")
                 }
             }
+
+            topic == ZmqStatusSubscriber.TOPIC_SLEEP_TIMER ->
+                StatusParser.sleepTimer(payload, SystemClock.elapsedRealtime())
+                    ?.let { _sleepTimer.value = it }
 
             topic.startsWith(ZmqStatusSubscriber.TOPIC_VOLUME) ->
                 StatusParser.volume(payload, _volume.value)?.let { _volume.value = it }

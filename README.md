@@ -30,6 +30,7 @@ Screenshots go here once captured. Suggested layout:
 ## Features
 
 - **Player** with cover art, scrubbing, transport controls and volume
+- **Sleep timer** that stops playback after a set time and leaves the box switched on
 - **Library browsing** by folder or album, play anything you find, and search that ignores case and accents
 - **Lock screen and notification controls** that appear on their own when the box starts playing, and can be switched off entirely
 - **Favourites** for a folder, an album or a single track, with home screen shortcuts, so one tap starts an audiobook without opening the app — or as a link, for an automation app or an NFC tag
@@ -43,6 +44,8 @@ Coil keeps everything on your device and your network. No account, no telemetry,
 ## What Coil does not do
 
 Card management, system settings and shutdown stay in the Phoniebox web UI. Coil covers the thing you do twenty times a day — putting something on — and deliberately leaves administration alone. Beyond keeping the app focused, it means Coil never sends a command that could take the box down.
+
+That applies to timers too. The box can shut itself down on a timer, or after being idle for a while; Coil offers neither. Its sleep timer is the one that stops the player and leaves the box on.
 
 ## Requirements
 

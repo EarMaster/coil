@@ -138,6 +138,20 @@ shuffle, `disable`/`enable_repeat`/`enable_repeat_single` for repeat.
 
 `update` triggers the MPD database scan. `update_wait` blocks until completion and should be avoided because of the shared socket.
 
+### Timers — `timers.*`
+
+Four plugins: `timer_stop_player`, `timer_shutdown`, `timer_idle_shutdown`, `timer_fade_volume`.
+Each takes `start(wait_seconds)`, `cancel()` and `get_state()`, and publishes its state on the topic
+`timers.<plugin>` — **on change only, not once a second**. `get_state` returns
+`{enabled, remaining_seconds, wait_seconds, type}`.
+
+Coil uses **`timer_stop_player` and no other**: the two shutdown plugins would switch the box off,
+which is out of scope by design (§16). See AGENTS.md "The sleep timer, and the timers Coil refuses".
+
+`GenericTimerClass.start` **ignores the call when the timer is already running** ("Ignoring start
+command" in the box's log, then it returns). Changing a running timer's duration means `cancel`
+first, otherwise the old duration silently stands.
+
 ### Volume — `volume.ctrl.*`
 
 `get_volume`, `set_volume(volume)`, `change_volume(step)`, `mute(mute)`, `get_soft_max_volume`

@@ -1,5 +1,6 @@
 package app.coilforphoniebox.ui.player
 
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.coilforphoniebox.R
@@ -10,6 +11,7 @@ import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
 import app.coilforphoniebox.domain.model.RepeatMode
+import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.FavoriteRepository
@@ -31,6 +33,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -56,7 +59,12 @@ class PlayerViewModel @Inject constructor(
         val currentFavorite: Favorite? = null,
         /** The favourite for the playing file itself, if there is one. */
         val currentTrackFavorite: Favorite? = null,
+        val sleepTimer: SleepTimerStatus = SleepTimerStatus.Off,
     ) {
+        /** Whether any playback option is on, so the menu's button can say so at a glance. */
+        val anyOptionActive: Boolean
+            get() = status.shuffle || status.repeat != RepeatMode.OFF || sleepTimer.running
+
         val canFavourite: Boolean get() = activeBox != null && (status.folder != null || status.file != null)
 
         /** The folder is the star's single-tap target, so it needs its own condition. */
@@ -111,6 +119,7 @@ class PlayerViewModel @Inject constructor(
         val boxCount: Int = 0,
         val folderFavorite: Favorite? = null,
         val trackFavorite: Favorite? = null,
+        val sleepTimer: SleepTimerStatus = SleepTimerStatus.Off,
     )
 
     val state: StateFlow<State> = combine(
@@ -118,8 +127,13 @@ class PlayerViewModel @Inject constructor(
         player.volume,
         player.connectionState,
         player.coverUrl,
-        combine(boxes.activeBox, boxes.boxes, favoritesForCurrentContent) { box, all, favorites ->
-            BoxInfo(box, all.size, favorites.first, favorites.second)
+        combine(
+            boxes.activeBox,
+            boxes.boxes,
+            favoritesForCurrentContent,
+            player.sleepTimer,
+        ) { box, all, favorites, timer ->
+            BoxInfo(box, all.size, favorites.first, favorites.second, timer)
         },
     ) { status, volume, connection, coverUrl, boxInfo ->
         State(
@@ -131,8 +145,35 @@ class PlayerViewModel @Inject constructor(
             boxCount = boxInfo.boxCount,
             currentFavorite = boxInfo.folderFavorite,
             currentTrackFavorite = boxInfo.trackFavorite,
+            sleepTimer = boxInfo.sleepTimer,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
+
+    /**
+     * Seconds left on the timer, recomputed once a second while one is running.
+     *
+     * The box publishes its timer state only when it changes, so the countdown has to be
+     * local — and it only ticks while there is something to count, which keeps an idle
+     * player from recomposing every second for nothing.
+     */
+    val sleepTimerRemaining: StateFlow<Int?> = state
+        .map { it.sleepTimer }
+        .distinctUntilChanged()
+        .flatMapLatest { timer ->
+            if (!timer.running) {
+                flowOf<Int?>(null)
+            } else {
+                flow<Int?> {
+                    while (true) {
+                        val left = timer.remainingSecondsAt(SystemClock.elapsedRealtime())
+                        emit(left)
+                        if (left <= 0) break
+                        delay(TIMER_TICK_MILLIS)
+                    }
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** Set while the user drags the progress bar, so the 4 Hz updates do not fight it. */
     private val _scrubPosition = MutableStateFlow<Float?>(null)
@@ -208,6 +249,20 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
+     * Asks the box what its timer is doing. Called when the timer sheet opens: the state is
+     * published on change, but a box that has not been asked for a timer since booting has
+     * nothing in the last-value cache to hand over.
+     */
+    fun refreshSleepTimer() {
+        viewModelScope.launch { player.refreshSleepTimer() }
+    }
+
+    /** Stops playback after [minutes]. The box is left running — Coil never switches it off. */
+    fun startSleepTimer(minutes: Int) = run { player.startSleepTimer(minutes) }
+
+    fun cancelSleepTimer() = run { player.cancelSleepTimer() }
+
+    /**
      * Saves the folder the playing song sits in, or removes it again. This is what the
      * star's single tap does; the long press menu offers the track as well, because from
      * a playing song alone "save this" is ambiguous between the two.
@@ -275,6 +330,9 @@ class PlayerViewModel @Inject constructor(
 
         /** Two status publishes at 4 Hz, so the box has certainly reported back. */
         const val VOLUME_RELEASE_MILLIS = 600L
+
+        /** The countdown is shown to the minute, but a second's resolution reads as alive. */
+        const val TIMER_TICK_MILLIS = 1_000L
     }
 }
 

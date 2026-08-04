@@ -137,4 +137,55 @@ class CommandsTest {
         assertEquals("player.ctrl.play_folder", Commands.play(PlayTarget.Folder("x")).name)
         assertEquals("volume.ctrl.set_volume", Commands.setVolume(30).name)
     }
+
+    /** The UI offers minutes; the plugin signature is `wait_seconds`. */
+    @Test
+    fun `the sleep timer addresses timer_stop_player in seconds`() {
+        val json = Commands.startSleepTimer(1_800).toJson("id")
+
+        assertEquals("timers", json["package"]?.jsonPrimitive?.content)
+        assertEquals("timer_stop_player", json["plugin"]?.jsonPrimitive?.content)
+        assertEquals("start", json["method"]?.jsonPrimitive?.content)
+        assertEquals("1800", json["kwargs"]?.jsonObject?.get("wait_seconds")?.jsonPrimitive?.content)
+
+        assertEquals("timers.timer_stop_player.cancel", Commands.cancelSleepTimer.name)
+        assertEquals("timers.timer_stop_player.get_state", Commands.sleepTimerState.name)
+    }
+
+    /**
+     * The promise this app makes: no command it can send switches the box off. The box's
+     * `timer_shutdown` and `timer_idle_shutdown` plugins would do exactly that, so nothing
+     * in the catalogue may name them — this fails if someone adds one.
+     */
+    @Test
+    fun `no command addresses a shutdown timer`() {
+        val everyName = listOf(
+            Commands.startSleepTimer(60),
+            Commands.cancelSleepTimer,
+            Commands.sleepTimerState,
+            Commands.play,
+            Commands.pause,
+            Commands.toggle,
+            Commands.next,
+            Commands.previous,
+            Commands.ping,
+            Commands.updateLibrary,
+            Commands.listAlbums,
+            Commands.softMaxVolume,
+            Commands.setVolume(10),
+            Commands.changeVolume(1),
+            Commands.mute(true),
+            Commands.seek(1.0),
+            Commands.shuffle(true),
+            Commands.repeat(RepeatMode.ALL),
+            Commands.folderContent("x"),
+            Commands.singleCoverArt("x"),
+            Commands.albumCoverArt("x", "y"),
+            Commands.play(PlayTarget.Folder("x")),
+        ).map { it.name }
+
+        assertTrue(everyName.none { it.contains("shutdown") })
+        assertTrue(everyName.none { it.contains("host.") })
+        assertTrue(everyName.none { it.contains("reboot") })
+    }
 }

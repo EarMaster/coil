@@ -49,6 +49,22 @@ replacement.
   and the `coilforphoniebox.app` DNS must point at GitHub Pages, for the `CNAME` file in
   `docs/pages/` to actually resolve.
 
+`main` is branch-protected: PRs required (enforced for admins too, 0 required approvals), plus
+`Build`/`Unit Tests`/`Lint`/`Analyze (Kotlin)` as required status checks (these currently pass
+by skipping, per the gate above). `ci.yml`/`codeql.yml` also trigger on PRs into `develop`.
+
+## Slash commands
+
+`.claude/commands/` — repo-specific Claude Code commands:
+
+- `/commit` — stages/syncs, drafts a conventional commit message, updates `CHANGELOG.md`'s
+  `Unreleased` section when the change is user-facing, and offers to push (to a branch — `main`
+  is protected).
+- `/release` — bumps `versionName`/`versionCode` in `app/build.gradle.kts`, stamps the
+  `CHANGELOG.md` `Unreleased` section with the new version, and generates
+  `docs/whatsnew/X.Y.Z-{locale}` files for `en-US`/`de-DE`/`fr-FR`/`es-ES`/`nl-NL` (the format
+  `google-play.yml` expects). Gated on `app/build.gradle.kts` existing — a no-op until Phase 1.
+
 ## Commands
 
 There is no root build yet, so the README's `./gradlew assembleDebug` is aspirational until

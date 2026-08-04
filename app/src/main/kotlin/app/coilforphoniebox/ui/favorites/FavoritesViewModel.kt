@@ -1,5 +1,6 @@
 package app.coilforphoniebox.ui.favorites
 
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.coilforphoniebox.R
@@ -8,6 +9,7 @@ import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.FavoriteRepository
 import app.coilforphoniebox.domain.usecase.PlayFavoriteUseCase
+import app.coilforphoniebox.shortcuts.PlayDeepLink
 import app.coilforphoniebox.shortcuts.ShortcutPublisher
 import app.coilforphoniebox.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -80,6 +82,25 @@ class FavoritesViewModel @Inject constructor(
             add(target, removeAt(index))
         }
         viewModelScope.launch { favorites.reorder(reordered.map { it.id }) }
+    }
+
+    /**
+     * The `coil://play` link for [favorite], or null for a row that cannot be played.
+     *
+     * This is the same URI a home screen shortcut carries, box id and all, so anything that
+     * can fire a VIEW intent — an automation app, an NFC tag, a link in a note — starts this
+     * favourite on *its* box regardless of which one is active (§7.3). Handing it over is the
+     * only way to get at it: the box id is a UUID that appears nowhere in the UI.
+     */
+    fun linkFor(favorite: Favorite): String? = PlayDeepLink.uriFor(favorite)?.toString()
+
+    /**
+     * Android 13 shows its own confirmation whenever an app writes to the clipboard, so
+     * saying it twice is worse than not saying it at all.
+     */
+    fun onLinkCopied() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return
+        viewModelScope.launch { messageChannel.emit(UiMessage(R.string.favourites_link_copied)) }
     }
 
     fun requestPin(favorite: Favorite, coverUrl: String?) {

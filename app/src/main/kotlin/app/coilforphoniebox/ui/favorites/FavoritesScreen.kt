@@ -1,5 +1,7 @@
 package app.coilforphoniebox.ui.favorites
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,10 +76,12 @@ fun FavoritesScreen(
             FavoriteCell(
                 favorite = favorite,
                 box = state.activeBox,
+                link = viewModel.linkFor(favorite),
                 onPlay = { viewModel.play(favorite) },
                 onRemove = { viewModel.remove(favorite) },
                 onPin = { coverUrl -> viewModel.requestPin(favorite, coverUrl) },
                 onMove = { up -> viewModel.move(favorite, up) },
+                onLinkCopied = viewModel::onLinkCopied,
             )
         }
     }
@@ -84,15 +91,20 @@ fun FavoritesScreen(
 private fun FavoriteCell(
     favorite: Favorite,
     box: PhonieBox?,
+    /** `coil://play` link for this favourite; null for a row that cannot be played. */
+    link: String?,
     onPlay: () -> Unit,
     onRemove: () -> Unit,
     onPin: (String?) -> Unit,
     onMove: (Boolean) -> Unit,
+    onLinkCopied: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val coverUrl = remember(favorite.coverFile, box?.host) {
         favorite.coverFile?.let { file -> box?.coverUrl(file) }
     }
+    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
 
     Column {
         Box {
@@ -131,6 +143,27 @@ private fun FavoriteCell(
                         onPin(coverUrl)
                     },
                 )
+                // The link is what a home screen shortcut points at. Handing it out lets an
+                // automation app, an NFC tag or a link in a note start this favourite on its
+                // own box — and it is the only way to see it, since the box id in it is a
+                // UUID shown nowhere else.
+                if (link != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_copy_link)) },
+                        onClick = {
+                            menuOpen = false
+                            clipboard.setText(AnnotatedString(link))
+                            onLinkCopied()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.action_share_link)) },
+                        onClick = {
+                            menuOpen = false
+                            context.shareLink(link, favorite.label)
+                        },
+                    )
+                }
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.action_move_up)) },
                     onClick = {
@@ -164,4 +197,21 @@ private fun FavoriteCell(
         )
         Spacer(Modifier.size(4.dp))
     }
+}
+
+/**
+ * Hands the link to the share sheet. [label] rides along as the sheet's preview title, so
+ * the target says which favourite it is rather than showing a bare URI — it is the name the
+ * user gave the favourite and goes out as it is (§12.4).
+ *
+ * A launcher with no app able to take plain text is possible, if unlikely; the link is on
+ * the clipboard route in that case, so this stays silent rather than raising an error.
+ */
+private fun Context.shareLink(link: String, label: String) {
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, link)
+        putExtra(Intent.EXTRA_TITLE, label)
+    }
+    runCatching { startActivity(Intent.createChooser(send, null)) }
 }

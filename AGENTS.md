@@ -200,6 +200,33 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
 - **Dynamic colour (Material You) is off by default**, toggle in settings; brand colours are fixed
   regardless of theme (the token set now lives in `app/src/main/kotlin/.../ui/theme/Color.kt`).
 
+## The `coil://play` deep link
+
+`PlayDeepLink` in `:feature-shortcuts` owns the format; `PlayShortcutActivity` in `:app` answers it.
+It is **exported** (`AndroidManifest.xml`), so it is not a private shortcut mechanism: an automation
+app, an NFC tag, an `<a href>` in a note, another app or `adb shell am start -a
+android.intent.action.VIEW -d "coil://play?…"` all start a favourite the same way a home screen
+shortcut does. No window opens — one RPC, a toast, `finish()`.
+
+```
+coil://play?box=<boxId>&type=folder&path=<relpath>
+coil://play?box=<boxId>&type=album&albumartist=<artist>&album=<album>
+coil://play?box=<boxId>&type=track&url=<mpd url>
+…&favorite=<id>     # optional; only counts the launch and feeds the launcher's ranking
+```
+
+- **`box` is required and authoritative.** `parse` returns null without it, `playOn` sends the
+  command to *that* box whether or not it is active (a one-shot socket via `callOn` when it is not),
+  and `setActive` follows so the app and the notification agree afterwards (§7.3). A link for the
+  bedroom box starts the bedroom box while the living room one is playing. This is deliberate:
+  favourites are per box, so a folder path from one box means nothing on another.
+- **`boxId` is a random UUID** minted in `BoxRepositoryImpl.add`, so a link cannot be written by
+  hand and a fresh install mints new ids. "Copy link" and "Share link" on a favourite's menu exist
+  precisely because that id is otherwise invisible. If hand-written links are ever wanted, the shape
+  to add is `host=<hostname>` resolved against the configured boxes, not a second id scheme.
+- Adding anything to this format means widening what an unprivileged external intent can ask Coil to
+  do. Keep it to starting playback — the same limit the RPC surface itself observes.
+
 ## Project conventions
 
 - Project language is English throughout: code, comments, commit messages, documentation.

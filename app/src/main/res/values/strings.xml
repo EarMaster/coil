@@ -97,6 +97,12 @@
     <string name="favourites_added">Saved as favourite</string>
     <string name="favourites_removed">Favourite removed</string>
     <string name="action_add_to_home_screen">Add to home screen</string>
+    <!-- Hands out the link that starts this favourite, for automation apps, NFC tags or a
+         link in a note. It names the box, so it starts that box wherever it is used. -->
+    <string name="action_copy_link">Copy link</string>
+    <string name="action_share_link">Share link</string>
+    <!-- Only shown below Android 13, which confirms a clipboard write by itself. -->
+    <string name="favourites_link_copied">Link copied</string>
     <string name="action_remove">Remove</string>
     <string name="action_move_up">Move up</string>
     <string name="action_move_down">Move down</string>

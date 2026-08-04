@@ -25,6 +25,9 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 - **Favourites** for a folder, an album or a single track, with launcher shortcuts — up to four
   dynamic ones plus pinned ones using cover art as their icon, each starting its own box with a
   single command and without opening the app
+- **A link for any favourite**, from its menu: copy or share it and anything that opens links —
+  an automation app, an NFC tag, a note — starts that favourite on the box it belongs to, whichever
+  box Coil is currently showing
 - **Multiple boxes**: "Add another box" in settings, a switcher in the top bar showing each box's
   reachability, an add flow with an mDNS scan and a connection test, a box picker and per-box
   settings on the settings screen, and a collapsed top bar while only one box is configured.

@@ -7,7 +7,8 @@ import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.domain.model.PlayTarget
 
 /**
- * `coil://play?box=<boxId>&type=folder&path=…`
+ * `coil://play?box=<boxId>&type=folder&path=…`, `…&type=album&albumartist=…&album=…`
+ * or `…&type=track&url=…`
  *
  * The box id travels in the link because a home screen shortcut has to start the box it
  * was created for, whatever is currently active (§7.3).
@@ -22,10 +23,12 @@ object PlayDeepLink {
     private const val PARAM_PATH = "path"
     private const val PARAM_ALBUM_ARTIST = "albumartist"
     private const val PARAM_ALBUM = "album"
+    private const val PARAM_URL = "url"
     private const val PARAM_FAVORITE = "favorite"
 
     private const val TYPE_FOLDER = "folder"
     private const val TYPE_ALBUM = "album"
+    private const val TYPE_TRACK = "track"
 
     data class Request(
         val boxId: String,
@@ -50,6 +53,10 @@ object PlayDeepLink {
                 .appendQueryParameter(PARAM_TYPE, TYPE_ALBUM)
                 .appendQueryParameter(PARAM_ALBUM_ARTIST, favorite.albumArtist ?: return null)
                 .appendQueryParameter(PARAM_ALBUM, favorite.album ?: return null)
+
+            FavoriteType.TRACK -> builder
+                .appendQueryParameter(PARAM_TYPE, TYPE_TRACK)
+                .appendQueryParameter(PARAM_URL, favorite.trackUrl ?: return null)
         }
         return builder.build()
     }
@@ -76,6 +83,8 @@ object PlayDeepLink {
                 val album = uri.getQueryParameter(PARAM_ALBUM)
                 if (artist != null && album != null) PlayTarget.Album(artist, album) else null
             }
+
+            TYPE_TRACK -> uri.getQueryParameter(PARAM_URL)?.let { PlayTarget.Track(it) }
 
             else -> null
         } ?: return null

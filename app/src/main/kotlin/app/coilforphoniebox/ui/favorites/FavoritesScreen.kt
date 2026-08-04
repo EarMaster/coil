@@ -14,7 +14,10 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -36,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.Box as PhonieBox
 import app.coilforphoniebox.domain.model.Favorite
+import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.ui.components.CoverArt
 import app.coilforphoniebox.ui.components.EmptyState
 
@@ -100,6 +104,13 @@ private fun FavoriteCell(
                     .aspectRatio(1f)
                     .clickable(onClick = onPlay),
                 cornerRadius = 14.dp,
+                // Folders and single tracks have no artwork, so the placeholder is what
+                // tells a saved folder apart from a saved track at a glance.
+                placeholderIcon = when (favorite.type) {
+                    FavoriteType.FOLDER -> Icons.Rounded.Folder
+                    FavoriteType.ALBUM -> Icons.Rounded.Album
+                    FavoriteType.TRACK -> Icons.Rounded.MusicNote
+                },
             )
 
             IconButton(

@@ -121,11 +121,13 @@ data class FavoriteEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val boxId: String,
     val label: String,
-    /** `FOLDER` or `ALBUM`, stored as its name so the column stays readable. */
+    /** `FOLDER`, `ALBUM` or `TRACK`, stored as its name so the column stays readable. */
     val type: String,
     val folder: String?,
     val albumArtist: String?,
     val album: String?,
+    /** MPD URL of a single file, set only for a `TRACK` row (schema version 2). */
+    val trackUrl: String?,
     val coverFile: String?,
     val sortIndex: Int,
     val launchCount: Int,

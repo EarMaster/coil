@@ -27,7 +27,6 @@
     <string name="action_repeat">Wiederholen</string>
     <string name="action_repeat_one">Einen Titel wiederholen</string>
     <string name="action_volume">Lautstärke</string>
-    <string name="action_favourite_add">Als Favorit speichern</string>
     <string name="action_favourite_remove">Aus den Favoriten entfernen</string>
     <string name="volume_percent">Lautstärke %1$d%%</string>
 

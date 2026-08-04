@@ -11,14 +11,19 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ### Added
 - **Player**: cover art, title and album, progress with seek, transport controls, volume slider,
-  shuffle and repeat, and a star that saves what is playing as a favourite
+  shuffle and repeat, and a star that saves the folder that is playing — with a long press to
+  choose explicitly between saving the folder and saving just the track
 - **Library browsing** by folder and by album, with folders loaded one level at a time, album covers
   fetched as they come into view, pull-to-refresh per level and a "last updated" hint
+- **A menu on every library item** — reachable from its ⋮ button or by a long press — offering
+  Play, saving it as a favourite, and a details panel with what Coil knows about it: path, artist,
+  album, track number, length, file name and when it was last read from the box
 - **Lock screen and notification controls** that appear on their own when the box starts playing,
   including control of the box from the phone's hardware volume buttons; switchable between "only
   while Coil is open" and "whenever the box plays"
-- **Favourites** with launcher shortcuts — up to four dynamic ones plus pinned ones using cover art
-  as their icon, each starting its own box with a single command and without opening the app
+- **Favourites** for a folder, an album or a single track, with launcher shortcuts — up to four
+  dynamic ones plus pinned ones using cover art as their icon, each starting its own box with a
+  single command and without opening the app
 - **Multiple boxes**: a switcher in the top bar showing each box's reachability, an add flow with an
   mDNS scan and a connection test, per-box settings, and a collapsed presentation when only one box
   is configured

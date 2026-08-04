@@ -1,6 +1,9 @@
 package app.coilforphoniebox.ui.player
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -34,10 +38,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +56,7 @@ import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.PlaybackState
 import app.coilforphoniebox.domain.model.RepeatMode
 import app.coilforphoniebox.ui.components.CoverArt
+import app.coilforphoniebox.ui.components.FavoriteMenuItem
 import app.coilforphoniebox.ui.components.formatDuration
 import app.coilforphoniebox.ui.components.formatNumber
 
@@ -112,16 +122,14 @@ fun PlayerScreen(
             }
 
             if (state.canFavourite) {
-                val saved = state.currentFavorite != null
-                IconButton(onClick = viewModel::toggleFavorite) {
-                    Icon(
-                        imageVector = if (saved) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                        contentDescription = stringResource(
-                            if (saved) R.string.action_favourite_remove else R.string.action_favourite_add,
-                        ),
-                        tint = MaterialTheme.colorScheme.tertiary,
-                    )
-                }
+                FavouriteControl(
+                    folderSaved = state.currentFavorite != null,
+                    trackSaved = state.currentTrackFavorite != null,
+                    folderLabel = state.folderLabel.takeIf { state.canFavouriteFolder },
+                    trackLabel = state.trackLabel.takeIf { state.canFavouriteTrack },
+                    onToggleFolder = viewModel::toggleFolderFavorite,
+                    onToggleTrack = viewModel::toggleTrackFavorite,
+                )
             }
         }
 
@@ -160,6 +168,86 @@ fun PlayerScreen(
         )
 
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/**
+ * The favourite star.
+ *
+ * A tap saves the folder — the thing a listener usually means by "save this", and what a
+ * card on the box would hold. A long press opens the menu, where folder and track are two
+ * separate, named entries: from a playing song the two are genuinely different intentions,
+ * and a single star cannot say which one it means.
+ *
+ * The icon shows the state of what a *tap* does, which is the folder. What the track's own
+ * state is, the menu says.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun FavouriteControl(
+    folderSaved: Boolean,
+    trackSaved: Boolean,
+    folderLabel: String?,
+    trackLabel: String?,
+    onToggleFolder: () -> Unit,
+    onToggleTrack: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+
+    Box {
+        Icon(
+            imageVector = if (folderSaved) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+            contentDescription = stringResource(
+                if (folderSaved) R.string.action_favourite_remove_folder
+                else R.string.action_favourite_add_folder,
+            ),
+            tint = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier
+                .clip(CircleShape)
+                .combinedClickable(
+                    role = Role.Button,
+                    // Web radio has no folder to save, so there the tap goes straight to
+                    // the menu rather than doing nothing.
+                    onClick = { if (folderLabel != null) onToggleFolder() else menuOpen = true },
+                    onLongClick = { menuOpen = true },
+                    onLongClickLabel = stringResource(R.string.action_favourite_options),
+                )
+                // 24 dp icon in 12 dp of padding: the 48 dp touch target an IconButton
+                // would have given, kept while swapping in the long press.
+                .padding(12.dp)
+                .size(24.dp),
+        )
+
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            if (folderLabel != null) {
+                FavoriteMenuItem(
+                    text = stringResource(
+                        if (folderSaved) R.string.action_favourite_remove_folder
+                        else R.string.action_favourite_add_folder,
+                    ),
+                    detail = folderLabel,
+                    saved = folderSaved,
+                    onClick = {
+                        menuOpen = false
+                        onToggleFolder()
+                    },
+                )
+            }
+            if (trackLabel != null) {
+                FavoriteMenuItem(
+                    text = stringResource(
+                        if (trackSaved) R.string.action_favourite_remove_track
+                        else R.string.action_favourite_add_track,
+                    ),
+                    detail = trackLabel,
+                    saved = trackSaved,
+                    onClick = {
+                        menuOpen = false
+                        onToggleTrack()
+                    },
+                )
+            }
+        }
     }
 }
 

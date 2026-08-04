@@ -27,8 +27,7 @@ class FavoriteRepositoryImpl @Inject constructor(
     override suspend fun matching(boxId: String, target: PlayTarget): Favorite? = when (target) {
         is PlayTarget.Folder -> dao.findFolder(boxId, target.path)
         is PlayTarget.Album -> dao.findAlbum(boxId, target.albumArtist, target.album)
-        // Single tracks are not favouritable, so they never match one.
-        is PlayTarget.Track -> null
+        is PlayTarget.Track -> dao.findTrack(boxId, target.url)
     }?.toDomain()
 
     override suspend fun add(favorite: Favorite): Long {

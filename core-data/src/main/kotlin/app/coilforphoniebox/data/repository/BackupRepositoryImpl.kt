@@ -61,6 +61,8 @@ class BackupRepositoryImpl @Inject constructor(
         val folder: String? = null,
         val albumArtist: String? = null,
         val album: String? = null,
+        /** Added with format version 2, together with `TRACK` favourites. */
+        val trackUrl: String? = null,
         val sortIndex: Int = 0,
     )
 
@@ -92,6 +94,7 @@ class BackupRepositoryImpl @Inject constructor(
                             folder = favorite.folder,
                             albumArtist = favorite.albumArtist,
                             album = favorite.album,
+                            trackUrl = favorite.trackUrl,
                             sortIndex = favorite.sortIndex,
                         )
                     },
@@ -138,7 +141,8 @@ class BackupRepositoryImpl @Inject constructor(
                     .getOrDefault(FavoriteType.FOLDER)
                 val alreadyThere = existingFavorites.any {
                     it.type == type && it.folder == favorite.folder &&
-                        it.albumArtist == favorite.albumArtist && it.album == favorite.album
+                        it.albumArtist == favorite.albumArtist && it.album == favorite.album &&
+                        it.trackUrl == favorite.trackUrl
                 }
                 if (alreadyThere) continue
 
@@ -150,6 +154,7 @@ class BackupRepositoryImpl @Inject constructor(
                         folder = favorite.folder,
                         albumArtist = favorite.albumArtist,
                         album = favorite.album,
+                        trackUrl = favorite.trackUrl,
                         sortIndex = favorite.sortIndex,
                     ).toEntity(),
                 )
@@ -172,6 +177,11 @@ class BackupRepositoryImpl @Inject constructor(
     }
 
     private companion object {
-        const val FORMAT_VERSION = 1
+        /**
+         * 2 added `trackUrl`. The bump is deliberate even though the field is optional:
+         * an older build would import a `TRACK` row without its URL, which is a
+         * favourite that cannot play. Refusing the file says so instead.
+         */
+        const val FORMAT_VERSION = 2
     }
 }

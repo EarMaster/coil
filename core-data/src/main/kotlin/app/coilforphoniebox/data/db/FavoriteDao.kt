@@ -31,6 +31,11 @@ interface FavoriteDao {
     )
     suspend fun findAlbum(boxId: String, albumArtist: String, album: String): FavoriteEntity?
 
+    @Query(
+        "SELECT * FROM favorites WHERE boxId = :boxId AND type = 'TRACK' AND trackUrl = :trackUrl LIMIT 1",
+    )
+    suspend fun findTrack(boxId: String, trackUrl: String): FavoriteEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(favorite: FavoriteEntity): Long
 

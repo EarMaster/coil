@@ -30,8 +30,17 @@
     <string name="action_repeat">Repeat</string>
     <string name="action_repeat_one">Repeat one track</string>
     <string name="action_volume">Volume</string>
-    <string name="action_favourite_add">Save as favourite</string>
     <string name="action_favourite_remove">Remove from favourites</string>
+    <!-- Favourite actions name their target: from a playing song, "save this" could mean
+         the single track or the whole folder, and the user picks which. -->
+    <string name="action_favourite_add_folder">Save folder as favourite</string>
+    <string name="action_favourite_remove_folder">Remove folder from favourites</string>
+    <string name="action_favourite_add_track">Save track as favourite</string>
+    <string name="action_favourite_remove_track">Remove track from favourites</string>
+    <string name="action_favourite_add_album">Save album as favourite</string>
+    <string name="action_favourite_remove_album">Remove album from favourites</string>
+    <!-- Screen reader label for the long press on the favourite star. -->
+    <string name="action_favourite_options">Favourite options</string>
     <!-- Screen reader label for the volume slider. %1$d is a percentage. -->
     <string name="volume_percent">Volume %1$d%%</string>
 
@@ -69,9 +78,22 @@
     <string name="action_up">Up one level</string>
     <string name="action_refresh">Refresh</string>
 
+    <!-- Details sheet. Labels for what Coil already knows about an item; nothing here
+         asks the box for anything. -->
+    <string name="action_details">Details</string>
+    <!-- Folder path on the box, relative to its music library. -->
+    <string name="details_path">Path</string>
+    <string name="details_artist">Artist</string>
+    <string name="details_album">Album</string>
+    <string name="details_album_artist">Album artist</string>
+    <string name="details_track_number">Track number</string>
+    <string name="details_duration">Length</string>
+    <!-- Name of the audio file on the box. -->
+    <string name="details_file">File</string>
+
     <!-- Favourites screen -->
     <string name="favourites_empty_title">No favourites yet</string>
-    <string name="favourites_empty_body">Press and hold a folder or album in the library to save it here.</string>
+    <string name="favourites_empty_body">Open the menu next to a folder, album or track in the library to save it here.</string>
     <string name="favourites_added">Saved as favourite</string>
     <string name="favourites_removed">Favourite removed</string>
     <string name="action_add_to_home_screen">Add to home screen</string>

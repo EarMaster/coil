@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
+import app.coilforphoniebox.data.db.ALL_MIGRATIONS
 import app.coilforphoniebox.data.db.BoxDao
 import app.coilforphoniebox.data.db.CoilDatabase
 import app.coilforphoniebox.data.db.FavoriteDao
@@ -39,7 +40,11 @@ object DatabaseModule {
     fun provideDatabase(@ApplicationContext context: Context): CoilDatabase =
         // Room switches SQLite's foreign key enforcement on for us, which is what makes
         // the ON DELETE CASCADE on every child table actually fire.
-        Room.databaseBuilder(context, CoilDatabase::class.java, CoilDatabase.NAME).build()
+        Room.databaseBuilder(context, CoilDatabase::class.java, CoilDatabase.NAME)
+            // No destructive fallback on purpose: favourites are the one thing in here
+            // that cannot be rebuilt from the box.
+            .addMigrations(*ALL_MIGRATIONS)
+            .build()
 
     @Provides
     fun provideBoxDao(database: CoilDatabase): BoxDao = database.boxDao()

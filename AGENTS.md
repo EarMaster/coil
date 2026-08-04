@@ -255,6 +255,20 @@ still needs doing, in rough order of importance:
   stays in the single `strings.xml`. `:feature-shortcuts` therefore has no string resources at all.
   For the same reason the media notification's text reaches `:feature-media` through the
   `MediaNotificationTexts` interface, implemented in `:app`.
+- **A single track is favouritable**, which the plan's `FOLDER | ALBUM` favourite type (§6.3, §7.2)
+  does not allow. From a playing song, "save this" is genuinely ambiguous between the track and its
+  folder, so both are offered by name instead of one being guessed at: a tap on the player's star
+  saves the folder, a long press opens a menu with folder and track as separate entries. The cost is
+  a `TRACK` type plus a `trackUrl` column (Room schema **version 2**, migrated in
+  `core-data/.../db/Migrations.kt` — no destructive fallback, favourites are the one thing here that
+  cannot be rebuilt from the box), a `track` variant of the `coil://play` deep link, and settings
+  backup **format version 2**.
+- **Long press in the library opens a context menu, it does not toggle a favourite.** The plan (§14,
+  phase 2) has long press as the way to favourite something, which is undiscoverable and was the
+  only way to do it. Every library row and album cell now carries a ⋮ button, and both it and a long
+  press open the same three-entry menu: Play, save as favourite, and Details. The details sheet is
+  built strictly from cached data — opening it must never put a request on the RPC socket the box
+  shares with its card reader.
 - **`LibraryFolderEntity` has one column the plan's schema does not**: `contentCachedAt`, recording
   when a folder's *own* contents were last fetched, as opposed to when the row was written by its
   parent's listing. It is what drives the "Updated 3 days ago" hint per level.

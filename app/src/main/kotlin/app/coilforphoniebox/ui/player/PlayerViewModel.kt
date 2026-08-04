@@ -6,6 +6,7 @@ import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.Favorite
+import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
 import app.coilforphoniebox.domain.model.RepeatMode
@@ -51,10 +52,25 @@ class PlayerViewModel @Inject constructor(
         val coverUrl: String? = null,
         val activeBox: Box? = null,
         val boxCount: Int = 0,
-        /** The favourite matching what is playing, if there is one. */
+        /** The folder favourite matching what is playing, if there is one. */
         val currentFavorite: Favorite? = null,
+        /** The favourite for the playing file itself, if there is one. */
+        val currentTrackFavorite: Favorite? = null,
     ) {
-        val canFavourite: Boolean get() = activeBox != null && status.folder != null
+        val canFavourite: Boolean get() = activeBox != null && (status.folder != null || status.file != null)
+
+        /** The folder is the star's single-tap target, so it needs its own condition. */
+        val canFavouriteFolder: Boolean get() = activeBox != null && status.folder != null
+
+        val canFavouriteTrack: Boolean get() = activeBox != null && status.file != null
+
+        /** Folder name as shown in the menu, so it is clear what a folder star saves. */
+        val folderLabel: String? get() = status.folder?.let { folderLabelFor(it) }
+
+        /** Track name as shown in the menu; the tags first, the file name as a fallback. */
+        val trackLabel: String? get() = status.file?.let { file ->
+            status.title?.takeIf { it.isNotBlank() } ?: file.substringAfterLast('/')
+        }
     }
 
     private val messageChannel = MutableSharedFlow<UiMessage>(
@@ -68,24 +84,42 @@ class PlayerViewModel @Inject constructor(
      * messages a second whether or not anything moved, so narrowing before combining
      * keeps recomposition off the idle path (§4.2.3).
      */
-    private val favoriteForCurrentFolder: Flow<Favorite?> = combine(
+    private val favoritesForCurrentContent: Flow<Pair<Favorite?, Favorite?>> = combine(
         boxes.activeBox.map { it?.id }.distinctUntilChanged(),
-        player.status.map { it.folder }.distinctUntilChanged(),
-    ) { boxId, folder -> boxId to folder }
-        .flatMapLatest { (boxId, folder) ->
-            if (boxId == null || folder == null) flowOf(null)
-            else favorites.favorites(boxId).map { list ->
-                list.firstOrNull { it.folder == folder }
+        player.status.map { it.folder to it.file }.distinctUntilChanged(),
+    ) { boxId, content -> boxId to content }
+        .flatMapLatest { (boxId, content) ->
+            val (folder, file) = content
+            if (boxId == null || (folder == null && file == null)) {
+                flowOf(null to null)
+            } else {
+                favorites.favorites(boxId).map { list ->
+                    val folderFavorite = folder?.let { path ->
+                        list.firstOrNull { it.type == FavoriteType.FOLDER && it.folder == path }
+                    }
+                    val trackFavorite = file?.let { url ->
+                        list.firstOrNull { it.type == FavoriteType.TRACK && it.trackUrl == url }
+                    }
+                    folderFavorite to trackFavorite
+                }
             }
         }
+
+    /** The box-side inputs, bundled so the outer [combine] stays within five sources. */
+    private data class BoxInfo(
+        val box: Box? = null,
+        val boxCount: Int = 0,
+        val folderFavorite: Favorite? = null,
+        val trackFavorite: Favorite? = null,
+    )
 
     val state: StateFlow<State> = combine(
         player.status,
         player.volume,
         player.connectionState,
         player.coverUrl,
-        combine(boxes.activeBox, boxes.boxes, favoriteForCurrentFolder) { box, all, favorite ->
-            Triple(box, all.size, favorite)
+        combine(boxes.activeBox, boxes.boxes, favoritesForCurrentContent) { box, all, favorites ->
+            BoxInfo(box, all.size, favorites.first, favorites.second)
         },
     ) { status, volume, connection, coverUrl, boxInfo ->
         State(
@@ -93,9 +127,10 @@ class PlayerViewModel @Inject constructor(
             volume = volume,
             connection = connection,
             coverUrl = coverUrl,
-            activeBox = boxInfo.first,
-            boxCount = boxInfo.second,
-            currentFavorite = boxInfo.third,
+            activeBox = boxInfo.box,
+            boxCount = boxInfo.boxCount,
+            currentFavorite = boxInfo.folderFavorite,
+            currentTrackFavorite = boxInfo.trackFavorite,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
 
@@ -173,10 +208,14 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
-     * Saves what is playing as a favourite, or removes it again. The label is the folder's
-     * own name — content from the box, so it is used exactly as it comes (§12.4).
+     * Saves the folder the playing song sits in, or removes it again. This is what the
+     * star's single tap does; the long press menu offers the track as well, because from
+     * a playing song alone "save this" is ambiguous between the two.
+     *
+     * The label is the folder's own name — content from the box, so it is used exactly as
+     * it comes (§12.4).
      */
-    fun toggleFavorite() {
+    fun toggleFolderFavorite() {
         val current = state.value
         val boxId = current.activeBox?.id ?: return
         val folder = current.status.folder ?: return
@@ -189,9 +228,27 @@ class PlayerViewModel @Inject constructor(
                 return@launch
             }
 
-            val label = folder.substringAfterLast('/').ifBlank { folder }
-            val favorite = Favorite.of(boxId, label, PlayTarget.Folder(folder)) ?: return@launch
-            favorites.add(favorite)
+            favorites.add(Favorite.of(boxId, folderLabelFor(folder), PlayTarget.Folder(folder)))
+            messageChannel.emit(UiMessage(R.string.favourites_added))
+        }
+    }
+
+    /** Saves the playing file itself, or removes it again. */
+    fun toggleTrackFavorite() {
+        val current = state.value
+        val boxId = current.activeBox?.id ?: return
+        val file = current.status.file ?: return
+        val label = current.trackLabel ?: return
+
+        viewModelScope.launch {
+            val existing = current.currentTrackFavorite
+            if (existing != null) {
+                favorites.remove(existing.id)
+                messageChannel.emit(UiMessage(R.string.favourites_removed))
+                return@launch
+            }
+
+            favorites.add(Favorite.of(boxId, label, PlayTarget.Track(file)))
             messageChannel.emit(UiMessage(R.string.favourites_added))
         }
     }
@@ -220,3 +277,10 @@ class PlayerViewModel @Inject constructor(
         const val VOLUME_RELEASE_MILLIS = 600L
     }
 }
+
+/**
+ * Last segment of a folder path, which is the name the user recognises. A path with no
+ * separator in it is already the name.
+ */
+private fun folderLabelFor(folder: String): String =
+    folder.substringAfterLast('/').ifBlank { folder }

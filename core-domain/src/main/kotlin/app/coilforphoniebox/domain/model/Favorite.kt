@@ -1,6 +1,6 @@
 package app.coilforphoniebox.domain.model
 
-enum class FavoriteType { FOLDER, ALBUM }
+enum class FavoriteType { FOLDER, ALBUM, TRACK }
 
 /**
  * Favourites are scoped per box on purpose (§7.2): a folder path that exists on one
@@ -15,24 +15,29 @@ data class Favorite(
     val folder: String? = null,
     val albumArtist: String? = null,
     val album: String? = null,
+    /** MPD URL of a single file, for a TRACK favourite. */
+    val trackUrl: String? = null,
     val coverFile: String? = null,
     val sortIndex: Int = 0,
     val launchCount: Int = 0,
     val shortcutPinned: Boolean = false,
 ) {
     /**
-     * Returns null for a row that cannot be played — a FOLDER without a path or an
-     * ALBUM without its two keys — rather than throwing on data that reached the
-     * database through an import.
+     * Returns null for a row that cannot be played — a FOLDER without a path, an
+     * ALBUM without its two keys, a TRACK without its URL — rather than throwing on
+     * data that reached the database through an import.
      */
     fun toPlayTarget(): PlayTarget? = when (type) {
         FavoriteType.FOLDER -> folder?.let { PlayTarget.Folder(it) }
         FavoriteType.ALBUM ->
             if (albumArtist != null && album != null) PlayTarget.Album(albumArtist, album) else null
+
+        FavoriteType.TRACK -> trackUrl?.let { PlayTarget.Track(it) }
     }
 
     companion object {
-        fun of(boxId: String, label: String, target: PlayTarget, coverFile: String? = null): Favorite? =
+        /** Every play target is favouritable, so this always produces a row. */
+        fun of(boxId: String, label: String, target: PlayTarget, coverFile: String? = null): Favorite =
             when (target) {
                 is PlayTarget.Folder -> Favorite(
                     boxId = boxId,
@@ -51,9 +56,16 @@ data class Favorite(
                     coverFile = coverFile,
                 )
 
-                // A single track is playable but deliberately not favouritable:
-                // one tap should start something worth listening to, not one file.
-                is PlayTarget.Track -> null
+                // A single track is a favourite of its own kind. The player and the
+                // library both offer folder *and* track explicitly, because from a
+                // playing song alone it is not obvious which one a star would save.
+                is PlayTarget.Track -> Favorite(
+                    boxId = boxId,
+                    label = label,
+                    type = FavoriteType.TRACK,
+                    trackUrl = target.url,
+                    coverFile = coverFile,
+                )
             }
     }
 }

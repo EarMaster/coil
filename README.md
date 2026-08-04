@@ -32,7 +32,7 @@ Screenshots go here once captured. Suggested layout:
 - **Player** with cover art, scrubbing, transport controls and volume
 - **Library browsing** by folder or album, play anything you find
 - **Lock screen and notification controls** that appear on their own when the box starts playing, and can be switched off entirely
-- **Favourites** with home screen shortcuts, so one tap starts an audiobook without opening the app
+- **Favourites** for a folder, an album or a single track, with home screen shortcuts, so one tap starts an audiobook without opening the app
 - **Multiple boxes** — one per room, switched from the top bar, each with its own favourites
 - **Hardware volume buttons** control the box while the media session is active
 - **Dark mode** built for bedtime rather than bolted on

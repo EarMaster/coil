@@ -207,7 +207,7 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    /** Long press on a row: save it as a favourite, or take it out again. */
+    /** From a row's context menu: save that exact target as a favourite, or take it out again. */
     fun toggleFavorite(label: String, target: PlayTarget, coverFile: String? = null) {
         val boxId = activeBox.value?.id ?: return
         viewModelScope.launch {
@@ -217,8 +217,7 @@ class LibraryViewModel @Inject constructor(
                 messageChannel.emit(UiMessage(R.string.favourites_removed))
                 return@launch
             }
-            val favorite = Favorite.of(boxId, label, target, coverFile) ?: return@launch
-            favorites.add(favorite)
+            favorites.add(Favorite.of(boxId, label, target, coverFile))
             messageChannel.emit(UiMessage(R.string.favourites_added))
         }
     }

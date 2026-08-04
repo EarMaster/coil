@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,11 +37,13 @@ fun CoverArt(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 18.dp,
     placeholderIconSize: Dp = 40.dp,
+    /** What stands in for missing artwork — a folder has no cover, but it has a shape. */
+    placeholderIcon: ImageVector = Icons.Rounded.Album,
 ) {
     val shape = RoundedCornerShape(cornerRadius)
 
     if (url == null) {
-        CoverPlaceholder(modifier.clip(shape), placeholderIconSize)
+        CoverPlaceholder(modifier.clip(shape), placeholderIconSize, placeholderIcon)
         return
     }
 
@@ -49,19 +52,19 @@ fun CoverArt(
         contentDescription = contentDescription,
         contentScale = ContentScale.Crop,
         modifier = modifier.clip(shape),
-        loading = { CoverPlaceholder(Modifier.fillMaxSize(), placeholderIconSize) },
-        error = { CoverPlaceholder(Modifier.fillMaxSize(), placeholderIconSize) },
+        loading = { CoverPlaceholder(Modifier.fillMaxSize(), placeholderIconSize, placeholderIcon) },
+        error = { CoverPlaceholder(Modifier.fillMaxSize(), placeholderIconSize, placeholderIcon) },
     )
 }
 
 @Composable
-private fun CoverPlaceholder(modifier: Modifier, iconSize: Dp) {
+private fun CoverPlaceholder(modifier: Modifier, iconSize: Dp, icon: ImageVector) {
     Box(
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = Icons.Rounded.Album,
+            imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(iconSize),

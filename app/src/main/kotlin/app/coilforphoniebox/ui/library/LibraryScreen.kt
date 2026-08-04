@@ -28,8 +28,12 @@ import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.FolderOff
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -57,8 +62,14 @@ import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryFolder
 import app.coilforphoniebox.domain.model.LibraryTrack
 import app.coilforphoniebox.domain.model.PlayTarget
+import app.coilforphoniebox.ui.components.ActionMenuItem
 import app.coilforphoniebox.ui.components.CoverArt
+import app.coilforphoniebox.ui.components.DetailRow
+import app.coilforphoniebox.ui.components.DetailsSheet
 import app.coilforphoniebox.ui.components.EmptyState
+import app.coilforphoniebox.ui.components.FavoriteMenuItem
+import app.coilforphoniebox.ui.components.formatDuration
+import app.coilforphoniebox.ui.components.formatNumber
 import app.coilforphoniebox.ui.components.rememberFreshnessLabel
 
 private const val TAB_FOLDERS = 0
@@ -98,6 +109,45 @@ private fun FolderTab(viewModel: LibraryViewModel) {
     val state by viewModel.folderState.collectAsStateWithLifecycle()
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.content.cachedAt)
+    var details by remember { mutableStateOf<DetailsTarget?>(null) }
+
+    // Starting playback closes the sheet; favouriting from it does not, because the star
+    // filling in is the confirmation — a snackbar would sit behind the sheet unseen.
+    when (val target = details) {
+        is DetailsTarget.Folder -> FolderDetailsSheet(
+            folder = target.folder,
+            favourite = "folder:${target.folder.path}" in favouriteKeys,
+            onPlay = {
+                details = null
+                viewModel.play(PlayTarget.Folder(target.folder.path))
+            },
+            onToggleFavourite = {
+                viewModel.toggleFavorite(
+                    target.folder.displayName,
+                    PlayTarget.Folder(target.folder.path),
+                )
+            },
+            onDismiss = { details = null },
+        )
+
+        is DetailsTarget.Track -> TrackDetailsSheet(
+            track = target.track,
+            favourite = "track:${target.track.url}" in favouriteKeys,
+            onPlay = {
+                details = null
+                viewModel.play(PlayTarget.Track(target.track.url))
+            },
+            onToggleFavourite = {
+                viewModel.toggleFavorite(
+                    target.track.displayTitle,
+                    PlayTarget.Track(target.track.url),
+                )
+            },
+            onDismiss = { details = null },
+        )
+
+        null -> Unit
+    }
 
     Column(Modifier.fillMaxSize()) {
         Breadcrumb(
@@ -132,13 +182,19 @@ private fun FolderTab(viewModel: LibraryViewModel) {
                     onToggleFavourite = {
                         viewModel.toggleFavorite(folder.displayName, PlayTarget.Folder(folder.path))
                     },
+                    onDetails = { details = DetailsTarget.Folder(folder) },
                 )
             }
 
             items(state.content.tracks, key = { it.url }) { track ->
                 TrackRow(
                     track = track,
+                    favourite = "track:${track.url}" in favouriteKeys,
                     onPlay = { viewModel.play(PlayTarget.Track(track.url)) },
+                    onToggleFavourite = {
+                        viewModel.toggleFavorite(track.displayTitle, PlayTarget.Track(track.url))
+                    },
+                    onDetails = { details = DetailsTarget.Track(track) },
                 )
             }
 
@@ -215,6 +271,11 @@ private fun Breadcrumb(
     }
 }
 
+/**
+ * A folder. Tapping opens it, the note button plays it, and both the ⋮ button and a long
+ * press open the same menu — the long press alone was the only way to favourite a folder,
+ * which is not something a user finds by accident.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FolderRow(
@@ -223,16 +284,23 @@ private fun FolderRow(
     onOpen: () -> Unit,
     onPlay: () -> Unit,
     onToggleFavourite: () -> Unit,
+    onDetails: () -> Unit,
 ) {
+    var menuOpen by remember { mutableStateOf(false) }
+
     Surface(
         shape = RoundedCornerShape(13.dp),
         color = MaterialTheme.colorScheme.surface,
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onOpen, onLongClick = onToggleFavourite),
+            .combinedClickable(
+                onClick = onOpen,
+                onLongClick = { menuOpen = true },
+                onLongClickLabel = stringResource(R.string.action_more),
+            ),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 11.dp, vertical = 10.dp),
+            modifier = Modifier.padding(start = 11.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RowIcon(Icons.Rounded.Folder)
@@ -259,21 +327,47 @@ private fun FolderRow(
                     contentDescription = stringResource(R.string.action_play_folder),
                 )
             }
+            ItemMenu(
+                expanded = menuOpen,
+                onExpandedChange = { menuOpen = it },
+                playLabel = stringResource(R.string.action_play_folder),
+                favouriteLabel = stringResource(
+                    if (favourite) R.string.action_favourite_remove_folder
+                    else R.string.action_favourite_add_folder,
+                ),
+                favourite = favourite,
+                onPlay = onPlay,
+                onToggleFavourite = onToggleFavourite,
+                onDetails = onDetails,
+            )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TrackRow(track: LibraryTrack, onPlay: () -> Unit) {
+private fun TrackRow(
+    track: LibraryTrack,
+    favourite: Boolean,
+    onPlay: () -> Unit,
+    onToggleFavourite: () -> Unit,
+    onDetails: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+
     Surface(
         shape = RoundedCornerShape(13.dp),
         color = MaterialTheme.colorScheme.surface,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onPlay),
+            .combinedClickable(
+                onClick = onPlay,
+                onLongClick = { menuOpen = true },
+                onLongClickLabel = stringResource(R.string.action_more),
+            ),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 11.dp, vertical = 10.dp),
+            modifier = Modifier.padding(start = 11.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RowIcon(Icons.Rounded.MusicNote)
@@ -284,6 +378,83 @@ private fun TrackRow(track: LibraryTrack, onPlay: () -> Unit) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
+            )
+            if (favourite) {
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = stringResource(R.string.action_favourite_remove),
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+            }
+            ItemMenu(
+                expanded = menuOpen,
+                onExpandedChange = { menuOpen = it },
+                playLabel = stringResource(R.string.action_play),
+                favouriteLabel = stringResource(
+                    if (favourite) R.string.action_favourite_remove_track
+                    else R.string.action_favourite_add_track,
+                ),
+                favourite = favourite,
+                onPlay = onPlay,
+                onToggleFavourite = onToggleFavourite,
+                onDetails = onDetails,
+            )
+        }
+    }
+}
+
+/**
+ * The ⋮ button and the menu behind it, shared by folders, tracks and albums. Its three
+ * entries are the same everywhere; only the wording of the first two changes with the kind
+ * of item, so that "Play" and "Save as favourite" never leave open *what* is meant.
+ */
+@Composable
+private fun ItemMenu(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    playLabel: String,
+    favouriteLabel: String,
+    favourite: Boolean,
+    onPlay: () -> Unit,
+    onToggleFavourite: () -> Unit,
+    onDetails: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier) {
+        IconButton(onClick = { onExpandedChange(true) }) {
+            Icon(
+                imageVector = Icons.Rounded.MoreVert,
+                contentDescription = stringResource(R.string.action_more),
+            )
+        }
+
+        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
+            ActionMenuItem(
+                text = playLabel,
+                icon = Icons.Rounded.PlayArrow,
+                onClick = {
+                    onExpandedChange(false)
+                    onPlay()
+                },
+            )
+            FavoriteMenuItem(
+                text = favouriteLabel,
+                detail = null,
+                saved = favourite,
+                onClick = {
+                    onExpandedChange(false)
+                    onToggleFavourite()
+                },
+            )
+            ActionMenuItem(
+                text = stringResource(R.string.action_details),
+                icon = Icons.Rounded.Info,
+                onClick = {
+                    onExpandedChange(false)
+                    onDetails()
+                },
             )
         }
     }
@@ -313,9 +484,30 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.cachedAt)
+    var details by remember { mutableStateOf<LibraryAlbum?>(null) }
 
     // Opening the tab is what asks the box for its albums the first time.
     LaunchedEffect(activeBox?.id) { viewModel.onAlbumsShown() }
+
+    details?.let { album ->
+        AlbumDetailsSheet(
+            album = album,
+            box = activeBox,
+            favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
+            onPlay = {
+                details = null
+                viewModel.play(PlayTarget.Album(album.albumArtist, album.album))
+            },
+            onToggleFavourite = {
+                viewModel.toggleFavorite(
+                    label = album.album,
+                    target = PlayTarget.Album(album.albumArtist, album.album),
+                    coverFile = album.coverFile,
+                )
+            },
+            onDismiss = { details = null },
+        )
+    }
 
     if (state.albums.isEmpty() && !state.refreshing) {
         EmptyState(
@@ -348,6 +540,7 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
                         coverFile = album.coverFile,
                     )
                 },
+                onDetails = { details = album },
             )
         }
 
@@ -373,7 +566,10 @@ private fun AlbumCell(
     onRequestCover: () -> Unit,
     onPlay: () -> Unit,
     onToggleFavourite: () -> Unit,
+    onDetails: () -> Unit,
 ) {
+    var menuOpen by remember { mutableStateOf(false) }
+
     // Covers are fetched as cells appear rather than all at once during a refresh: one
     // RPC per album on a socket the box shares with its card reader (§6).
     LaunchedEffect(album.albumArtist, album.album, album.coverFile) {
@@ -385,7 +581,11 @@ private fun AlbumCell(
     }
 
     Column(
-        Modifier.combinedClickable(onClick = onPlay, onLongClick = onToggleFavourite),
+        Modifier.combinedClickable(
+            onClick = onPlay,
+            onLongClick = { menuOpen = true },
+            onLongClickLabel = stringResource(R.string.action_more),
+        ),
     ) {
         Box {
             CoverArt(
@@ -402,11 +602,27 @@ private fun AlbumCell(
                     contentDescription = stringResource(R.string.action_favourite_remove),
                     tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
+                        .align(Alignment.TopStart)
                         .padding(6.dp)
                         .size(20.dp),
                 )
             }
+            // Over the artwork rather than under the title: the grid has no spare row,
+            // and the star badge moves to the opposite corner to make room.
+            ItemMenu(
+                expanded = menuOpen,
+                onExpandedChange = { menuOpen = it },
+                playLabel = stringResource(R.string.action_play),
+                favouriteLabel = stringResource(
+                    if (favourite) R.string.action_favourite_remove_album
+                    else R.string.action_favourite_add_album,
+                ),
+                favourite = favourite,
+                onPlay = onPlay,
+                onToggleFavourite = onToggleFavourite,
+                onDetails = onDetails,
+                modifier = Modifier.align(Alignment.TopEnd),
+            )
         }
         Spacer(Modifier.height(6.dp))
         Text(
@@ -424,6 +640,128 @@ private fun AlbumCell(
         )
         Spacer(Modifier.height(4.dp))
     }
+}
+
+/** What the folder tab is currently showing details for. */
+private sealed interface DetailsTarget {
+    data class Folder(val folder: LibraryFolder) : DetailsTarget
+
+    data class Track(val track: LibraryTrack) : DetailsTarget
+}
+
+/**
+ * The three details sheets differ only in which fields exist for the kind of item, all of
+ * them read from the cache. Nothing here asks the box anything (§6).
+ */
+@Composable
+private fun FolderDetailsSheet(
+    folder: LibraryFolder,
+    favourite: Boolean,
+    onPlay: () -> Unit,
+    onToggleFavourite: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    DetailsSheet(
+        title = folder.displayName,
+        subtitle = null,
+        coverUrl = null,
+        placeholderIcon = Icons.Rounded.Folder,
+        rows = listOf(
+            DetailRow(
+                label = stringResource(R.string.details_path),
+                // The root's children have a bare name as their path, which is still the
+                // path the box takes.
+                value = folder.path,
+            ),
+        ),
+        footnote = rememberFreshnessLabel(folder.cachedAt),
+        favouriteLabel = stringResource(
+            if (favourite) R.string.action_favourite_remove_folder
+            else R.string.action_favourite_add_folder,
+        ),
+        favourite = favourite,
+        onToggleFavourite = onToggleFavourite,
+        onPlay = onPlay,
+        onDismiss = onDismiss,
+    )
+}
+
+@Composable
+private fun TrackDetailsSheet(
+    track: LibraryTrack,
+    favourite: Boolean,
+    onPlay: () -> Unit,
+    onToggleFavourite: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val rows = buildList {
+        track.artist?.takeIf { it.isNotBlank() }?.let {
+            add(DetailRow(stringResource(R.string.details_artist), it))
+        }
+        track.album?.takeIf { it.isNotBlank() }?.let {
+            add(DetailRow(stringResource(R.string.details_album), it))
+        }
+        track.trackNo?.let {
+            add(DetailRow(stringResource(R.string.details_track_number), formatNumber(it)))
+        }
+        track.durationSeconds?.takeIf { it > 0 }?.let {
+            add(DetailRow(stringResource(R.string.details_duration), formatDuration(it)))
+        }
+        add(DetailRow(stringResource(R.string.details_file), track.url))
+    }
+
+    DetailsSheet(
+        title = track.displayTitle,
+        subtitle = track.artist?.takeIf { it.isNotBlank() },
+        coverUrl = null,
+        placeholderIcon = Icons.Rounded.MusicNote,
+        rows = rows,
+        footnote = null,
+        favouriteLabel = stringResource(
+            if (favourite) R.string.action_favourite_remove_track
+            else R.string.action_favourite_add_track,
+        ),
+        favourite = favourite,
+        onToggleFavourite = onToggleFavourite,
+        onPlay = onPlay,
+        onDismiss = onDismiss,
+    )
+}
+
+@Composable
+private fun AlbumDetailsSheet(
+    album: LibraryAlbum,
+    box: PhonieBox?,
+    favourite: Boolean,
+    onPlay: () -> Unit,
+    onToggleFavourite: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val coverUrl = remember(album.coverFile, box?.host) {
+        album.coverFile?.let { file -> box?.coverUrl(file) }
+    }
+
+    DetailsSheet(
+        title = album.album.ifBlank { stringResource(R.string.library_unknown_album) },
+        subtitle = album.albumArtist.ifBlank { stringResource(R.string.library_unknown_artist) },
+        coverUrl = coverUrl,
+        placeholderIcon = Icons.Rounded.Album,
+        rows = listOf(
+            DetailRow(
+                label = stringResource(R.string.details_album_artist),
+                value = album.albumArtist.ifBlank { stringResource(R.string.library_unknown_artist) },
+            ),
+        ),
+        footnote = rememberFreshnessLabel(album.cachedAt),
+        favouriteLabel = stringResource(
+            if (favourite) R.string.action_favourite_remove_album
+            else R.string.action_favourite_add_album,
+        ),
+        favourite = favourite,
+        onToggleFavourite = onToggleFavourite,
+        onPlay = onPlay,
+        onDismiss = onDismiss,
+    )
 }
 
 /** Path separator between breadcrumb segments; not translated. */

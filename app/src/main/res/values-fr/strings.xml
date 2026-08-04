@@ -28,7 +28,6 @@
     <string name="action_repeat">Répéter</string>
     <string name="action_repeat_one">Répéter une piste</string>
     <string name="action_volume">Volume</string>
-    <string name="action_favourite_add">Ajouter aux favoris</string>
     <string name="action_favourite_remove">Retirer des favoris</string>
     <string name="volume_percent">Volume %1$d%%</string>
 

@@ -27,7 +27,6 @@
     <string name="action_repeat">Herhalen</string>
     <string name="action_repeat_one">Eén nummer herhalen</string>
     <string name="action_volume">Volume</string>
-    <string name="action_favourite_add">Als favoriet opslaan</string>
     <string name="action_favourite_remove">Uit favorieten verwijderen</string>
     <string name="volume_percent">Volume %1$d%%</string>
 

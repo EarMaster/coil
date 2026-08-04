@@ -36,15 +36,43 @@ jobs:
       contents: read
 
     steps:
+      # Check out the tag being deployed, not the default branch: the versionCode below and the
+      # release notes keyed by it must come from the same commit the AAB was built from.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
 
       - name: Resolve tag and version
         id: resolve
         run: |
           TAG="${{ inputs.tag || github.event.release.tag_name }}"
           VERSION="${TAG#v}"
+          CODE=$(sed -n 's/.*versionCode[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' app/build.gradle.kts | head -1)
+          NAME=$(sed -n 's/.*versionName[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' app/build.gradle.kts | head -1)
+
+          if [ -z "$CODE" ]; then
+            echo "::error::Could not read versionCode from app/build.gradle.kts"
+            exit 1
+          fi
+
+          # Guards against deploying a tag whose version bump never landed — that would pick
+          # the previous release's notes and upload them under the new version.
+          if [ "$NAME" != "$VERSION" ]; then
+            echo "::error::Tag $TAG implies versionName $VERSION but app/build.gradle.kts says $NAME"
+            exit 1
+          fi
+
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "Deploying $TAG — versionName $NAME, versionCode $CODE"
+
+      # Fails the deploy if any locale is missing release notes for this versionCode, or if any
+      # locale's text is over Play's per-locale character limit.
+      # Invoked via `bash` deliberately: the repo is developed on Windows with core.filemode=false,
+      # so the script's executable bit is not recorded and `./tools/...` would fail here.
+      - name: Validate store metadata
+        run: bash tools/check_store_metadata.sh "${{ steps.resolve.outputs.code }}"
 
       - name: Download AAB and mapping from GitHub Release
         env:
@@ -56,14 +84,19 @@ jobs:
             --pattern "mapping.txt" \
             --dir release-assets
 
+      # Translate fastlane's layout (<locale>/changelogs/<versionCode>.txt) into the flat
+      # whatsnew-<locale> naming upload-google-play expects. The validate step above already
+      # guaranteed every launch locale has a file here.
       - name: Prepare what's new
         run: |
-          VERSION="${{ steps.resolve.outputs.version }}"
+          CODE="${{ steps.resolve.outputs.code }}"
           mkdir -p whatsnew
-          for FILE in docs/whatsnew/${VERSION}-*; do
+          for DIR in fastlane/metadata/android/*/; do
+            LOCALE=$(basename "$DIR")
+            FILE="${DIR}changelogs/${CODE}.txt"
             if [ -f "$FILE" ]; then
-              LOCALE=$(basename "$FILE" | sed "s/^${VERSION}-//")
               cp "$FILE" "whatsnew/whatsnew-${LOCALE}"
+              echo "release notes: $LOCALE"
             fi
           done
 

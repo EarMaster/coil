@@ -1,0 +1,14 @@
+Phoniebox maakt van een Raspberry Pi een RFID-jukebox: kaartje op de box leggen, de weergave start. Er zit een webinterface bij die op een computer prima werkt en op een telefoon onhandig is.
+
+coil is een volwaardige Android-app voor hetzelfde werk. Openen, zien wat er speelt, iets anders kiezen, telefoon weer teruggeven. Zodra de box begint te spelen, verschijnt de bediening op je vergrendelscherm — de app hoeft er niet voor open.
+
+- Speler met hoes, voortgangsbalk, bedieningstoetsen en volume
+- Bibliotheek doorbladeren per map of album en alles direct afspelen
+- Bediening op het vergrendelscherm en in de melding, verschijnt van zichzelf zodra de box speelt en kan helemaal uit
+- Favorieten met snelkoppelingen op het startscherm: één tik start een luisterboek of album zonder de app te openen
+- Meerdere boxen — één per kamer, wisselen via de balk bovenaan, elk met eigen favorieten
+- De volumetoetsen van de telefoon regelen de box zolang de weergave actief is
+
+coil houdt alles op je toestel en in je eigen netwerk. Geen account, geen telemetrie, geen cloud.
+
+coil is een onafhankelijke client van derden. De app is niet verbonden met het Phoniebox-project en wordt daar niet door onderschreven. Phoniebox is het werk van MiczFlor en andere bijdragers.

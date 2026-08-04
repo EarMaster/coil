@@ -1,0 +1,14 @@
+Phoniebox transforme un Raspberry Pi en juke-box RFID : on pose une carte sur la box et la lecture démarre. Elle est livrée avec une interface web, à l'aise sur un ordinateur et malcommode sur un téléphone.
+
+coil est une véritable application Android pour le même usage. Vous l'ouvrez, vous voyez ce qui est en cours, vous choisissez autre chose, vous rendez le téléphone. Dès que la box se met à jouer, les commandes de lecture apparaissent sur votre écran de verrouillage, sans avoir à lancer l'application.
+
+- Lecteur avec pochette, barre de progression, commandes de lecture et volume
+- Bibliothèque à parcourir par dossier ou par album, avec lecture immédiate
+- Commandes sur l'écran de verrouillage et dans la notification, qui apparaissent d'elles-mêmes dès que la box joue et peuvent être désactivées entièrement
+- Favoris avec raccourcis sur l'écran d'accueil : un appui lance un livre audio ou un album sans ouvrir l'application
+- Plusieurs box : une par pièce, changement depuis la barre du haut, chacune avec ses propres favoris
+- Les touches de volume du téléphone règlent la box tant que la lecture est active
+
+coil garde tout sur votre appareil et sur votre réseau. Aucun compte, aucune télémétrie, aucun cloud.
+
+coil est un client indépendant, développé par un tiers. Il n'est ni affilié au projet Phoniebox ni approuvé par lui. Phoniebox est l'œuvre de MiczFlor et de ses contributeurs.

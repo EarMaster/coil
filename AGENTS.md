@@ -28,8 +28,10 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 | `docs/protocol-notes.md` | Condensed Phoniebox v3 ZMQ protocol reference, distilled from the upstream Python source. |
 | `docs/pages/` | The GitHub Pages site (Jekyll), deployed by `pages.yml` — landing page and privacy policy, served at `coilforphoniebox.app` via the `CNAME` file in this folder. Kept separate from the planning docs above so the Pages *site* only contains user-facing content — the planning docs are still public in the repo, just not part of the deployed website. |
 | `spike/` | Standalone Gradle/Kotlin JVM project validating the transport approach (JeroMQ DEALER client) against a real box, independent of Android. |
+| `tools/check_store_metadata.sh` | Validates `fastlane/metadata/android/` against Play's per-locale character limits (title 30, short 80, full 4000, release notes 500). Pass a versionCode to also require release notes in every launch locale. Run by `/release` and by `google-play.yml`. Counts characters as bytes-minus-UTF-8-continuation-bytes rather than using `wc -m`, which silently counts bytes in a non-UTF-8 shell locale. |
 | `tools/probe_phoniebox.py` | Python/pyzmq script that does the same validation from the other side (REQ vs DEALER framing, pipelining, PubSub schema dump) — used to sanity-check protocol assumptions against a live box before trusting them in Kotlin. |
 | `android/` | Original reference bundle for theme and adaptive icon XML. Now **copied into `app/`** and kept only as the source of those files' provenance; edit the copies under `app/src/main/`, not these. |
+| `fastlane/metadata/android/` | All Play Store text, one folder per locale in `fastlane supply` layout: `title.txt`, `short_description.txt`, `full_description.txt`, and release notes at `changelogs/{versionCode}.txt`. Written by `/release`, validated by `tools/check_store_metadata.sh`, consumed by `google-play.yml`. See that folder's `README.md`. |
 | `brand/` | Logo mark SVG. |
 | `mockup/` | Static HTML UI mockup (`coil-mockup.html`) — visual reference only, not implementation. |
 | `CHANGELOG.md` | [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)-format history. **Update the `## [Unreleased]` section as part of any user-facing change** — new feature, fix, or behaviour change. `release.yml` extracts release notes straight from the `## [x.y.z]` heading matching `versionName`, so headings must stay exact and the `Unreleased` section shouldn't go stale. |
@@ -48,7 +50,13 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
   from `CHANGELOG.md`'s `## [x.y.z]` heading matching `versionName` — see that file's own note.
 - `google-play.yml` — reusable workflow (`workflow_call`/manual dispatch) that uploads a tagged
   release's AAB to Google Play, package `app.coilforphoniebox`. Needs a `SERVICE_ACCOUNT_JSON`
-  repo secret and an active Play Console listing.
+  repo secret and an active Play Console listing. Checks out the *tag* (not the default branch)
+  so the `versionCode` it reads from `app/build.gradle.kts` matches the AAB, and aborts if that
+  file's `versionName` disagrees with the tag. Release notes come from
+  `fastlane/metadata/android/{locale}/changelogs/{versionCode}.txt`, gated by
+  `tools/check_store_metadata.sh` — a missing or over-limit locale fails the deploy. It does
+  **not** upload listing text (title/descriptions) yet; `r0adkll/upload-google-play` handles only
+  the AAB, mapping and release notes.
 - `pages.yml` — deploys `docs/pages/` via Jekyll to GitHub Pages on push to `main` (path-filtered
   to `docs/pages/**`). GitHub Pages must be enabled in repo settings with source "GitHub Actions",
   and the `coilforphoniebox.app` DNS must point at GitHub Pages, for the `CNAME` file in
@@ -78,9 +86,11 @@ initiate unprompted.
   `Unreleased` section when the change is user-facing, and offers to push (to a branch — `main`
   is protected).
 - `/release` — bumps `versionName`/`versionCode` in `app/build.gradle.kts`, stamps the
-  `CHANGELOG.md` `Unreleased` section with the new version, and generates
-  `docs/whatsnew/X.Y.Z-{locale}` files for `en-US`/`de-DE`/`fr-FR`/`es-ES`/`nl-NL` (the format
-  `google-play.yml` expects). Gated on `app/build.gradle.kts` existing, which it now does.
+  `CHANGELOG.md` `Unreleased` section with the new version, and generates release notes at
+  `fastlane/metadata/android/{locale}/changelogs/{versionCode}.txt` for all five launch locales,
+  then verifies each against Play's 500-character limit via `tools/check_store_metadata.sh`.
+  Note the filename is the **versionCode**, not the versionName — that is what fastlane and the
+  Play API key release notes by. Gated on `app/build.gradle.kts` existing, which it now does.
 
 ## Commands
 

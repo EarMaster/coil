@@ -160,6 +160,8 @@
     <string name="settings_rescan">Rescan library on the box</string>
     <string name="settings_rescan_summary">Tells the box to look for new files. Can take a while on a large library.</string>
     <string name="settings_rescan_started">Rescan started on the box.</string>
+    <string name="settings_add_box">Add another box</string>
+    <string name="settings_add_box_summary">Coil controls one box at a time. Once a second box is set up, the name at the top of the screen switches between them.</string>
     <string name="settings_remove_box">Remove this box</string>
     <string name="settings_remove_box_confirm">Remove %1$s? Its favourites and cached library are removed with it. The box itself is not touched.</string>
 

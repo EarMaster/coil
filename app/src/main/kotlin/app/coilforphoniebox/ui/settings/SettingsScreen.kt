@@ -155,7 +155,13 @@ fun SettingsScreen(
         }
 
         SectionDivider()
-        SectionHeader(stringResource(R.string.settings_section_box))
+        // The heading follows what the section actually contains: with a second box the
+        // rows below are no longer about one box only.
+        SectionHeader(
+            stringResource(
+                if (state.boxes.size > 1) R.string.boxes_title else R.string.settings_section_box,
+            ),
+        )
 
         val box = state.activeBox
         if (box == null) {
@@ -167,6 +173,35 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
             Button(onClick = onAddBox) { Text(stringResource(R.string.action_add_box)) }
         } else {
+            // The same "exactly one box is active" choice the top bar's switcher offers,
+            // repeated here because this is where the boxes themselves are configured.
+            if (state.boxes.size > 1) {
+                GroupLabel(stringResource(R.string.boxes_switch))
+                state.boxes.forEach { configured ->
+                    RadioRow(
+                        label = configured.displayName,
+                        subtitle = configured.host,
+                        selected = configured.id == box.id,
+                        onSelect = { viewModel.selectBox(configured.id) },
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
+            // Always offered, and this is the only place it can live: the switcher in the
+            // top bar collapses to a plain indicator while there is a single box, so a
+            // second one was previously unreachable from anywhere in the app.
+            ActionRow(
+                title = stringResource(R.string.settings_add_box),
+                subtitle = stringResource(R.string.settings_add_box_summary),
+                onClick = onAddBox,
+            )
+
+            // Which box the fields below belong to needs saying once there is more than one.
+            if (state.boxes.size > 1) {
+                GroupLabel(stringResource(R.string.settings_section_box))
+            }
+
             BoxFields(
                 initialName = box.displayName,
                 initialHost = box.host,

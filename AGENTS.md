@@ -255,6 +255,14 @@ still needs doing, in rough order of importance:
   stays in the single `strings.xml`. `:feature-shortcuts` therefore has no string resources at all.
   For the same reason the media notification's text reaches `:feature-media` through the
   `MediaNotificationTexts` interface, implemented in `:app`.
+- **"Add another box" lives on the settings screen, and is always visible there.** §7.5's collapsed
+  top bar — a plain indicator, not a switcher, while there is one box — is kept, but it made a second
+  box unreachable: the switcher sheet holds the only other "Add box" entry, and settings offered one
+  solely when *no* box existed. One box was therefore a dead end, which reads as multi-box being
+  unimplemented rather than merely hidden. Settings now also carries a box picker once there are two
+  or more, mirroring the switcher, since that is where boxes are configured. Adding a box
+  deliberately does **not** make it active: nothing should tear down a live connection the user did
+  not ask to change.
 - **A single track is favouritable**, which the plan's `FOLDER | ALBUM` favourite type (§6.3, §7.2)
   does not allow. From a playing song, "save this" is genuinely ambiguous between the track and its
   folder, so both are offered by name instead of one being guessed at: a tap on the player's star

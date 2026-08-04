@@ -25,9 +25,10 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 - **Favourites** for a folder, an album or a single track, with launcher shortcuts — up to four
   dynamic ones plus pinned ones using cover art as their icon, each starting its own box with a
   single command and without opening the app
-- **Multiple boxes**: a switcher in the top bar showing each box's reachability, an add flow with an
-  mDNS scan and a connection test, per-box settings, and a collapsed presentation when only one box
-  is configured
+- **Multiple boxes**: "Add another box" in settings, a switcher in the top bar showing each box's
+  reachability, an add flow with an mDNS scan and a connection test, a box picker and per-box
+  settings on the settings screen, and a collapsed top bar while only one box is configured.
+  Switching box returns the library to its root, since folders belong to the box they came from
 - **Settings**: theme, wallpaper colours, language shortcut, per-box address and rescan, background
   mode with a plain-language note about its limits, and settings export and import
 - **Five locales**: English as the source, plus German, French, Spanish and Dutch. The four

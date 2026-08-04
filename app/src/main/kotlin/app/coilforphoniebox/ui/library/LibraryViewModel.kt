@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -126,9 +127,17 @@ class LibraryViewModel @Inject constructor(
     init {
         // Fetching a level is a side effect, so it lives here rather than inside a flow
         // transform: opening a folder for the first time loads it, revisiting does not.
+        //
+        // Switching box starts again at the root. A path is only meaningful on the box it
+        // came from — the other box may have no such folder — and `collectLatest` drops the
+        // old box's collector before the reset, so the stale path is never fetched from the
+        // new box on the way past.
         viewModelScope.launch {
-            combine(activeBoxId, currentPath) { boxId, path -> boxId to path }
-                .collect { (boxId, path) -> if (boxId != null) loadLevelOnce(boxId, path) }
+            activeBoxId.collectLatest { boxId ->
+                if (boxId == null) return@collectLatest
+                currentPath.value = FolderContent.ROOT
+                currentPath.collect { path -> loadLevelOnce(boxId, path) }
+            }
         }
     }
 

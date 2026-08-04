@@ -40,7 +40,8 @@ class SettingsViewModel @Inject constructor(
     data class State(
         val settings: AppSettings = AppSettings(),
         val activeBox: Box? = null,
-        val boxCount: Int = 0,
+        /** Every configured box, so this screen can switch between them and add one. */
+        val boxes: List<Box> = emptyList(),
         val boxVersion: String? = null,
     )
 
@@ -59,10 +60,20 @@ class SettingsViewModel @Inject constructor(
         State(
             settings = appSettings,
             activeBox = activeBox,
-            boxCount = allBoxes.size,
+            boxes = allBoxes,
             boxVersion = version,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
+
+    /**
+     * Makes another box the active one. The connection follows on its own — the transport
+     * watches the active box and rebuilds its sockets (§7.3) — and every per-box row on this
+     * screen then describes the box that was just picked.
+     */
+    fun selectBox(boxId: String) {
+        if (boxId == state.value.activeBox?.id) return
+        viewModelScope.launch { boxes.setActive(boxId) }
+    }
 
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch { settings.setThemeMode(mode) }
 

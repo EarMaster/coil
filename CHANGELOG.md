@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-05
+
 ### Added
 - **Media controls can be switched off entirely.** "Show controls" had two settings, both of which
   put a notification up sooner or later; it now has three, with "Never" as the third. In that mode

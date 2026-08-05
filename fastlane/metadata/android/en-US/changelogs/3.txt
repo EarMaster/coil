@@ -1,0 +1,5 @@
+Media controls can now be switched off completely, next to the existing "only while Coil is open" and "whenever the box plays".
+
+Every box has its own page now, reached from "Manage boxes" — rename or re-address a box without switching to it first, and copy a link that opens Coil showing that box.
+
+Fixed: cover art stayed blank on a real box.

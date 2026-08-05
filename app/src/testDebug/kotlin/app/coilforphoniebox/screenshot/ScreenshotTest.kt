@@ -1,6 +1,5 @@
 package app.coilforphoniebox.screenshot
 
-import android.graphics.drawable.ColorDrawable
 import android.os.Looper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +17,8 @@ import app.coilforphoniebox.HiltTestActivity
 import app.coilforphoniebox.ui.theme.CoilTheme
 import coil.Coil
 import coil.ImageLoader
+import coil.decode.DataSource
+import coil.request.SuccessResult
 import coil.test.FakeImageLoaderEngine
 import com.github.takahirom.roborazzi.captureRoboImage
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -58,12 +59,28 @@ abstract class ScreenshotTest {
     /**
      * Cover art must never be a real request. The box's HTTP cover cache is not reachable from
      * CI, and an image that arrives a frame late would make the golden depend on timing rather
-     * than on the layout — so every URL resolves to the same flat colour, instantly.
+     * than on the layout — so every URL resolves instantly, from [FakeCoverArt].
+     *
+     * It answers with synthetic artwork rather than a flat colour on purpose: one rectangle of
+     * one colour looks the same whether it was cropped, stretched, letterboxed, left unclipped
+     * or swapped with a different cover, which left these goldens unable to fail on any of it.
+     * See [FakeCoverArt] for what each part of the picture is there to catch.
+     *
+     * The interceptor is added rather than set as the default because only that path receives
+     * the engine's transformed request, which is the one with the crossfade removed — an image
+     * that fades in would put timing back into the golden.
      */
     @Before
     fun installFakeImageLoader() {
+        val resources = RuntimeEnvironment.getApplication().resources
         val engine = FakeImageLoaderEngine.Builder()
-            .default(ColorDrawable(FAKE_COVER_COLOR))
+            .addInterceptor { chain ->
+                SuccessResult(
+                    drawable = FakeCoverArt.drawable(resources, chain.request.data.toString()),
+                    request = chain.request,
+                    dataSource = DataSource.MEMORY,
+                )
+            }
             .build()
         Coil.setImageLoader(
             ImageLoader.Builder(RuntimeEnvironment.getApplication())
@@ -194,8 +211,5 @@ abstract class ScreenshotTest {
 
         /** How far the clock steps between checks in [awaitText]. */
         const val POLL_MILLIS = 250L
-
-        /** A muted green, close enough to real artwork to show how the layout carries it. */
-        const val FAKE_COVER_COLOR = 0xFF3B5A46.toInt()
     }
 }

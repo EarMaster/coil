@@ -399,9 +399,18 @@ Three levels, and the distinction matters:
   activity exists, and `RuntimeEnvironment.setQualifiers` inside a test body is too late (the
   same trap as the locale). Note this simulates the *window*, not the device: there are no
   system bars, no rounded corners and no notch in a golden.
-- **Cover art never reaches the network.** The image loader is replaced with a fake engine that
-  answers every URL with a flat colour, instantly; the box's HTTP cover cache is not reachable
-  from CI, and an image arriving a frame late would make the golden depend on timing.
+- **Cover art never reaches the network, and it is not a flat colour either.** The image loader
+  is replaced with a fake engine answering instantly from `FakeCoverArt` — the box's HTTP cover
+  cache is not reachable from CI, and an image arriving a frame late would make the golden
+  depend on timing. It used to answer every URL with one flat green rectangle, which meant the
+  goldens could not fail on a cropped, stretched, letterboxed, unclipped or swapped cover: all
+  of those look identical when the picture is one colour. `FakeCoverArt` draws a **3:2
+  landscape** source (so `ContentScale.Crop` has to be doing something — `Fit` would letterbox),
+  with a **circle** inside the middle third (round when scaled right, an ellipse when stretched),
+  an asymmetric **wedge** and a full-width **base stripe** (so a mirrored or vertically offset
+  draw is not a picture that happens to match), and a **colour derived from the URL** (so two
+  covers are two colours). Everything is a pure function of the URL — `String.hashCode` is
+  specified by the JLS — because a golden cannot afford a picture that varies by host or run.
 - **Roborazzi captures the window, not the node**, whichever node it is handed — so a component
   golden shortens the window instead, via `@Config(qualifiers = "+h200dp")` on the class, rather
   than being a 40 dp chip above a screenful of background.
@@ -421,9 +430,15 @@ The favourites goldens carry **two entries with a `coverFile` and one without**,
 matter: a cover has to render, and a favourite the box has no artwork for has to stay recognisable
 by its placeholder icon. `favourites_compact_*` reaches the list layout by *clicking* the top bar
 action rather than presetting the stored preference, so a toggle that stopped switching fails the
-test instead of quietly capturing the same picture twice. `StoreFixtures.favorites` deliberately
-keeps no covers: the fake engine answers every URL with the same flat colour, and four identical
-green squares would be a worse store screenshot than four placeholder icons.
+test instead of quietly capturing the same picture twice. `Fixtures.albums` does the same for the
+album grid, four of six with artwork.
+
+`StoreFixtures.favorites` still carries no covers, which is now a choice about the listing rather
+than a limitation — those entries are folders, and that shot reads as a shelf of saved folders.
+Note also that the store assets under `fastlane/` and `docs/pages/` were **not** regenerated when
+`FakeCoverArt` landed, so they still show the old flat-green covers. Bringing them in step is
+`recordRoborazziDebug --tests '*StoreAssetTest' --rerun-tasks`, and it is a deliberate act rather
+than a consequence, because they are products.
 
 Box management is captured with **two** boxes configured (`app/boxes_*`, `app/box_detail_*`), since
 one box is the case where those screens have least to say — and the box page golden is the

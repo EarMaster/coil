@@ -136,19 +136,25 @@ object Fixtures {
         durationSeconds = seconds,
     )
 
-    private fun album(artist: String, name: String) = LibraryAlbum(
+    private fun album(artist: String, name: String, cover: String? = null) = LibraryAlbum(
         boxId = livingRoom.id,
         albumArtist = artist,
         album = name,
+        coverFile = cover,
         cachedAt = NOW,
     )
 
+    /**
+     * Four with artwork and two without, so the album grid is a picture of both cases — a
+     * resolved cover next to an album the box has no art for. The names are a stand-in; what
+     * they produce is [FakeCoverArt], one distinct cover per URL.
+     */
     val albums = listOf(
-        album("Bärenstark", "Ein Bär räumt auf"),
-        album("Detective Stories", "The Missing Key"),
-        album("Detective Stories", "The Silent Lighthouse"),
+        album("Bärenstark", "Ein Bär räumt auf", "cover-baer.jpg"),
+        album("Detective Stories", "The Missing Key", "cover-missing-key.jpg"),
+        album("Detective Stories", "The Silent Lighthouse", "cover-lighthouse.jpg"),
         album("Nursery Rhymes", "Ten in the Bed"),
-        album("Nursery Rhymes", "Wheels on the Bus"),
+        album("Nursery Rhymes", "Wheels on the Bus", "cover-wheels.jpg"),
         album("Sing-Along", "Songs for the Long Drive Home"),
     )
 
@@ -168,8 +174,9 @@ object Fixtures {
     /**
      * Two with artwork and one without, which is the mix worth a golden: a cover has to
      * render *and* a favourite the box has no artwork for has to stay recognisable by its
-     * placeholder. The file names are a stand-in — the fake image loader answers every URL
-     * with the same flat colour, so what they say is only that a cover was resolved.
+     * placeholder. The file names are a stand-in, but not an inert one — [FakeCoverArt]
+     * derives a different picture from each, so a cover shown against the wrong title is
+     * something the golden can fail on.
      */
     val favorites = listOf(
         Favorite(

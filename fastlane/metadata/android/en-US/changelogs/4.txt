@@ -1,0 +1,3 @@
+Favourites now show their cover art. Almost all of them used to show a plain icon: Coil now keeps the artwork when you save a favourite, and looks up the ones that are missing.
+
+New: the button at the top of the favourites tab switches between large covers and a compact list, for when a shelf of favourites has outgrown one screen.

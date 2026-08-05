@@ -351,9 +351,11 @@ settings, offline, onboarding), the player screen (playing, paused, idle, web ra
 timer, light and dark), the library screen (folders, tracks, albums, search, no results, empty,
 light and dark) and the chrome components.
 
-The tablet goldens are worth looking at rather than skipping past: the UI is single-column
-everywhere, and `app/library_tablet.png` is what that means on 1280 dp. They document the gap
-in "Implementation status" item 5 instead of pretending it is handled.
+The tablet goldens are the reason the player got a tablet layout at all: `app/player_tablet.png`
+used to be a full-screen cover with its own controls pushed off the bottom, which is obvious in a
+picture and invisible in a diff. The remaining tablet goldens still show single-column screens
+stretched wide — see "Implementation status" item 5 — and `player/playing_landscape.png` covers
+the short-and-wide case that no other golden does.
 
 ### Recording is a decision, and it happens on CI
 
@@ -475,7 +477,14 @@ still needs doing, in rough order of importance:
    refuse to start a foreground service from `BootReceiver`, which `AutoSessionStarter` treats as a
    normal outcome. In practice the mode becomes reliable once the app has been opened after a
    reboot. The settings screen says so in plain language.
-5. **Tablet layout** is untouched — the UI is single-column everywhere.
+5. **The player has a tablet layout; the other screens do not.** On a window wider than it is
+   tall — a tablet in landscape, a phone on its side — the player puts the cover beside the
+   controls instead of above them (`WidePlayer` in `PlayerScreen.kt`, at Material's medium and
+   expanded width classes). It was the screen that needed it most: a full-width square cover is
+   taller than a landscape window, so the transport controls fell below the fold on the one
+   screen whose entire job is the transport controls. Library, favourites and settings are still
+   single-column and merely stretch, which reads as roomy rather than broken — see
+   `app/library_tablet.png`.
 6. **Android 16's local network restriction will eventually break Coil outright.** Access to
    local-network addresses — which is every socket this app opens, plus `NsdManager` discovery and
    the HTTP cover fetches — will require the `NEARBY_WIFI_DEVICES` permission, granted by the user

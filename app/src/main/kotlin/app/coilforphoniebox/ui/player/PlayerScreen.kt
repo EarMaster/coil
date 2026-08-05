@@ -4,14 +4,17 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -61,7 +64,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.coilforphoniebox.R
@@ -104,123 +109,270 @@ fun PlayerScreen(
         )
     }
 
+    // One RPC on opening, so the sheet shows the truth even if the timer was set from the
+    // box's own web UI before Coil connected.
+    val openTimer = {
+        viewModel.refreshSleepTimer()
+        timerSheetOpen = true
+    }
+
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        // Two panes on a large screen, and also on any window that is merely wider than it is
+        // tall: a phone on its side has width to spare and no height at all, which is the same
+        // problem a tablet has and wants the same answer. A 7-inch tablet held upright stays in
+        // one column, where two panes would only be two cramped ones.
+        val wide = maxWidth >= WIDE_WIDTH || (maxWidth >= MEDIUM_WIDTH && maxWidth > maxHeight)
+
+        if (wide) {
+            WidePlayer(
+                // Bounded by the height as well as the width: on a landscape tablet the
+                // limiting dimension is the short one, and a square that ignores it is exactly
+                // how this screen used to push its own controls off the bottom.
+                coverSize = minOf(maxWidth * WIDE_COVER_FRACTION, maxHeight - WIDE_COVER_INSET),
+                state = state,
+                scrub = scrub,
+                volumeTarget = volumeTarget,
+                timerRemaining = timerRemaining,
+                viewModel = viewModel,
+                onOpenTimer = openTimer,
+            )
+        } else {
+            CompactPlayer(
+                // The width still decides on a phone. The height only takes over when the
+                // window is short — a phone in landscape, or a small floating window — where a
+                // full-width cover would leave no room for anything else.
+                coverSize = minOf(
+                    maxWidth - COMPACT_PADDING * 2,
+                    maxHeight * COMPACT_COVER_FRACTION,
+                ),
+                state = state,
+                scrub = scrub,
+                volumeTarget = volumeTarget,
+                timerRemaining = timerRemaining,
+                viewModel = viewModel,
+                onOpenTimer = openTimer,
+            )
+        }
+    }
+}
+
+/** Phone-shaped: cover on top, everything else stacked under it. */
+@Composable
+private fun CompactPlayer(
+    coverSize: Dp,
+    state: PlayerViewModel.State,
+    scrub: Float?,
+    volumeTarget: Int?,
+    timerRemaining: Int?,
+    viewModel: PlayerViewModel,
+    onOpenTimer: () -> Unit,
+) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = COMPACT_PADDING),
     ) {
         CoverArt(
             url = state.coverUrl,
             contentDescription = stringResource(R.string.player_cover_art),
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f),
+                .align(Alignment.CenterHorizontally)
+                .size(coverSize),
             placeholderIconSize = 64.dp,
         )
 
         Spacer(Modifier.height(20.dp))
 
-        Row(verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = state.status.title
-                        ?: if (state.status.hasContent) {
-                            stringResource(R.string.player_no_title)
-                        } else {
-                            stringResource(R.string.player_nothing_playing)
-                        },
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val subtitle = listOfNotNull(state.status.artist, state.status.album)
-                    .distinct()
-                    .joinToString(" · ")
-                    .ifBlank { null }
-                if (subtitle != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            if (state.canFavourite) {
-                FavouriteControl(
-                    folderSaved = state.currentFavorite != null,
-                    trackSaved = state.currentTrackFavorite != null,
-                    folderLabel = state.folderLabel.takeIf { state.canFavouriteFolder },
-                    trackLabel = state.trackLabel.takeIf { state.canFavouriteTrack },
-                    onToggleFolder = viewModel::toggleFolderFavorite,
-                    onToggleTrack = viewModel::toggleTrackFavorite,
-                )
-            }
-        }
+        TitleBlock(state = state, style = MaterialTheme.typography.titleLarge, viewModel = viewModel)
 
         Spacer(Modifier.height(16.dp))
 
-        ProgressRow(
-            elapsedSeconds = scrub?.toDouble() ?: state.status.elapsedSeconds,
-            durationSeconds = state.status.durationSeconds,
-            onScrub = viewModel::onScrub,
-            onScrubFinished = viewModel::onScrubFinished,
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        TransportRow(
-            isPlaying = state.status.state == PlaybackState.PLAY,
-            shuffle = state.status.shuffle,
-            repeat = state.status.repeat,
-            timerRunning = state.sleepTimer.running,
-            anyOptionActive = state.anyOptionActive,
-            onToggle = viewModel::toggle,
-            onNext = viewModel::next,
-            onPrevious = viewModel::previous,
-            onShuffle = viewModel::toggleShuffle,
-            onRepeat = viewModel::cycleRepeat,
-            onOpenTimer = {
-                // One RPC on opening, so the sheet shows the truth even if the timer was set
-                // from the box's own web UI before Coil connected.
-                viewModel.refreshSleepTimer()
-                timerSheetOpen = true
-            },
-        )
-
-        // Only while a timer is running: a countdown to something stopping is worth a line of
-        // its own, and there is nothing to say when nothing is scheduled.
-        timerRemaining?.let { seconds ->
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(
-                    R.string.player_sleep_timer_remaining,
-                    formatDuration(seconds.toDouble()),
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        VolumeRow(
-            // The dragged value wins while a drag is in progress, so the slider follows the
-            // finger instead of the box's four-per-second reports.
-            level = volumeTarget ?: state.volume.level,
-            maxLevel = state.volume.maxLevel,
-            muted = state.volume.muted,
-            onChange = viewModel::onVolumeChange,
-            onChangeFinished = viewModel::onVolumeChangeFinished,
+        PlayerControls(
+            state = state,
+            scrub = scrub,
+            volumeTarget = volumeTarget,
+            timerRemaining = timerRemaining,
+            viewModel = viewModel,
+            onOpenTimer = onOpenTimer,
         )
 
         Spacer(Modifier.height(24.dp))
     }
+}
+
+/**
+ * Tablet-shaped: cover beside the controls rather than above them.
+ *
+ * A family tablet is one of the places this app belongs — propped in a kitchen, tapped by
+ * whoever walks past — and there the single column was actively bad: the cover took the whole
+ * width, which on a landscape screen is more than the whole height, and the transport controls
+ * ended up below the fold on the one screen whose entire job is the transport controls.
+ */
+@Composable
+private fun WidePlayer(
+    coverSize: Dp,
+    state: PlayerViewModel.State,
+    scrub: Float?,
+    volumeTarget: Int?,
+    timerRemaining: Int?,
+    viewModel: PlayerViewModel,
+    onOpenTimer: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp, vertical = 24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CoverArt(
+            url = state.coverUrl,
+            contentDescription = stringResource(R.string.player_cover_art),
+            modifier = Modifier.size(coverSize),
+            placeholderIconSize = 96.dp,
+        )
+
+        Spacer(Modifier.width(32.dp))
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                // Scrollable in its own right, so a short window loses the bottom of the
+                // controls rather than clipping them out of reach.
+                .verticalScroll(rememberScrollState()),
+        ) {
+            // The title carries the pane, so it steps up a size — at this width `titleLarge`
+            // reads as a caption rather than as the name of what is playing.
+            TitleBlock(state = state, style = MaterialTheme.typography.headlineSmall, viewModel = viewModel)
+
+            Spacer(Modifier.height(24.dp))
+
+            PlayerControls(
+                state = state,
+                scrub = scrub,
+                volumeTarget = volumeTarget,
+                timerRemaining = timerRemaining,
+                viewModel = viewModel,
+                onOpenTimer = onOpenTimer,
+            )
+        }
+    }
+}
+
+/** Title, artist and album, with the favourite star beside them. */
+@Composable
+private fun TitleBlock(
+    state: PlayerViewModel.State,
+    style: TextStyle,
+    viewModel: PlayerViewModel,
+) {
+    Row(verticalAlignment = Alignment.Top) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = state.status.title
+                    ?: if (state.status.hasContent) {
+                        stringResource(R.string.player_no_title)
+                    } else {
+                        stringResource(R.string.player_nothing_playing)
+                    },
+                style = style,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val subtitle = listOfNotNull(state.status.artist, state.status.album)
+                .distinct()
+                .joinToString(" · ")
+                .ifBlank { null }
+            if (subtitle != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        if (state.canFavourite) {
+            FavouriteControl(
+                folderSaved = state.currentFavorite != null,
+                trackSaved = state.currentTrackFavorite != null,
+                folderLabel = state.folderLabel.takeIf { state.canFavouriteFolder },
+                trackLabel = state.trackLabel.takeIf { state.canFavouriteTrack },
+                onToggleFolder = viewModel::toggleFolderFavorite,
+                onToggleTrack = viewModel::toggleTrackFavorite,
+            )
+        }
+    }
+}
+
+/**
+ * Progress, transport, the timer line and volume — identical in both layouts.
+ *
+ * Kept as one composable rather than repeated in each: these four belong together, and a
+ * control that appeared on a phone but not on a tablet would be a bug nobody notices for
+ * months.
+ */
+@Composable
+private fun ColumnScope.PlayerControls(
+    state: PlayerViewModel.State,
+    scrub: Float?,
+    volumeTarget: Int?,
+    timerRemaining: Int?,
+    viewModel: PlayerViewModel,
+    onOpenTimer: () -> Unit,
+) {
+    ProgressRow(
+        elapsedSeconds = scrub?.toDouble() ?: state.status.elapsedSeconds,
+        durationSeconds = state.status.durationSeconds,
+        onScrub = viewModel::onScrub,
+        onScrubFinished = viewModel::onScrubFinished,
+    )
+
+    Spacer(Modifier.height(8.dp))
+
+    TransportRow(
+        isPlaying = state.status.state == PlaybackState.PLAY,
+        shuffle = state.status.shuffle,
+        repeat = state.status.repeat,
+        timerRunning = state.sleepTimer.running,
+        anyOptionActive = state.anyOptionActive,
+        onToggle = viewModel::toggle,
+        onNext = viewModel::next,
+        onPrevious = viewModel::previous,
+        onShuffle = viewModel::toggleShuffle,
+        onRepeat = viewModel::cycleRepeat,
+        onOpenTimer = onOpenTimer,
+    )
+
+    // Only while a timer is running: a countdown to something stopping is worth a line of its
+    // own, and there is nothing to say when nothing is scheduled.
+    timerRemaining?.let { seconds ->
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = stringResource(
+                R.string.player_sleep_timer_remaining,
+                formatDuration(seconds.toDouble()),
+            ),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+    }
+
+    Spacer(Modifier.height(20.dp))
+
+    VolumeRow(
+        // The dragged value wins while a drag is in progress, so the slider follows the finger
+        // instead of the box's four-per-second reports.
+        level = volumeTarget ?: state.volume.level,
+        maxLevel = state.volume.maxLevel,
+        muted = state.volume.muted,
+        onChange = viewModel::onVolumeChange,
+        onChangeFinished = viewModel::onVolumeChangeFinished,
+    )
 }
 
 /**
@@ -586,6 +738,32 @@ private fun SleepTimerSheet(
 
 /** Bedtime-shaped: fifteen minutes to two hours, which is one audiobook either way. */
 private val TIMER_PRESETS = listOf(15, 30, 45, 60, 90, 120)
+
+/**
+ * Where the player stops stacking and starts sitting side by side.
+ *
+ * Material's "expanded" width class. A 7-inch tablet in portrait (600 dp) stays in one column,
+ * where two panes would be two cramped ones; a 10-inch in landscape (1280 dp) splits.
+ */
+private val WIDE_WIDTH = 840.dp
+
+/**
+ * The narrowest window that may still split, when it is wider than it is tall.
+ *
+ * Material's "medium" width class. Below this there is not enough room for two of anything.
+ */
+private val MEDIUM_WIDTH = 600.dp
+
+/** How much of a wide window the cover may claim, leaving the rest for the controls. */
+private const val WIDE_COVER_FRACTION = 0.42f
+
+/** Breathing room above and below the cover in the wide layout. */
+private val WIDE_COVER_INSET = 48.dp
+
+private val COMPACT_PADDING = 20.dp
+
+/** The most of a short window's height the cover may eat before the controls suffer. */
+private const val COMPACT_COVER_FRACTION = 0.55f
 
 @Composable
 private fun VolumeRow(

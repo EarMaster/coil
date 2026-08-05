@@ -90,6 +90,21 @@ class PlayerScreenshotTest : ScreenshotTest() {
     }
 
     /**
+     * A phone on its side: 731×411 dp, under the two-pane breakpoint but far too short for a
+     * full-width cover.
+     *
+     * This is the case the compact layout's height cap exists for — without it the cover alone
+     * is taller than the window and the transport controls sit below the fold. Worth a golden
+     * because nothing else in the suite is short and wide.
+     */
+    @Test
+    @Config(qualifiers = "w731dp-h411dp-normal-long-notround-any-420dpi-keyshidden-nonav")
+    fun playing_landscape() {
+        val vm = viewModel()
+        capture("player/playing_landscape") { PlayerScreen(vm) }
+    }
+
+    /**
      * German. Almost everything on a playing screen is the box's own metadata, so what this
      * golden actually shows is the idle state, where the app is doing the talking.
      *

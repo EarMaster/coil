@@ -44,6 +44,9 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
   mode with a plain-language note about its limits, and settings export and import
 - **Five locales**: English as the source, plus German, French, Spanish and Dutch. The four
   translations are unreviewed drafts and are marked as such in their files
+- **A tablet layout for the player**: on a screen wider than it is tall, the cover sits beside the
+  title and controls instead of above them, so the transport controls stay in view on a family
+  tablet and on a phone held sideways. The rest of the app is unchanged
 - Project scaffolding: architecture and protocol documentation (`docs/`), brand assets (`brand/`),
   Android theme reference bundle (`android/`), static UI mockup (`mockup/`)
 

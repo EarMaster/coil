@@ -200,6 +200,28 @@ server in this repo.
   `StateFlow` that starts at null and is filled in by a background resolver for exactly this
   reason. The same caution applies to any future flow that needs the network to produce its first
   value.
+- **Caching covers was never the missing piece; knowing their file name was.** The image loader has
+  had a 96 MB disk cache since the first commit (`CoilApplication.newImageLoader`), so a cover that
+  has been fetched once renders with the box switched off. What favourites lacked was a
+  `coverFile` to build a URL from: only an album favourite ever recorded one, and only if that
+  album's cover had already been resolved by the album grid. Everything else — the player's star,
+  every folder and track row in the library — saved `null` and nothing backfilled it, so the tab
+  was a wall of placeholder icons and the cache was never asked for anything. Two halves fix it,
+  and both are needed: the player passes `player.currentCoverFile()` when it saves, and
+  `ResolveFavoriteCoverUseCase` fills in the rest from `LibraryRepository.coverFileFor`.
+- **A folder's cover is its first track's, and that costs up to three RPCs.** Nothing in the
+  protocol returns cover art for a folder, so `coverFileFor` resolves one track inside it: from the
+  Room cache when that level has been browsed, otherwise via `get_folder_content` first, and one
+  level deeper when the folder holds nothing but subfolders (an artist above its albums). It stops
+  there — a cover is not worth walking a tree for. This is why the lookup is driven by what is on
+  screen (`FavoritesViewModel.ensureCover`), capped by the same two-permit semaphore as the album
+  grid, tried once per favourite per session, and never run as a sweep over the table. The result
+  is persisted, so a favourite costs it once ever.
+- **A cover lookup that failed because the box was off must be allowed to happen again.**
+  `FavoritesViewModel` keeps its "already asked" set in memory and clears it whenever the active box
+  or the connection changes; without that, opening the tab while offline would spend every
+  favourite's one attempt on an unreachable box and leave the covers missing until the app
+  restarted.
 - **There is no `core` RPC package.** `core.version`, `core.started_at` and `core.git_state` are
   *published topics*; asking for `core.version` over RPC answers with an error. Use
   `player.ctrl.playerstatus` as a reachability ping — it returns the poller's cached dict without
@@ -377,9 +399,18 @@ Three levels, and the distinction matters:
   activity exists, and `RuntimeEnvironment.setQualifiers` inside a test body is too late (the
   same trap as the locale). Note this simulates the *window*, not the device: there are no
   system bars, no rounded corners and no notch in a golden.
-- **Cover art never reaches the network.** The image loader is replaced with a fake engine that
-  answers every URL with a flat colour, instantly; the box's HTTP cover cache is not reachable
-  from CI, and an image arriving a frame late would make the golden depend on timing.
+- **Cover art never reaches the network, and it is not a flat colour either.** The image loader
+  is replaced with a fake engine answering instantly from `FakeCoverArt` — the box's HTTP cover
+  cache is not reachable from CI, and an image arriving a frame late would make the golden
+  depend on timing. It used to answer every URL with one flat green rectangle, which meant the
+  goldens could not fail on a cropped, stretched, letterboxed, unclipped or swapped cover: all
+  of those look identical when the picture is one colour. `FakeCoverArt` draws a **3:2
+  landscape** source (so `ContentScale.Crop` has to be doing something — `Fit` would letterbox),
+  with a **circle** inside the middle third (round when scaled right, an ellipse when stretched),
+  an asymmetric **wedge** and a full-width **base stripe** (so a mirrored or vertically offset
+  draw is not a picture that happens to match), and a **colour derived from the URL** (so two
+  covers are two colours). Everything is a pure function of the URL — `String.hashCode` is
+  specified by the JLS — because a golden cannot afford a picture that varies by host or run.
 - **Roborazzi captures the window, not the node**, whichever node it is handed — so a component
   golden shortens the window instead, via `@Config(qualifiers = "+h200dp")` on the class, rather
   than being a 40 dp chip above a screenful of background.
@@ -390,10 +421,29 @@ Three levels, and the distinction matters:
 - **Roborazzi is pinned at 1.60.0** because 1.61.0 and later carry Kotlin 2.3 metadata that
   Kotlin 2.0.21 cannot read. Upgrading it means upgrading Kotlin and the Compose compiler too.
 
-Covered so far: the whole app on three devices (player light and dark, library, favourites,
-settings top and lower half, box management, one box's page, offline, onboarding), the player
-screen (playing, paused, idle, web radio, sleep timer, light and dark), the library screen
+Covered so far: the whole app on three devices (player light and dark, library, favourites in both
+layouts, settings top and lower half, box management, one box's page, offline, onboarding), the
+player screen (playing, paused, idle, web radio, sleep timer, light and dark), the library screen
 (folders, tracks, albums, search, no results, empty, light and dark) and the chrome components.
+
+The favourites goldens carry **two entries with a `coverFile` and one without**, because both halves
+matter: a cover has to render, and a favourite the box has no artwork for has to stay recognisable
+by its placeholder icon. `favourites_compact_*` reaches the list layout by *clicking* the top bar
+action rather than presetting the stored preference, so a toggle that stopped switching fails the
+test instead of quietly capturing the same picture twice. `Fixtures.albums` does the same for the
+album grid, four of six with artwork.
+
+`StoreFixtures.favorites` carries covers on three of four for a reason worth keeping: without them
+that listing image is four empty tiles above a mini player that *does* show a cover, which reads as
+artwork failing to load rather than as a design — and it contradicts what the app now does, since
+a played folder gets its cover. The fourth keeps its placeholder, because a box genuinely does have
+folders it has no artwork for.
+
+**Two fixtures can land on the same palette slot.** `FakeCoverArt` picks from five colours by URL
+hash, so a grid meant to show that covers differ can end up with two identical tiles next to each
+other — `cover-fairy-tales.jpg` and `cover-bedtime.jpg` collide, which is why the store fixture
+spells it `cover-fairytales.jpg`. Check a new fixture's slot rather than assume:
+`Math.floorMod(("http://<host>/cover-cache/" + fileName).hashCode(), 5)`.
 
 Box management is captured with **two** boxes configured (`app/boxes_*`, `app/box_detail_*`), since
 one box is the case where those screens have least to say — and the box page golden is the
@@ -713,6 +763,17 @@ still needs doing, in rough order of importance:
   `core-data/.../db/Migrations.kt` — no destructive fallback, favourites are the one thing here that
   cannot be rebuilt from the box), a `track` variant of the `coil://play` deep link, and settings
   backup **format version 2**.
+- **The favourites tab has two layouts, and the switch is in the top bar.** `FavoritesLayout` in
+  `AppSettings` chooses between the cover grid (the default — §7.2's point is a target a child can
+  aim at without reading) and a compact row list for a collection that has outgrown a screenful of
+  tiles. Consequences worth keeping: the preference is owned by `AppViewModel` and passed *into*
+  `FavoritesScreen`, because the control lives in the shell's top bar and one preference should have
+  one owner; the top bar's `actions` slot is per destination, so anything added there must stay
+  conditional on the route the way this is; and both layouts share one `LazyVerticalGrid` —
+  `GridCells.Fixed(1)` is the list — plus one `FavoriteEntry`, so neither shape can quietly lose an
+  action the other has. It also rides in the settings backup, which did **not** bump
+  `FORMAT_VERSION`: an older build that drops the field loses a layout preference, not the ability
+  to play anything. Same for the `coverFile` now exported per favourite.
 - **Long press in the library opens a context menu, it does not toggle a favourite.** The plan (§14,
   phase 2) has long press as the way to favourite something, which is undiscoverable and was the
   only way to do it. Every library row and album cell now carries a ⋮ button, and both it and a long

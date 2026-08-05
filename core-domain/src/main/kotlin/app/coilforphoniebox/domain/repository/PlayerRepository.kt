@@ -29,6 +29,16 @@ interface PlayerRepository {
     val coverUrl: Flow<String?>
 
     /**
+     * Cover file name of the playing song, if one has already been resolved.
+     *
+     * The same name [coverUrl] is built from, handed over unwrapped so that saving a
+     * favourite can store it. Read once at the moment of the tap rather than exposed as a
+     * flow: nothing on screen shows this, and a favourite records the cover it was saved
+     * with, not whatever is playing later.
+     */
+    fun currentCoverFile(): String?
+
+    /**
      * The box's stop-player timer. Its shutdown timers are deliberately not represented
      * here at all — Coil never sends a command that switches the box off (§16).
      */

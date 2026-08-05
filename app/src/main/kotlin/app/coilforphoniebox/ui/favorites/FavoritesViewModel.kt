@@ -5,10 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.Box
+import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.FavoriteRepository
+import app.coilforphoniebox.domain.repository.PlayerRepository
 import app.coilforphoniebox.domain.usecase.PlayFavoriteUseCase
+import app.coilforphoniebox.domain.usecase.ResolveFavoriteCoverUseCase
 import app.coilforphoniebox.shortcuts.PlayDeepLink
 import app.coilforphoniebox.shortcuts.ShortcutPublisher
 import app.coilforphoniebox.ui.UiMessage
@@ -33,13 +36,16 @@ import javax.inject.Inject
 class FavoritesViewModel @Inject constructor(
     private val favorites: FavoriteRepository,
     private val boxes: BoxRepository,
+    private val player: PlayerRepository,
     private val playFavorite: PlayFavoriteUseCase,
+    private val resolveCover: ResolveFavoriteCoverUseCase,
     private val shortcuts: ShortcutPublisher,
 ) : ViewModel() {
 
     data class State(
         val favorites: List<Favorite> = emptyList(),
         val activeBox: Box? = null,
+        val connection: ConnectionState = ConnectionState.DISCONNECTED,
     )
 
     private val messageChannel = MutableSharedFlow<UiMessage>(
@@ -53,8 +59,46 @@ class FavoritesViewModel @Inject constructor(
         boxes.activeBox.map { it?.id }.distinctUntilChanged().flatMapLatest { boxId ->
             if (boxId == null) flowOf(emptyList()) else favorites.favorites(boxId)
         },
-    ) { box, list -> State(favorites = list, activeBox = box) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
+        player.connectionState,
+    ) { box, list, connection ->
+        State(favorites = list, activeBox = box, connection = connection)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
+
+    /**
+     * Favourites this session has already asked the box about, so a scroll back up the grid
+     * does not ask again for the ones that genuinely have no artwork.
+     *
+     * Deliberately not persisted, and cleared whenever the box or the connection changes:
+     * a lookup that came back empty because the box was unreachable must be allowed a second
+     * chance once it is back, or a missing cover would stay missing until the app restarts.
+     */
+    private val coverAttempts = mutableSetOf<Long>()
+
+    init {
+        viewModelScope.launch {
+            combine(
+                boxes.activeBox.map { it?.id },
+                player.connectionState.map { it.isUsable },
+            ) { boxId, usable -> boxId to usable }
+                .distinctUntilChanged()
+                .collect { coverAttempts.clear() }
+        }
+    }
+
+    /**
+     * Resolves the cover art for a favourite that was saved without one, once it is on
+     * screen. Called from the entry itself rather than for the whole list, because each
+     * lookup is at least one RPC on the socket the box shares with its card reader (§6) —
+     * and the answer is stored, so it happens once per favourite rather than per visit.
+     */
+    fun ensureCover(favorite: Favorite) {
+        if (favorite.coverFile != null) return
+        // Asking an unreachable box only burns the one attempt this favourite gets.
+        if (!state.value.connection.isUsable) return
+        if (!coverAttempts.add(favorite.id)) return
+
+        viewModelScope.launch { resolveCover(favorite) }
+    }
 
     fun play(favorite: Favorite) {
         viewModelScope.launch {

@@ -10,11 +10,13 @@ import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryIndexResult
 import app.coilforphoniebox.domain.model.LibraryIndexState
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlaybackState
 import app.coilforphoniebox.domain.repository.LibraryRepository
 import app.coilforphoniebox.transport.Commands
 import app.coilforphoniebox.transport.ConnectionManager
 import app.coilforphoniebox.transport.LibraryParser
+import app.coilforphoniebox.transport.PhonieboxCommand
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -93,28 +95,70 @@ class LibraryRepositoryImpl @Inject constructor(
         coverPermits.withPermit {
             // Another caller may have resolved it while this one waited for a permit.
             if (dao.findAlbum(boxId, albumArtist, album)?.coverFile != null) return
+            val coverFile = resolveCover(Commands.albumCoverArt(albumArtist, album)) ?: return
+            dao.setAlbumCover(boxId, albumArtist, album, coverFile)
+        }
+    }
 
-            // The box answers the first request with CACHE_PENDING and extracts the artwork
-            // on a worker thread, so asking once never yields a file name.
-            repeat(COVER_ATTEMPTS) { attempt ->
-                if (attempt > 0) delay(COVER_RETRY_MILLIS)
-
-                val payload = transport.call(Commands.albumCoverArt(albumArtist, album))
-                    .getOrNull() ?: return
-
-                when (val art = LibraryParser.coverArt(payload)) {
-                    is LibraryParser.CoverArt.Available -> {
-                        dao.setAlbumCover(boxId, albumArtist, album, art.fileName)
-                        return
-                    }
-
-                    // Nothing to show, and nothing to gain from asking again.
-                    LibraryParser.CoverArt.Missing -> return
-
-                    LibraryParser.CoverArt.Pending -> Unit
+    override suspend fun coverFileFor(boxId: String, target: PlayTarget): String? = when (target) {
+        is PlayTarget.Album ->
+            dao.findAlbum(boxId, target.albumArtist, target.album)?.coverFile
+                ?: coverPermits.withPermit {
+                    resolveCover(Commands.albumCoverArt(target.albumArtist, target.album))
+                        // The album grid asks the same question, so answer it here too. A
+                        // missing row makes this a no-op rather than an error.
+                        ?.also { dao.setAlbumCover(boxId, target.albumArtist, target.album, it) }
                 }
+
+        is PlayTarget.Track -> coverPermits.withPermit { resolveCover(Commands.singleCoverArt(target.url)) }
+
+        is PlayTarget.Folder -> firstTrackUrlIn(boxId, target.path, descend = true)
+            ?.let { url -> coverPermits.withPermit { resolveCover(Commands.singleCoverArt(url)) } }
+    }
+
+    /**
+     * URL of the track whose artwork stands in for a folder's.
+     *
+     * There is no folder cover in the protocol, so a track inside it has to do. The cache
+     * answers for a level that has been browsed; one that has not costs a
+     * `get_folder_content`. A folder holding nothing but subfolders — an artist above its
+     * albums, which is a common layout — is followed one level down and no further, because
+     * each level is another call on the socket the box shares with its card reader (§6).
+     */
+    private suspend fun firstTrackUrlIn(boxId: String, path: String, descend: Boolean): String? {
+        if (dao.findFolder(boxId, path)?.contentCachedAt == null) {
+            refreshFolder(boxId, path).getOrElse { return null }
+        }
+        dao.firstTrackIn(boxId, path)?.let { return it.url }
+        if (!descend) return null
+        val child = dao.firstFolderIn(boxId, path) ?: return null
+        return firstTrackUrlIn(boxId, child.path, descend = false)
+    }
+
+    /**
+     * Asks the box for one cover and waits out its extraction.
+     *
+     * The first request for a song or album the box has not cached yet answers
+     * `CACHE_PENDING` and queues the work on a worker thread, so asking once never yields a
+     * file name. Null means there is no artwork — or that it did not arrive in the time this
+     * is prepared to wait, which the caller must not record as "none".
+     */
+    private suspend fun resolveCover(command: PhonieboxCommand): String? {
+        repeat(COVER_ATTEMPTS) { attempt ->
+            if (attempt > 0) delay(COVER_RETRY_MILLIS)
+
+            val payload = transport.call(command).getOrNull() ?: return null
+
+            when (val art = LibraryParser.coverArt(payload)) {
+                is LibraryParser.CoverArt.Available -> return art.fileName
+
+                // Nothing to show, and nothing to gain from asking again.
+                LibraryParser.CoverArt.Missing -> return null
+
+                LibraryParser.CoverArt.Pending -> Unit
             }
         }
+        return null
     }
 
     override suspend fun rescanBoxLibrary(boxId: String): Result<Unit> =

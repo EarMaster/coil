@@ -44,4 +44,6 @@ class FavoriteRepositoryImpl @Inject constructor(
     override suspend fun recordLaunch(id: Long) = dao.incrementLaunchCount(id)
 
     override suspend fun setPinned(id: Long, pinned: Boolean) = dao.setPinned(id, pinned)
+
+    override suspend fun setCover(id: Long, coverFile: String) = dao.setCover(id, coverFile)
 }

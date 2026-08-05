@@ -5,6 +5,7 @@ import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.ConnectionTestResult
 import app.coilforphoniebox.domain.model.Favorite
+import app.coilforphoniebox.domain.model.FavoritesLayout
 import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryIndexResult
@@ -47,6 +48,7 @@ class FakePlayerRepository(
     coverUrl: String? = null,
     sleepTimer: SleepTimerStatus = SleepTimerStatus.Off,
     boxVersion: String? = "future3/main",
+    private val coverFile: String? = null,
 ) : PlayerRepository {
     override val status = MutableStateFlow(status)
     override val volume = MutableStateFlow(volume)
@@ -54,6 +56,8 @@ class FakePlayerRepository(
     override val boxVersion = MutableStateFlow(boxVersion)
     override val coverUrl = MutableStateFlow(coverUrl)
     override val sleepTimer = MutableStateFlow(sleepTimer)
+
+    override fun currentCoverFile(): String? = coverFile
 
     override suspend fun play(): Result<Unit> = Result.success(Unit)
     override suspend fun pause(): Result<Unit> = Result.success(Unit)
@@ -145,6 +149,10 @@ class FakeFavoriteRepository(favorites: List<Favorite> = emptyList()) : Favorite
     override suspend fun reorder(ids: List<Long>) = Unit
     override suspend fun recordLaunch(id: Long) = Unit
     override suspend fun setPinned(id: Long, pinned: Boolean) = Unit
+
+    override suspend fun setCover(id: Long, coverFile: String) {
+        all.value = all.value.map { if (it.id == id) it.copy(coverFile = coverFile) else it }
+    }
 }
 
 /**
@@ -181,6 +189,13 @@ class FakeLibraryRepository(
 
     override suspend fun ensureAlbumCover(boxId: String, albumArtist: String, album: String) = Unit
 
+    /**
+     * Null, deliberately: a golden has to be the same picture every run, and a cover that
+     * appeared as the result of a lookup would depend on when the lookup finished. A
+     * favourite that is meant to show artwork carries its `coverFile` from the start.
+     */
+    override suspend fun coverFileFor(boxId: String, target: PlayTarget): String? = null
+
     override suspend fun rescanBoxLibrary(boxId: String): Result<Unit> = Result.success(Unit)
 
     override suspend fun refreshIfStaleAndIdle(boxId: String) = Unit
@@ -214,6 +229,10 @@ class FakeSettingsRepository(settings: AppSettings = AppSettings()) : SettingsRe
 
     override suspend fun setSessionMode(mode: SessionMode) {
         state.value = state.value.copy(sessionMode = mode)
+    }
+
+    override suspend fun setFavoritesLayout(layout: FavoritesLayout) {
+        state.value = state.value.copy(favoritesLayout = layout)
     }
 
     override suspend fun setOnboardingComplete(complete: Boolean) {

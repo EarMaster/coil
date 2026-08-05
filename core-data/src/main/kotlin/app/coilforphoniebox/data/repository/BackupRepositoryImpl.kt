@@ -8,6 +8,7 @@ import app.coilforphoniebox.data.settings.SettingsStore
 import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
+import app.coilforphoniebox.domain.model.FavoritesLayout
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
 import app.coilforphoniebox.domain.repository.BackupRepository
@@ -64,6 +65,12 @@ class BackupRepositoryImpl @Inject constructor(
         /** Added with format version 2, together with `TRACK` favourites. */
         val trackUrl: String? = null,
         val sortIndex: Int = 0,
+        /**
+         * Saves the box a round of cover lookups after a reinstall. The name is a hash in
+         * the box's own cover cache, so it stays valid for the same box and means nothing
+         * on another one — which is fine, since favourites are matched to a box by address.
+         */
+        val coverFile: String? = null,
     )
 
     @Serializable
@@ -71,6 +78,7 @@ class BackupRepositoryImpl @Inject constructor(
         val themeMode: String = ThemeMode.SYSTEM.name,
         val dynamicColor: Boolean = false,
         val sessionMode: String = SessionMode.APP_ONLY.name,
+        val favoritesLayout: String = FavoritesLayout.GRID.name,
     )
 
     override suspend fun export(): String {
@@ -96,6 +104,7 @@ class BackupRepositoryImpl @Inject constructor(
                             album = favorite.album,
                             trackUrl = favorite.trackUrl,
                             sortIndex = favorite.sortIndex,
+                            coverFile = favorite.coverFile,
                         )
                     },
                 )
@@ -104,6 +113,7 @@ class BackupRepositoryImpl @Inject constructor(
                 themeMode = current.themeMode.name,
                 dynamicColor = current.dynamicColor,
                 sessionMode = current.sessionMode.name,
+                favoritesLayout = current.favoritesLayout.name,
             ),
         )
         return codec.encodeToString(file)
@@ -156,6 +166,7 @@ class BackupRepositoryImpl @Inject constructor(
                         album = favorite.album,
                         trackUrl = favorite.trackUrl,
                         sortIndex = favorite.sortIndex,
+                        coverFile = favorite.coverFile,
                     ).toEntity(),
                 )
             }
@@ -169,6 +180,10 @@ class BackupRepositoryImpl @Inject constructor(
             SessionMode.entries.firstOrNull { it.name == file.settings.sessionMode }
                 ?: SessionMode.APP_ONLY,
         )
+        settings.setFavoritesLayout(
+            FavoritesLayout.entries.firstOrNull { it.name == file.settings.favoritesLayout }
+                ?: FavoritesLayout.GRID,
+        )
     }
 
     private val codec = Json {
@@ -181,6 +196,10 @@ class BackupRepositoryImpl @Inject constructor(
          * 2 added `trackUrl`. The bump is deliberate even though the field is optional:
          * an older build would import a `TRACK` row without its URL, which is a
          * favourite that cannot play. Refusing the file says so instead.
+         *
+         * `coverFile` and `favoritesLayout` arrived later and deliberately did *not* bump
+         * it: an older build that drops them loses a cover it can resolve again from the
+         * box and a layout preference, not the ability to play anything.
          */
         const val FORMAT_VERSION = 2
     }

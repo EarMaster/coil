@@ -85,6 +85,15 @@ object StoreFixtures {
         ),
     )
 
+    /**
+     * Three with artwork and one without, which is what a used favourites tab looks like: a
+     * folder that has been played carries the cover Coil resolved for it, and one whose tracks
+     * have no embedded art keeps its placeholder.
+     *
+     * The covers are not decoration on a listing image — without them this shot is four empty
+     * tiles above a mini player that *does* show a cover, which reads as artwork failing to
+     * load rather than as a design.
+     */
     val favorites = listOf(
         Favorite(
             id = 1,
@@ -92,6 +101,7 @@ object StoreFixtures {
             label = "Bedtime Stories",
             type = FavoriteType.FOLDER,
             folder = "Bedtime Stories",
+            coverFile = "cover-bedtime.jpg",
             sortIndex = 0,
             launchCount = 31,
         ),
@@ -102,6 +112,7 @@ object StoreFixtures {
             type = FavoriteType.ALBUM,
             albumArtist = "Detective Stories",
             album = "The Missing Key",
+            coverFile = "cover-missing-key.jpg",
             sortIndex = 1,
             launchCount = 12,
         ),
@@ -111,6 +122,10 @@ object StoreFixtures {
             label = "Fairy Tales",
             type = FavoriteType.FOLDER,
             folder = "Fairy Tales",
+            // Not "cover-fairy-tales.jpg": that lands in the same palette slot as the
+            // bedtime cover, and two adjacent tiles of one colour is what this shot is
+            // meant to disprove. See FakeCoverArt on picking a fixture's file name.
+            coverFile = "cover-fairytales.jpg",
             sortIndex = 2,
             launchCount = 9,
         ),

@@ -9,6 +9,20 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Added
+- **Favourites can be shown as a compact list**, switched with the new button in the top bar of that
+  tab. Covers stay the default — they are what makes a favourite something a child can aim at
+  without reading — but a collection that has outgrown a screenful of tiles is easier to scan as
+  rows. The choice is remembered
+
+### Fixed
+- **Favourites now show cover art.** They almost never did: a favourite recorded a cover only when
+  it was saved from an album whose artwork happened to be loaded already, so the star on the player
+  and every folder and track in the library saved one with no cover at all — and nothing ever filled
+  it in later. A favourite saved while something is playing now keeps that cover, and any favourite
+  without one has it looked up when it comes on screen, once, and stored. Fetched artwork already
+  survived the box being switched off, in the image cache; there was simply nothing to fetch
+
 ## [0.9.0] - 2026-08-05
 
 ### Added

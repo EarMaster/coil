@@ -6,6 +6,7 @@ import app.coilforphoniebox.domain.model.AppSettings
 import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.ConnectionTestResult
+import app.coilforphoniebox.domain.model.FavoritesLayout
 import app.coilforphoniebox.domain.model.PlayerStatus
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.LibraryRepository
@@ -35,7 +36,7 @@ class AppViewModel @Inject constructor(
     private val boxes: BoxRepository,
     private val player: PlayerRepository,
     private val library: LibraryRepository,
-    settings: SettingsRepository,
+    private val settings: SettingsRepository,
 ) : ViewModel() {
 
     data class State(
@@ -117,5 +118,20 @@ class AppViewModel @Inject constructor(
 
     fun togglePlayback() {
         viewModelScope.launch { player.toggle() }
+    }
+
+    /**
+     * Switches the favourites tab between covers and rows.
+     *
+     * Lives here rather than in `FavoritesViewModel` because the control is in the top bar,
+     * which the shell owns — and it is a stored preference, so the tab comes back the way it
+     * was left.
+     */
+    fun toggleFavoritesLayout() {
+        val next = when (state.value.settings.favoritesLayout) {
+            FavoritesLayout.GRID -> FavoritesLayout.LIST
+            FavoritesLayout.LIST -> FavoritesLayout.GRID
+        }
+        viewModelScope.launch { settings.setFavoritesLayout(next) }
     }
 }

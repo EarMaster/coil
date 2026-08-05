@@ -27,6 +27,26 @@ interface LibraryDao {
     @Query("SELECT contentCachedAt FROM library_folders WHERE boxId = :boxId AND path = :path")
     fun observeContentCachedAt(boxId: String, path: String): Flow<Long?>
 
+    /**
+     * First track of a level, in the order the browser shows it. Nothing in the protocol
+     * returns a folder's cover art, so this is what stands in for one.
+     */
+    @Query(
+        "SELECT * FROM library_tracks WHERE boxId = :boxId AND parentPath = :parentPath " +
+            "ORDER BY trackNo IS NULL, trackNo ASC, title COLLATE NOCASE ASC LIMIT 1",
+    )
+    suspend fun firstTrackIn(boxId: String, parentPath: String): LibraryTrackEntity?
+
+    /**
+     * First subfolder of a level, for a folder that holds no tracks of its own. A listing
+     * carries the level itself as well, which is why it is excluded here.
+     */
+    @Query(
+        "SELECT * FROM library_folders WHERE boxId = :boxId AND parentPath = :parentPath " +
+            "AND path != :parentPath ORDER BY displayName COLLATE NOCASE ASC LIMIT 1",
+    )
+    suspend fun firstFolderIn(boxId: String, parentPath: String): LibraryFolderEntity?
+
     @Query(
         "SELECT * FROM library_albums WHERE boxId = :boxId " +
             "ORDER BY albumArtist COLLATE NOCASE ASC, album COLLATE NOCASE ASC",

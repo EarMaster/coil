@@ -28,7 +28,7 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 | `app/src/debug/` | `HiltTestActivity` and the manifest entry for it: an empty, unexported Hilt entry point the screenshot tests compose into. Debug builds only. |
 | `docs/implementation-plan.md` | Full architecture/design spec — tech stack, module layout, transport design, data model, media session, multi-box design, branding, i18n rules, phased build plan. **Read before implementing anything non-trivial.** |
 | `docs/protocol-notes.md` | Condensed Phoniebox v3 ZMQ protocol reference, distilled from the upstream Python source. |
-| `docs/pages/` | The GitHub Pages site (Jekyll), deployed by `pages.yml` — landing page (with generated screenshots in `assets/screenshots/`) and privacy policy, served at `coilforphoniebox.app` via the `CNAME` file in this folder. Kept separate from the planning docs above so the Pages *site* only contains user-facing content — the planning docs are still public in the repo, just not part of the deployed website. |
+| `docs/pages/` | The GitHub Pages site (Jekyll), deployed by `pages.yml` — landing page (with generated screenshots in `assets/screenshots/`) and privacy policy, served at `coilforphoniebox.app` via the `CNAME` file in this folder. Kept separate from the planning docs above so the Pages *site* only contains user-facing content — the planning docs are still public in the repo, just not part of the deployed website. See "Landing page" below for the theme it is built on. |
 | `spike/` | Standalone Gradle/Kotlin JVM project validating the transport approach (JeroMQ DEALER client) against a real box, independent of Android. |
 | `tools/check_store_metadata.sh` | Validates `fastlane/metadata/android/` against Play's per-locale character limits (title 30, short 80, full 4000, release notes 500) **and its listing images** (24-bit PNG, no alpha, 320–3840 px a side, long side at most twice the short one, at least two per set). Pass a versionCode to also require release notes in every launch locale. Run by `/release` and by `google-play.yml`. Counts characters as bytes-minus-UTF-8-continuation-bytes rather than using `wc -m`, which silently counts bytes in a non-UTF-8 shell locale. |
 | `tools/probe_phoniebox.py` | Python/pyzmq script that does the same validation from the other side (REQ vs DEALER framing, pipelining, PubSub schema dump) — used to sanity-check protocol assumptions against a live box before trusting them in Kotlin. |
@@ -44,7 +44,11 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 
 - `ci.yml` / `codeql.yml` — build/test/lint/screenshot verification and CodeQL analysis on PRs to
   `main` or `develop`. Both start with a `detect` job that checks for a root `./gradlew`; that gate
-  is now satisfied, so these actually build, test and lint.
+  is now satisfied, so these actually build, test and lint. `ci.yml` also has a `Pages Site` job
+  that builds `docs/pages/` with the same action `pages.yml` uses and asserts `CNAME`, `main.css`,
+  `index.html` and `privacy/index.html` all landed. It deliberately skips the `detect` gate — the
+  site has nothing to do with Gradle — and exists because `pages.yml` only runs on `main`, so
+  without it a broken template would reach the live site before anyone noticed.
 - `screenshots.yml` — re-records the golden screenshots *and* the store/website images on the
   Linux runner and commits them back to the branch. Triggered from the Actions tab, or by a push
   to `develop` whose commit message contains `[record-screenshots]`. See "Screenshot tests".
@@ -413,8 +417,11 @@ commits the result back to the branch. Its own commit carries no marker, so it c
 `StoreAssetTest` generates the Play listing screenshots and the website's, from the same fakes
 and the same harness as the goldens, into `fastlane/metadata/android/en-US/images/` —
 `phoneScreenshots` (1233×2460), `sevenInchScreenshots` (1200×1920) and `tenInchScreenshots`
-(2560×1600), five images each. The phone set is copied to `docs/pages/assets/screenshots/`,
-which is what the landing page shows.
+(2560×1600), five images each. All three sets are copied into `docs/pages/assets/screenshots/`
+— the phone set at the top level, then `tablet7/` and `tablet10/` — because the website is served
+from `docs/pages` only and cannot link into the fastlane tree. Everything is copied, not just what
+the site currently shows, so changing which tablet shots appear is an edit to
+`docs/pages/_config.yml` alone and never needs Gradle or a re-record.
 
 **They are products, not baselines**, and the distinction runs through everything here:
 
@@ -442,9 +449,15 @@ which is what the landing page shows.
 - **English only, deliberately.** Another locale is one more subclass with a locale qualifier,
   but three of the five translations are unreviewed drafts missing 43 strings, and a store
   screenshot with English fallbacks visible in it is worse than no localised screenshot.
-- The **10-inch set shows the untouched tablet layout** — a phone layout stretched across
-  1280 dp. It is accurate and not flattering; publishing the phone set alone may serve the
-  listing better until that layout is addressed.
+- The **10-inch set is now mixed, not uniformly bad.** The player and sleep timer genuinely use
+  the width — since "put the cover beside the controls on a wide screen" they are a two-pane
+  layout with the cover beside the title and transport controls. Library, favourites and search
+  are still the phone layout stretched across 1280 dp, which leaves folder names on the far left
+  with their action icons about 1500 px away, and over half the favourites grid empty. Accurate,
+  and not flattering. The landing page shows the two that work and skips the three that do not
+  (see "Landing page"); the same split is worth making if these are ever uploaded to Play.
+- The **7-inch set holds up throughout** — at 1200×1920 it is portrait, so it reads as a roomier
+  phone rather than a stretched one.
 
 Neither `google-play.yml` nor `r0adkll/upload-google-play` uploads images yet, so these files
 are the canonical source waiting for a tool that reads them — the same position the listing text
@@ -455,6 +468,79 @@ The locale axis is one German golden rather than all five launch locales —
 phone. It used to show 43 strings falling back to English mid-screen, which is how the gap was
 noticed at all; every string is translated as of this commit, so what it now shows is German
 throughout.
+
+## Landing page
+
+`docs/pages/` is built on **[automatic-app-landing-page](https://github.com/emilbaehr/automatic-app-landing-page)**
+by Emil Baehr, MIT. The theme is **vendored** — `_layouts/`, `_includes/`, `_sass/` and
+`main.scss` are copies, not a `remote_theme` — because it keeps `index.html` and `main.scss` at
+its repo root, and `remote_theme` only pulls `_layouts`, `_includes`, `_sass` and `assets`. So
+upstream fixes have to be merged by hand; `_config.yml`'s header comment records what diverged.
+Vendoring means the MIT notice has to travel with the code, so it is reproduced in
+`docs/pages/_THEME-LICENSE.txt` — underscore-prefixed, so Jekyll keeps it out of the built site.
+MIT is GPL-compatible, so it does not conflict with Coil's own GPL-3.0.
+
+The theme is built for iOS apps, and three parts of it were wrong for an Android-only client:
+
+- **The device frame was an iPhone** — body PNGs plus a notched SVG clip-path sized for
+  1125×2436 (0.462). The store screenshots are 1233×2460 (0.501), so they came out squashed.
+  Replaced with a bezel drawn in CSS that takes its height from the image, so it cannot squash
+  whatever gets dropped in later.
+- **It showed one screenshot.** `screencontent.html` looped the files in `assets/screenshot/`
+  but assigned every one to the same `<img>`, so the last silently won. Replaced by a captioned
+  `overflow-x` strip driven by the `screenshots:` list in `_config.yml`, plus the first entry in
+  the hero frame. No carousel script — images a reader can flick through beat images behind a
+  JS state machine, and it survives JS being off.
+- **The App Store badge rendered unconditionally** and the "smart app banner" was
+  `apple-itunes-app`. Both gone; the Play badge and a GitHub Releases button replace them. The
+  `itunes.apple.com` lookup that filled in icon, name and price at runtime is gone too, along
+  with the jQuery it needed.
+
+Beyond the theme, three things were added:
+
+- **A second, tablet strip.** `gallery.html` is shared by both and takes `include.items`,
+  `include.heading`, `include.area` and `include.variant`. Two details there have bitten once
+  each: Jekyll exposes include parameters as `include.*`, and a bare `{% if items %}` silently
+  renders nothing; and both strips carry the same `.gallery` class, so the grid area has to come
+  from a per-strip modifier or the second lands on top of the first. The tablet strip mixes
+  landscape and portrait shots, so its cards size by image *height* and take their width from the
+  image (`width: min-content`) — sized off the caption instead, a 182px portrait shot ends up
+  centred in a 530px landscape-shaped card.
+- **A lightbox**, in `_includes/lightbox.html`. Native `<dialog>` + `showModal()`, so Escape,
+  the backdrop and the focus trap are the browser's job, and roughly 40 lines cover the rest:
+  click to open, arrow keys and buttons to page within the clicked strip, and the `src` dropped
+  on close. Every thumbnail is a real `<a>` to its own image file, so with no JS or no `<dialog>`
+  the click still opens the full-size image. The hero is zoomable too and forms a group of one.
+- **A side-links panel** (`sidelinks.html`, `side_links:` in `_config.yml`) filling the four
+  columns beside the prose, which is capped at a 780px measure and otherwise left that band
+  empty. A url containing `://` is treated as external and gets `target="_blank"` plus the
+  outward arrow.
+
+Every thumbnail needs `width`/`height` in `_config.yml`. They are not decoration: the images are
+lazy-loaded and the tablet strip sizes by height, so with no intrinsic ratio to work from the
+browser collapses each one to 1px wide until it loads. Note also that the thumbnails sit inside
+the lightbox anchor, so CSS must reach them with a descendant selector — `.galleryItem > img`
+matches nothing and the images silently fall back to natural size, 2560px wide in one case.
+
+Two things about it are load-bearing:
+
+- **`.coverWrapper`'s height is a magic number, per breakpoint.** It wraps the whole page in
+  `default.html`, so it cannot size to content without tinting the features and footer as well.
+  Everything in `.appInfo` is light text, so anything that spills past the band lands on the
+  white body and vanishes — `.downloadNote` is last and goes first. Sweep the widths after
+  touching the hero. The tightest case is where the download buttons stack; buttons stack at
+  ≤600px rather than the theme's ≤528px precisely because `flex-wrap` used to drop the second
+  one to its own row somewhere in between and add an unaccounted row of height.
+- **Two logo variants.** `assets/coil-mark.svg` (deep green card, white coil) is the favicon and
+  the hero icon, and the header on the white privacy page. It is a copy of `brand/coil-mark.svg`
+  — Jekyll only copies files from the site source, so the two can drift; keep them in step.
+  `assets/coil-mark-header.svg` inverts
+  it — white card, green coil — for the header on the green cover, where the standard mark has
+  almost no contrast. Its viewBox is cropped to the card so the logo is not mostly dead space.
+  The layout picks one via `{% include header.html inverse=true %}`.
+
+Font Awesome still loads from `use.fontawesome.com` for the 14 feature and social icons — the
+one third-party request left on the site.
 
 ## Deep links
 

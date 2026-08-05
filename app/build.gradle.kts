@@ -150,15 +150,30 @@ val flattenStoreAssets = tasks.register("flattenStoreAssets") {
 
         // The website is served from docs/pages only, so it needs its own copy rather than a
         // link into the fastlane tree.
-        val phones = storeImages.resolve("phoneScreenshots")
-        if (phones.isDirectory) {
-            pagesScreenshots.mkdirs()
-            phones.listFiles { file -> file.extension == "png" }?.forEach { file ->
-                file.copyTo(pagesScreenshots.resolve(file.name), overwrite = true)
+        //
+        // All three sets are copied, not just the ones the site currently shows. Which tablet
+        // images are worth showing is a content decision — some screens still have a lot of dead
+        // space at 1280 dp — and it belongs in docs/pages/_config.yml's `tablet_screenshots`
+        // list, not in a build script. Copying everything means changing that list never
+        // requires touching Gradle or re-recording.
+        var copied = 0
+        listOf(
+            "phoneScreenshots" to pagesScreenshots,
+            "sevenInchScreenshots" to pagesScreenshots.resolve("tablet7"),
+            "tenInchScreenshots" to pagesScreenshots.resolve("tablet10"),
+        ).forEach { (setName, destination) ->
+            val source = storeImages.resolve(setName)
+            if (!source.isDirectory) return@forEach
+            destination.mkdirs()
+            source.listFiles { file -> file.extension == "png" }?.forEach { file ->
+                file.copyTo(destination.resolve(file.name), overwrite = true)
+                copied++
             }
         }
 
-        logger.lifecycle("Flattened $flattened store screenshot(s); phone set copied to the Pages site.")
+        logger.lifecycle(
+            "Flattened $flattened store screenshot(s); copied $copied to the Pages site."
+        )
     }
 }
 

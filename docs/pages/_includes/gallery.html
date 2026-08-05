@@ -1,0 +1,38 @@
+{% comment %}
+	Parameters, all set by the layout. Jekyll exposes them as include.*, not as bare names.
+	  include.items    — a list of {image, title, description, alt}
+	  include.heading  — section heading, optional
+	  include.area     — grid area to occupy ("g" for the phone strip, "t" for the tablet one)
+	  include.variant  — "phone" fixes card width; "tablet" fixes card height instead, so
+	                     portrait and landscape shots can share a strip without one dwarfing
+	                     the other
+
+	A plain overflow-x strip with scroll snapping. No carousel script: images a reader can
+	flick through beat images behind a JS state machine, and it keeps working with
+	JavaScript switched off.
+{% endcomment %}
+
+{% if include.items and include.items.size > 0 %}
+	<section class="gallery gallery--{{ include.area }}">
+		{% if include.heading %}
+			<h2 class="galleryHeading">{{ include.heading }}</h2>
+		{% endif %}
+		<ul class="galleryStrip galleryStrip--{{ include.variant }}">
+			{% for shot in include.items %}
+				<li class="galleryItem">
+					{% comment %}
+						A real link to the image file, so this still does something useful with
+						JavaScript off. lightbox.html intercepts the click when it can.
+					{% endcomment %}
+					<a class="galleryZoom" href="{{ shot.image | relative_url }}" data-caption="{{ shot.title | escape }}">
+						<img src="{{ shot.image | relative_url }}" alt="{{ shot.alt }}"{% if shot.width and shot.height %} width="{{ shot.width }}" height="{{ shot.height }}"{% endif %} loading="lazy">
+					</a>
+					<div class="galleryCaption">
+						<h3>{{ shot.title }}</h3>
+						<p>{{ shot.description }}</p>
+					</div>
+				</li>
+			{% endfor %}
+		</ul>
+	</section>
+{% endif %}

@@ -1,6 +1,9 @@
 ---
+layout: page
 title: Privacy Policy
 permalink: /privacy/
+include_in_header: true
+include_in_footer: true
 ---
 
 # Privacy Policy for Coil

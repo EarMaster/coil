@@ -1,0 +1,34 @@
+{% comment %}
+	include.inverse — set by the layout, not the page. The landing page's header sits on the
+	green cover and needs the white-card mark; the privacy page's header sits on white and
+	needs the standard deep green one.
+{% endcomment %}
+{% if include.inverse %}
+	{% assign header_icon = site.header_icon_inverse | default: site.app_icon %}
+{% else %}
+	{% assign header_icon = site.app_icon %}
+{% endif %}
+
+<header>
+	<div class="logo">
+		{% if page.url != '/' %}
+			<a href="{{ '/' | relative_url }}"><img class="headerIcon{% if include.inverse %} headerIconInverse{% endif %}" src="{{ header_icon | relative_url }}" alt="{{ site.app_name }}"></a>
+		{% else %}
+			<img class="headerIcon{% if include.inverse %} headerIconInverse{% endif %}" src="{{ header_icon | relative_url }}" alt="{{ site.app_name }}">
+		{% endif %}
+		<div class="divider"></div>
+		<p class="headerName">{{ site.app_name }}</p>
+	</div>
+	<nav class="scroll">
+		<ul>
+			{% for p in site.pages %}
+				{% if p.include_in_header %}
+					<li><a href="{{ p.url | relative_url }}">{{ p.title }}</a></li>
+				{% endif %}
+			{% endfor %}
+			{% if site.github_link %}
+				<li><a href="{{ site.github_link }}" target="_blank" rel="noopener">GitHub</a></li>
+			{% endif %}
+		</ul>
+	</nav>
+</header>

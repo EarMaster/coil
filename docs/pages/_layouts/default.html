@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{% include head.html %}
+
+<body>
+	<div class="coverWrapper">
+		<div class="headerBackground">
+			<div class="container">
+				{% include header.html inverse=true %}
+				{% include hero.html %}
+				{% include features.html %}
+				{% include gallery.html items=site.screenshots heading=site.gallery_heading area="g" variant="phone" %}
+				{% include gallery.html items=site.tablet_screenshots heading=site.tablet_gallery_heading area="t" variant="tablet" %}
+				{% if content != '' %}
+					<section class="landingProse markdown-body">
+						{{ content }}
+					</section>
+				{% endif %}
+				{% include sidelinks.html %}
+				{% include footer.html %}
+			</div>
+		</div>
+	</div>
+	{% include lightbox.html %}
+</body>
+
+</html>

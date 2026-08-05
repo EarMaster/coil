@@ -120,3 +120,29 @@ jobs:
           name: lint-report
           path: app/build/reports/lint-results-debug.html
           retention-days: 14
+
+  # The landing page only deploys from main, so without this a broken Liquid tag or SCSS
+  # variable would reach the live site before anyone found out. Same build action as
+  # pages.yml, so a pass here means that workflow will get through too.
+  #
+  # Deliberately no `needs: detect` — the site does not involve Gradle.
+  pages:
+    name: Pages Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the site
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs/pages
+          destination: ./_site
+
+      # The custom domain lives in docs/pages/CNAME and has to survive into the artifact.
+      - name: Check CNAME and the rendered stylesheet survived
+        run: |
+          test -f ./_site/CNAME || { echo "::error::CNAME missing from build output"; exit 1; }
+          test -s ./_site/main.css || { echo "::error::main.css missing or empty"; exit 1; }
+          test -f ./_site/index.html || { echo "::error::index.html missing"; exit 1; }
+          test -f ./_site/privacy/index.html || { echo "::error::privacy page missing"; exit 1; }
+          echo "CNAME: $(cat ./_site/CNAME)"

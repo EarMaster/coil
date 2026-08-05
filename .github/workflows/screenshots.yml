@@ -1,0 +1,81 @@
+name: Record screenshots
+
+# Re-recording is how a visual change is *accepted*, which is a decision rather than something
+# that should happen on every push. There are therefore two deliberate ways to ask for it
+# (a local `recordRoborazziDebug` is equally valid — the files come out the same):
+#
+#   1. `workflow_dispatch` — pick the branch in the Actions tab. GitHub only offers this once
+#      the workflow exists on the default branch, which for this repo means after `screenshots.yml`
+#      has reached `main` at a release.
+#   2. A push to `develop` whose commit message contains `[record-screenshots]`. That works
+#      today, needs no default-branch registration, and keeps the opt-in explicit — put the
+#      marker in the commit that changes the UI.
+#
+# Either way the run commits the regenerated files back to the branch it ran on. It cannot be
+# used on `main`: that branch takes pull requests only, so the push would be rejected.
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    name: Record and commit
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[record-screenshots]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      # Recording here rather than locally is about who is doing it, not about rendering: the
+      # two have been compared and produce identical files. This is the route for a change
+      # someone wants accepted without a local Android toolchain, and it keeps the baseline and
+      # the check in the same place by default.
+      - name: Record goldens
+        run: ./gradlew :app:recordRoborazziDebug --tests '*ScreenshotTest'
+
+      # Same run, same renderer, so the store listing and the website never show an older UI
+      # than the goldens do. `recordRoborazziDebug` is finalised by `flattenStoreAssets`, which
+      # strips the alpha channel Play rejects and copies the phone set into the Pages site.
+      - name: Record store and website assets
+        run: ./gradlew :app:recordRoborazziDebug --tests '*StoreAssetTest'
+
+      # The images are listing metadata, so they answer to the same validator as the listing
+      # text: format, alpha, dimensions, aspect ratio and count.
+      - name: Validate store images
+        run: tools/check_store_metadata.sh
+
+      - name: Commit updated screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/testDebug/screenshots fastlane/metadata/android docs/pages/assets
+          if git diff --cached --quiet; then
+            echo "Screenshots unchanged — nothing to commit."
+            exit 0
+          fi
+          git commit -m "test(screenshots): re-record screenshots on the CI runner"
+          git push
+
+      # Uploaded whether or not anything changed, so the run itself is reviewable: the images
+      # are the result here, and a commit hash does not show you what the app looks like.
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: |
+            app/src/testDebug/screenshots/
+            fastlane/metadata/android/en-US/images/
+          retention-days: 14

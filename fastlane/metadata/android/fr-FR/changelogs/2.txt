@@ -1,0 +1,1 @@
+Première version. Voir ce qui est en cours, parcourir et rechercher la bibliothèque, et lancer ce que vous trouvez. Enregistrer des dossiers, des albums ou des titres comme favoris et les poser sur l'écran d'accueil. Une minuterie arrête la lecture sans éteindre la box. Les commandes apparaissent sur l'écran de verrouillage, et plusieurs box sont possibles.

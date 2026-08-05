@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!--
+      Box configuration and favourites are worth restoring. Everything not listed here is
+      left out, which is what keeps the library cache out of a backup: it is rebuilt from
+      the box on demand and would only make the backup large.
+    -->
+    <include domain="database" path="coil.db" />
+    <include domain="sharedpref" path="." />
+</full-backup-content>

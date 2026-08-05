@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Dutch translation.
+
+  DRAFT — not yet read by a fluent speaker. Per CONTRIBUTING, a locale ships only after a
+  human has reviewed it; missing strings fall back to English, so this file can be
+  corrected in place, a few strings at a time.
+
+  Note on length: Dutch runs roughly 30–35% longer than English, like German, so the box
+  switcher and the settings rows are where truncation shows up first.
+-->
+<resources>
+
+    <string name="nav_player">Speler</string>
+    <string name="nav_library">Bibliotheek</string>
+    <string name="nav_favourites">Favorieten</string>
+    <string name="nav_settings">Instellingen</string>
+
+    <string name="player_nothing_playing">Er speelt niets</string>
+    <string name="player_no_title">Onbekende titel</string>
+    <string name="player_cover_art">Hoes</string>
+    <string name="action_play">Afspelen</string>
+    <string name="action_pause">Pauze</string>
+    <string name="action_previous">Vorig nummer</string>
+    <string name="action_next">Volgend nummer</string>
+    <string name="action_shuffle">Willekeurig</string>
+    <string name="action_repeat">Herhalen</string>
+    <string name="action_repeat_one">Eén nummer herhalen</string>
+    <string name="action_volume">Volume</string>
+    <string name="action_favourite_remove">Uit favorieten verwijderen</string>
+    <string name="volume_percent">Volume %1$d%%</string>
+
+    <string name="connection_connected">Verbonden met %1$s</string>
+    <string name="connection_connecting">Verbinden met %1$s…</string>
+    <string name="connection_degraded">Opnieuw verbinden met %1$s…</string>
+    <string name="connection_disconnected">Niet verbonden</string>
+
+    <string name="library_tab_folders">Mappen</string>
+    <string name="library_tab_albums">Albums</string>
+    <string name="library_root">Bibliotheek</string>
+    <string name="library_empty_folder">Deze map is leeg</string>
+    <string name="library_empty_albums">Nog geen albums. Laat de box haar bibliotheek opnieuw inlezen als je er wel verwacht.</string>
+    <string name="library_unknown_album">Onbekend album</string>
+    <string name="library_unknown_artist">Onbekende artiest</string>
+    <string name="library_updated">Bijgewerkt %1$s</string>
+    <string name="library_never_updated">Nog niet geladen</string>
+    <string name="time_just_now">net nu</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">%1$d minuut geleden</item>
+        <item quantity="other">%1$d minuten geleden</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">%1$d uur geleden</item>
+        <item quantity="other">%1$d uur geleden</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">%1$d dag geleden</item>
+        <item quantity="other">%1$d dagen geleden</item>
+    </plurals>
+    <string name="action_play_folder">Map afspelen</string>
+    <string name="action_up">Eén niveau omhoog</string>
+    <string name="action_refresh">Vernieuwen</string>
+
+    <string name="favourites_empty_title">Nog geen favorieten</string>
+    <string name="favourites_empty_body">Houd een map of album in de bibliotheek ingedrukt om het hier op te slaan.</string>
+    <string name="favourites_added">Als favoriet opgeslagen</string>
+    <string name="favourites_removed">Favoriet verwijderd</string>
+    <string name="action_add_to_home_screen">Aan startscherm toevoegen</string>
+    <string name="action_remove">Verwijderen</string>
+    <string name="action_move_up">Omhoog</string>
+    <string name="action_move_down">Omlaag</string>
+    <string name="shortcut_pin_unsupported">Deze launcher ondersteunt geen snelkoppelingen op het startscherm.</string>
+
+    <string name="boxes_title">Boxen</string>
+    <string name="boxes_switch">Andere box kiezen</string>
+    <string name="action_add_box">Box toevoegen</string>
+    <string name="box_active">Actief</string>
+
+    <string name="add_box_explainer">De box en deze telefoon moeten in hetzelfde netwerk zitten. Coil praat direct met de box; niets gaat via internet.</string>
+    <string name="add_box_discovered">Gevonden in dit netwerk</string>
+    <string name="add_box_scanning">Zoeken…</string>
+    <string name="add_box_none_found">Automatisch niets gevonden. Voer het adres met de hand in.</string>
+    <string name="add_box_manual">Adres invoeren</string>
+    <string name="field_host">Hostnaam of IP-adres</string>
+    <string name="field_display_name">Naam</string>
+    <string name="field_display_name_hint">Woonkamer</string>
+    <string name="field_rpc_port">Opdrachtpoort</string>
+    <string name="field_pub_port">Statuspoort</string>
+    <string name="action_test_connection">Verbinding testen</string>
+    <string name="action_save">Opslaan</string>
+    <string name="action_cancel">Annuleren</string>
+    <string name="action_delete">Verwijderen</string>
+    <string name="test_running">Testen…</string>
+    <string name="test_success">Box bereikt. Phoniebox %1$s.</string>
+    <string name="test_success_unknown_version">Box bereikt.</string>
+
+    <string name="error_connection_timeout">Geen antwoord van de box.</string>
+    <string name="error_connection_timeout_help">Controleer of de box aan staat en in hetzelfde netwerk zit. Sommige routers en gastnetwerken verhinderen dat apparaten elkaar zien — die instelling heet meestal client-isolatie of AP-isolatie.</string>
+    <string name="error_host_empty">Voer een hostnaam of IP-adres in.</string>
+    <string name="error_port_invalid">Voer een poort tussen 1 en 65535 in.</string>
+    <string name="error_command_failed">De box heeft dat niet geaccepteerd.</string>
+    <string name="error_not_connected">Geen verbinding met de box.</string>
+    <string name="error_library_load_failed">De bibliotheek kon niet worden geladen.</string>
+
+    <string name="offline_banner">Opgeslagen gegevens. De box is niet bereikbaar.</string>
+    <string name="empty_no_box_body">Voeg je Phoniebox toe om te beginnen.</string>
+
+    <string name="settings_section_appearance">Weergave</string>
+    <string name="settings_theme">Thema</string>
+    <string name="settings_theme_system">Systeem volgen</string>
+    <string name="settings_theme_light">Licht</string>
+    <string name="settings_theme_dark">Donker</string>
+    <string name="settings_dynamic_colour">Kleuren van de achtergrond</string>
+    <string name="settings_dynamic_colour_summary">Vervangt het groen van Coil door kleuren uit je achtergrond.</string>
+    <string name="settings_language">Taal</string>
+    <string name="settings_language_summary">Opent de taalinstellingen van het systeem voor Coil.</string>
+
+    <string name="settings_section_box">Deze box</string>
+    <string name="settings_box_address">Adres</string>
+    <string name="settings_rescan">Bibliotheek op de box opnieuw inlezen</string>
+    <string name="settings_rescan_summary">Laat de box naar nieuwe bestanden zoeken. Bij een grote bibliotheek kan dat even duren.</string>
+    <string name="settings_rescan_started">De box leest haar bibliotheek opnieuw in.</string>
+    <string name="settings_remove_box">Deze box verwijderen</string>
+    <string name="settings_remove_box_confirm">%1$s verwijderen? De favorieten en de opgeslagen bibliotheek gaan mee. De box zelf blijft ongemoeid.</string>
+
+    <string name="settings_section_notification">Bediening op het vergrendelscherm</string>
+    <string name="settings_session_mode">Bediening tonen</string>
+    <string name="settings_session_mode_app_open">Alleen zolang Coil open is</string>
+    <string name="settings_session_mode_app_open_summary">Geen verbinding op de achtergrond, geen batterijverbruik.</string>
+    <string name="settings_session_mode_automatic">Zodra de box speelt</string>
+    <string name="settings_session_mode_automatic_summary">Houdt op wifi een verbinding met de box open, zodat de bediening van zichzelf verschijnt.</string>
+    <string name="settings_session_honest_note">Android kan een verbinding op de achtergrond alsnog verbreken om stroom te sparen, en sommige telefoons zijn strenger dan andere. Dan kan de bediening later verschijnen of wegblijven tot je Coil opent.</string>
+    <string name="settings_battery_exemption">Coil op de achtergrond toestaan</string>
+    <string name="settings_battery_exemption_summary">Opent de systeeminstelling die voorkomt dat Android Coil in slaap legt.</string>
+    <string name="settings_auto_session_box">Automatische bediening voor deze box</string>
+
+    <string name="settings_section_data">Gegevens</string>
+    <string name="settings_export">Instellingen exporteren</string>
+    <string name="settings_export_summary">Slaat boxen en favorieten op in een bestand. Handig voordat je wisselt tussen de Play Store- en de GitHub-versie.</string>
+    <string name="settings_import">Instellingen importeren</string>
+    <string name="settings_export_done">Instellingen geëxporteerd.</string>
+    <string name="settings_import_done">Instellingen geïmporteerd.</string>
+    <string name="settings_import_failed">Dat bestand kon niet worden gelezen.</string>
+
+    <string name="settings_section_about">Over</string>
+    <string name="settings_version">Coil %1$s</string>
+    <string name="settings_box_version">Phoniebox %1$s</string>
+    <string name="settings_security_note">Coil is bedoeld voor je thuisnetwerk. De opdrachtinterface van de box heeft geen wachtwoord, dus stuur die poorten niet door op je router — gebruik een VPN als je van buitenaf toegang nodig hebt.</string>
+
+    <string name="onboarding_title">Wijs Coil naar je box</string>
+
+    <string name="notification_channel_playback">Weergave</string>
+    <string name="notification_channel_playback_description">Bediening voor de Phoniebox die speelt.</string>
+    <string name="notification_channel_status">Verbinding</string>
+    <string name="notification_channel_status_description">Stille melding zolang Coil een verbinding met de box openhoudt.</string>
+    <string name="notification_watching_title">Gereed</string>
+    <string name="notification_watching_text">Verbonden met %1$s</string>
+
+    <string name="shortcut_failed">De box was niet bereikbaar.</string>
+    <string name="shortcut_starting">%1$s starten op %2$s</string>
+
+    <string name="action_more">Meer opties</string>
+
+</resources>

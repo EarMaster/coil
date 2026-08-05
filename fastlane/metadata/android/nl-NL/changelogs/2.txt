@@ -1,0 +1,1 @@
+Eerste versie. Zien wat er speelt, de bibliotheek doorbladeren en doorzoeken en alles direct afspelen. Mappen, albums of losse nummers als favoriet opslaan en op je startscherm zetten. Een slaaptimer stopt de weergave zonder de box uit te zetten. De bediening verschijnt op je vergrendelscherm en meerdere boxen zijn mogelijk.

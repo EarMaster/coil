@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  German translation.
+
+  DRAFT — not yet read by a fluent speaker. Per CONTRIBUTING, a locale ships only after
+  a human has reviewed it; missing strings fall back to English, so correcting this file
+  in place is safe and does not need to happen all at once.
+
+  Note on length: German runs roughly 30–35% longer than English, which is why the box
+  switcher and the settings rows are where truncation shows up first.
+-->
+<resources>
+
+    <string name="nav_player">Player</string>
+    <string name="nav_library">Bibliothek</string>
+    <string name="nav_favourites">Favoriten</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <string name="player_nothing_playing">Es läuft nichts</string>
+    <string name="player_no_title">Unbekannter Titel</string>
+    <string name="player_cover_art">Cover</string>
+    <string name="action_play">Abspielen</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_previous">Vorheriger Titel</string>
+    <string name="action_next">Nächster Titel</string>
+    <string name="action_shuffle">Zufallswiedergabe</string>
+    <string name="action_repeat">Wiederholen</string>
+    <string name="action_repeat_one">Einen Titel wiederholen</string>
+    <string name="action_volume">Lautstärke</string>
+    <string name="action_favourite_remove">Aus den Favoriten entfernen</string>
+    <string name="volume_percent">Lautstärke %1$d%%</string>
+
+    <string name="connection_connected">Mit %1$s verbunden</string>
+    <string name="connection_connecting">Verbinde mit %1$s…</string>
+    <string name="connection_degraded">Verbinde erneut mit %1$s…</string>
+    <string name="connection_disconnected">Nicht verbunden</string>
+
+    <string name="library_tab_folders">Ordner</string>
+    <string name="library_tab_albums">Alben</string>
+    <string name="library_root">Bibliothek</string>
+    <string name="library_empty_folder">Dieser Ordner ist leer</string>
+    <string name="library_empty_albums">Noch keine Alben. Wenn du welche erwartest, lass die Box ihre Bibliothek neu einlesen.</string>
+    <string name="library_unknown_album">Unbekanntes Album</string>
+    <string name="library_unknown_artist">Unbekannte Interpretin oder Interpret</string>
+    <string name="library_updated">Aktualisiert %1$s</string>
+    <string name="library_never_updated">Noch nicht geladen</string>
+    <string name="time_just_now">gerade eben</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">vor %1$d Minute</item>
+        <item quantity="other">vor %1$d Minuten</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">vor %1$d Stunde</item>
+        <item quantity="other">vor %1$d Stunden</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">vor %1$d Tag</item>
+        <item quantity="other">vor %1$d Tagen</item>
+    </plurals>
+    <string name="action_play_folder">Ordner abspielen</string>
+    <string name="action_up">Eine Ebene nach oben</string>
+    <string name="action_refresh">Aktualisieren</string>
+
+    <string name="favourites_empty_title">Noch keine Favoriten</string>
+    <string name="favourites_empty_body">Halte in der Bibliothek einen Ordner oder ein Album gedrückt, um es hier zu speichern.</string>
+    <string name="favourites_added">Als Favorit gespeichert</string>
+    <string name="favourites_removed">Favorit entfernt</string>
+    <string name="action_add_to_home_screen">Zum Startbildschirm hinzufügen</string>
+    <string name="action_remove">Entfernen</string>
+    <string name="action_move_up">Nach oben</string>
+    <string name="action_move_down">Nach unten</string>
+    <string name="shortcut_pin_unsupported">Dieser Launcher unterstützt keine Verknüpfungen auf dem Startbildschirm.</string>
+
+    <string name="boxes_title">Boxen</string>
+    <string name="boxes_switch">Box wechseln</string>
+    <string name="action_add_box">Box hinzufügen</string>
+    <string name="box_active">Aktiv</string>
+
+    <string name="add_box_explainer">Die Box und dieses Telefon müssen im gleichen Netzwerk sein. Coil spricht direkt mit der Box; nichts läuft über das Internet.</string>
+    <string name="add_box_discovered">Im Netzwerk gefunden</string>
+    <string name="add_box_scanning">Suche…</string>
+    <string name="add_box_none_found">Automatisch nichts gefunden. Gib die Adresse von Hand ein.</string>
+    <string name="add_box_manual">Adresse eingeben</string>
+    <string name="field_host">Hostname oder IP-Adresse</string>
+    <string name="field_display_name">Name</string>
+    <string name="field_display_name_hint">Wohnzimmer</string>
+    <string name="field_rpc_port">Befehlsport</string>
+    <string name="field_pub_port">Statusport</string>
+    <string name="action_test_connection">Verbindung testen</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_delete">Löschen</string>
+    <string name="test_running">Test läuft…</string>
+    <string name="test_success">Box erreicht. Phoniebox %1$s.</string>
+    <string name="test_success_unknown_version">Box erreicht.</string>
+
+    <string name="error_connection_timeout">Keine Antwort von der Box.</string>
+    <string name="error_connection_timeout_help">Prüfe, ob die Box eingeschaltet und im gleichen Netzwerk ist. Manche Router und Gastnetzwerke verhindern, dass Geräte sich gegenseitig sehen — diese Einstellung heißt meist Client-Isolation oder AP-Isolation.</string>
+    <string name="error_host_empty">Gib einen Hostnamen oder eine IP-Adresse ein.</string>
+    <string name="error_port_invalid">Gib einen Port zwischen 1 und 65535 ein.</string>
+    <string name="error_command_failed">Die Box hat das nicht angenommen.</string>
+    <string name="error_not_connected">Keine Verbindung zur Box.</string>
+    <string name="error_library_load_failed">Die Bibliothek konnte nicht geladen werden.</string>
+
+    <string name="offline_banner">Gespeicherte Daten. Die Box ist nicht erreichbar.</string>
+    <string name="empty_no_box_body">Füge deine Phoniebox hinzu, um zu beginnen.</string>
+
+    <string name="settings_section_appearance">Darstellung</string>
+    <string name="settings_theme">Erscheinungsbild</string>
+    <string name="settings_theme_system">Wie im System</string>
+    <string name="settings_theme_light">Hell</string>
+    <string name="settings_theme_dark">Dunkel</string>
+    <string name="settings_dynamic_colour">Farben des Hintergrundbilds</string>
+    <string name="settings_dynamic_colour_summary">Ersetzt das Grün von Coil durch Farben aus deinem Hintergrundbild.</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_summary">Öffnet die Spracheinstellungen des Systems für Coil.</string>
+
+    <string name="settings_section_box">Diese Box</string>
+    <string name="settings_box_address">Adresse</string>
+    <string name="settings_rescan">Bibliothek auf der Box neu einlesen</string>
+    <string name="settings_rescan_summary">Die Box sucht nach neuen Dateien. Bei einer großen Bibliothek kann das dauern.</string>
+    <string name="settings_rescan_started">Die Box liest ihre Bibliothek neu ein.</string>
+    <string name="settings_remove_box">Diese Box entfernen</string>
+    <string name="settings_remove_box_confirm">%1$s entfernen? Favoriten und zwischengespeicherte Bibliothek werden mit entfernt. Die Box selbst bleibt unangetastet.</string>
+
+    <string name="settings_section_notification">Steuerung auf dem Sperrbildschirm</string>
+    <string name="settings_session_mode">Steuerung anzeigen</string>
+    <string name="settings_session_mode_app_open">Nur solange Coil offen ist</string>
+    <string name="settings_session_mode_app_open_summary">Keine Verbindung im Hintergrund, kein Akkuverbrauch.</string>
+    <string name="settings_session_mode_automatic">Immer wenn die Box spielt</string>
+    <string name="settings_session_mode_automatic_summary">Hält im WLAN eine Verbindung zur Box, damit die Steuerung von selbst erscheint.</string>
+    <string name="settings_session_honest_note">Android kann eine Verbindung im Hintergrund trotzdem trennen, um Strom zu sparen, und manche Telefone sind strenger als andere. Dann erscheint die Steuerung erst verzögert oder bleibt aus, bis du Coil öffnest.</string>
+    <string name="settings_battery_exemption">Coil im Hintergrund erlauben</string>
+    <string name="settings_battery_exemption_summary">Öffnet die Systemeinstellung, mit der Android Coil nicht schlafen legt.</string>
+    <string name="settings_auto_session_box">Automatische Steuerung für diese Box</string>
+
+    <string name="settings_section_data">Daten</string>
+    <string name="settings_export">Einstellungen exportieren</string>
+    <string name="settings_export_summary">Speichert Boxen und Favoriten in einer Datei. Sinnvoll, bevor du zwischen Play-Store- und GitHub-Version wechselst.</string>
+    <string name="settings_import">Einstellungen importieren</string>
+    <string name="settings_export_done">Einstellungen exportiert.</string>
+    <string name="settings_import_done">Einstellungen importiert.</string>
+    <string name="settings_import_failed">Diese Datei konnte nicht gelesen werden.</string>
+
+    <string name="settings_section_about">Über</string>
+    <string name="settings_version">Coil %1$s</string>
+    <string name="settings_box_version">Phoniebox %1$s</string>
+    <string name="settings_security_note">Coil ist für dein Heimnetzwerk gedacht. Die Befehlsschnittstelle der Box hat kein Passwort — leite diese Ports nicht durch deinen Router. Nutze ein VPN, wenn du von außerhalb zugreifen willst.</string>
+
+    <string name="onboarding_title">Coil auf deine Box richten</string>
+
+    <string name="notification_channel_playback">Wiedergabe</string>
+    <string name="notification_channel_playback_description">Steuerung für die Phoniebox, die gerade spielt.</string>
+    <string name="notification_channel_status">Verbindung</string>
+    <string name="notification_channel_status_description">Leiser Hinweis, solange Coil eine Verbindung zur Box hält.</string>
+    <string name="notification_watching_title">Bereit</string>
+    <string name="notification_watching_text">Mit %1$s verbunden</string>
+
+    <string name="shortcut_failed">Die Box war nicht erreichbar.</string>
+    <string name="shortcut_starting">%1$s startet auf %2$s</string>
+
+    <string name="action_more">Weitere Optionen</string>
+
+</resources>

@@ -37,7 +37,10 @@ Both bind to `tcp://*`, so both are reachable across the local network.
 
 - `id` is optional but required to correlate responses
 - `method` is optional when the plugin itself is callable
-- `as_thread` runs the call on its own thread — use for potentially slow calls
+- `as_thread` runs the call on its own thread **and returns the `Thread` object instead of the
+  function's result** (`jukebox/plugs.py`). It is fire-and-forget only: any call whose answer you
+  need must omit it, even a slow one. Verified against a real box — sending it is what made every
+  library call come back empty
 - `tsp` (timestamp in nanoseconds) makes the server return its processing time
 
 ### Response
@@ -50,6 +53,13 @@ Both bind to `tcp://*`, so both are reachable across the local network.
 When `tsp` was sent, the response additionally carries `total_processing_time` in milliseconds.
 
 **A response is always sent**, even without an `id`. The client must drain every reply or its receive queue fills up.
+
+### There is no `core` RPC package
+
+`core.*` names are **published topics only**. Calling `core.version` over RPC answers with an
+error, which is a convincing way to make a working box look unreachable. For a reachability check
+use `player.ctrl.playerstatus`: it returns the status poller's cached dict without touching MPD, so
+it is cheap and proves the jukebox app itself is answering.
 
 ### Socket type
 
@@ -75,7 +85,8 @@ The same REP socket is bound to `inproc`, `tcp` and `ws` simultaneously. Interna
 |---|---|
 | `playerstatus` | Core status: essentially the MPD status plus song data |
 | `volume.level` | Current volume |
-| `core.version` | Version identifier, usable as a connection check |
+| `core.git_state` | Identifies the installed source state; the closest thing to a version |
+| `core.version` | Documented, but **not published** by `daemon.py` — subscribe to the `core.` prefix rather than this exact topic |
 | `core.started_at` | Start timestamp |
 | `rfid.card_id` | Most recently read card |
 | `host.temperature.cpu` | CPU temperature |
@@ -117,11 +128,35 @@ Full reference: `src/webapp/src/commands/index.js` in the Phoniebox repository.
 
 Do **not** use `list_all_dirs` — the repository explicitly warns about memory consumption on large libraries. Use `get_folder_content` lazily, one level at a time.
 
+`get_folder_content(folder)` returns entries of the form
+`{ type: directory|file|stream|podcast, name, path, relpath }`. **Use `relpath`**: `path` is absolute
+on the box's filesystem, while `play_folder` and `play_single` expect a path relative to the music
+library root.
+
+`shuffle(option)` and `repeat(option)` take named strings, not MPD flags — `enable`/`disable` for
+shuffle, `disable`/`enable_repeat`/`enable_repeat_single` for repeat.
+
 `update` triggers the MPD database scan. `update_wait` blocks until completion and should be avoided because of the shared socket.
+
+### Timers — `timers.*`
+
+Four plugins: `timer_stop_player`, `timer_shutdown`, `timer_idle_shutdown`, `timer_fade_volume`.
+Each takes `start(wait_seconds)`, `cancel()` and `get_state()`, and publishes its state on the topic
+`timers.<plugin>` — **on change only, not once a second**. `get_state` returns
+`{enabled, remaining_seconds, wait_seconds, type}`.
+
+Coil uses **`timer_stop_player` and no other**: the two shutdown plugins would switch the box off,
+which is out of scope by design (§16). See AGENTS.md "The sleep timer, and the timers Coil refuses".
+
+`GenericTimerClass.start` **ignores the call when the timer is already running** ("Ignoring start
+command" in the box's log, then it returns). Changing a running timer's duration means `cancel`
+first, otherwise the old duration silently stands.
 
 ### Volume — `volume.ctrl.*`
 
-`get_volume`, `set_volume(volume)`, `change_volume(step)`, `mute`, `get_soft_max_volume`
+`get_volume`, `set_volume(volume)`, `change_volume(step)`, `mute(mute)`, `get_soft_max_volume`
+
+Despite the name, `mute` is **not** a toggle: it takes the state you want as a `mute` boolean.
 
 `get_soft_max_volume` returns the upper limit — use it as `deviceVolumeMax` in the media session.
 

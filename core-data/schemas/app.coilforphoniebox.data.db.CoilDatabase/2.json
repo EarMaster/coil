@@ -1,0 +1,430 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "adce28a4aa580b7aa6d8be797d1dea05",
+    "entities": [
+      {
+        "tableName": "boxes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `displayName` TEXT NOT NULL, `host` TEXT NOT NULL, `rpcPort` INTEGER NOT NULL, `pubPort` INTEGER NOT NULL, `addedAt` INTEGER NOT NULL, `autoSessionEnabled` INTEGER NOT NULL, `networkSsid` TEXT, `lastSeenAt` INTEGER, `sortIndex` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "host",
+            "columnName": "host",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rpcPort",
+            "columnName": "rpcPort",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pubPort",
+            "columnName": "pubPort",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "addedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoSessionEnabled",
+            "columnName": "autoSessionEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "networkSsid",
+            "columnName": "networkSsid",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "lastSeenAt",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sortIndex",
+            "columnName": "sortIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "library_folders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`boxId` TEXT NOT NULL, `path` TEXT NOT NULL, `parentPath` TEXT, `displayName` TEXT NOT NULL, `hasChildren` INTEGER NOT NULL, `cachedAt` INTEGER NOT NULL, `contentCachedAt` INTEGER, PRIMARY KEY(`boxId`, `path`), FOREIGN KEY(`boxId`) REFERENCES `boxes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "boxId",
+            "columnName": "boxId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "path",
+            "columnName": "path",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentPath",
+            "columnName": "parentPath",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasChildren",
+            "columnName": "hasChildren",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cachedAt",
+            "columnName": "cachedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentCachedAt",
+            "columnName": "contentCachedAt",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "boxId",
+            "path"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_library_folders_boxId_parentPath",
+            "unique": false,
+            "columnNames": [
+              "boxId",
+              "parentPath"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_folders_boxId_parentPath` ON `${TABLE_NAME}` (`boxId`, `parentPath`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "boxes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "boxId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "library_tracks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`boxId` TEXT NOT NULL, `url` TEXT NOT NULL, `parentPath` TEXT, `title` TEXT, `artist` TEXT, `album` TEXT, `trackNo` INTEGER, `durationSeconds` REAL, PRIMARY KEY(`boxId`, `url`), FOREIGN KEY(`boxId`) REFERENCES `boxes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "boxId",
+            "columnName": "boxId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentPath",
+            "columnName": "parentPath",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "artist",
+            "columnName": "artist",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "album",
+            "columnName": "album",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "trackNo",
+            "columnName": "trackNo",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "REAL",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "boxId",
+            "url"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_library_tracks_boxId_parentPath",
+            "unique": false,
+            "columnNames": [
+              "boxId",
+              "parentPath"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_tracks_boxId_parentPath` ON `${TABLE_NAME}` (`boxId`, `parentPath`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "boxes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "boxId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "library_albums",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`boxId` TEXT NOT NULL, `albumArtist` TEXT NOT NULL, `album` TEXT NOT NULL, `coverFile` TEXT, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`boxId`, `albumArtist`, `album`), FOREIGN KEY(`boxId`) REFERENCES `boxes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "boxId",
+            "columnName": "boxId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "albumArtist",
+            "columnName": "albumArtist",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "album",
+            "columnName": "album",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverFile",
+            "columnName": "coverFile",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "cachedAt",
+            "columnName": "cachedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "boxId",
+            "albumArtist",
+            "album"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_library_albums_boxId",
+            "unique": false,
+            "columnNames": [
+              "boxId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_library_albums_boxId` ON `${TABLE_NAME}` (`boxId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "boxes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "boxId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "favorites",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `boxId` TEXT NOT NULL, `label` TEXT NOT NULL, `type` TEXT NOT NULL, `folder` TEXT, `albumArtist` TEXT, `album` TEXT, `trackUrl` TEXT, `coverFile` TEXT, `sortIndex` INTEGER NOT NULL, `launchCount` INTEGER NOT NULL, `shortcutPinned` INTEGER NOT NULL, FOREIGN KEY(`boxId`) REFERENCES `boxes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "boxId",
+            "columnName": "boxId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "folder",
+            "columnName": "folder",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "albumArtist",
+            "columnName": "albumArtist",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "album",
+            "columnName": "album",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "trackUrl",
+            "columnName": "trackUrl",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "coverFile",
+            "columnName": "coverFile",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sortIndex",
+            "columnName": "sortIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "launchCount",
+            "columnName": "launchCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shortcutPinned",
+            "columnName": "shortcutPinned",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_favorites_boxId",
+            "unique": false,
+            "columnNames": [
+              "boxId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_favorites_boxId` ON `${TABLE_NAME}` (`boxId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "boxes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "boxId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'adce28a4aa580b7aa6d8be797d1dea05')"
+    ]
+  }
+}

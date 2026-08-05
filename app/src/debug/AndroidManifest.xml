@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only additions. The activity below hosts the screenshot tests' composed content and is
+  never reachable by the user: not exported, no intent filter, no launcher entry. Robolectric
+  will not launch an activity that is missing from the merged manifest, which is why this is
+  declared here rather than living purely in the test sources.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name="app.coilforphoniebox.HiltTestActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Coil" />
+    </application>
+</manifest>

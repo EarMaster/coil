@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Source locale. Every user-facing string in the app lives here; HardcodedText is
+  a lint error, so this file is the only place text is allowed to exist.
+
+  Naming: describe the role, not the current wording (error_connection_timeout,
+  not error_could_not_reach_box) so rewording the English does not orphan the
+  four translations. Add a comment above anything a translator could misread.
+-->
+<resources>
+
+    <!-- Product name. "Phoniebox" is a product name and stays untranslated. -->
+    <string name="app_name" translatable="false">Coil</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_player">Player</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_favourites">Favourites</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Player screen -->
+    <string name="player_nothing_playing">Nothing playing</string>
+    <string name="player_no_title">Unknown title</string>
+    <string name="player_cover_art">Cover art</string>
+    <string name="action_play">Play</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_previous">Previous track</string>
+    <string name="action_next">Next track</string>
+    <string name="action_shuffle">Shuffle</string>
+    <string name="action_repeat">Repeat</string>
+    <string name="action_repeat_all">Repeat all</string>
+    <string name="action_repeat_one">Repeat one track</string>
+    <string name="action_volume">Volume</string>
+    <!-- Opens the menu holding shuffle, repeat and the sleep timer. -->
+    <string name="action_playback_options">Playback options</string>
+
+    <!-- Sleep timer. It stops playback; it does not switch the box off. The box has
+         shutdown timers too, and Coil deliberately offers none of them, so the wording
+         has to make clear which one this is. -->
+    <string name="action_sleep_timer">Sleep timer</string>
+    <string name="action_sleep_timer_on">Sleep timer is on</string>
+    <string name="action_sleep_timer_cancel">Cancel timer</string>
+    <string name="player_sleep_timer_title">Sleep timer</string>
+    <string name="player_sleep_timer_explainer">Stops playback after the time you pick. The box stays switched on — Coil never turns it off.</string>
+    <!-- %1$s is a remaining time such as "23:15". -->
+    <string name="player_sleep_timer_remaining">Stops in %1$s</string>
+    <!-- %1$s is a number of minutes. -->
+    <plurals name="duration_minutes">
+        <item quantity="one">%1$s min</item>
+        <item quantity="other">%1$s min</item>
+    </plurals>
+    <string name="action_favourite_remove">Remove from favourites</string>
+    <!-- Favourite actions name their target: from a playing song, "save this" could mean
+         the single track or the whole folder, and the user picks which. -->
+    <string name="action_favourite_add_folder">Save folder as favourite</string>
+    <string name="action_favourite_remove_folder">Remove folder from favourites</string>
+    <string name="action_favourite_add_track">Save track as favourite</string>
+    <string name="action_favourite_remove_track">Remove track from favourites</string>
+    <string name="action_favourite_add_album">Save album as favourite</string>
+    <string name="action_favourite_remove_album">Remove album from favourites</string>
+    <!-- Screen reader label for the long press on the favourite star. -->
+    <string name="action_favourite_options">Favourite options</string>
+    <!-- Screen reader label for the volume slider. %1$d is a percentage. -->
+    <string name="volume_percent">Volume %1$d%%</string>
+
+    <!-- Connection states. %1$s is the name of a box. -->
+    <string name="connection_connected">Connected to %1$s</string>
+    <string name="connection_connecting">Connecting to %1$s…</string>
+    <string name="connection_degraded">Reconnecting to %1$s…</string>
+    <string name="connection_disconnected">Not connected</string>
+
+    <!-- Library screen -->
+    <string name="library_tab_folders">Folders</string>
+    <string name="library_tab_albums">Albums</string>
+    <string name="library_root">Library</string>
+    <string name="library_empty_folder">This folder is empty</string>
+    <string name="library_empty_albums">No albums yet. Rescan the library on the box if you expect some.</string>
+    <string name="library_unknown_album">Unknown album</string>
+    <string name="library_unknown_artist">Unknown artist</string>
+    <!-- Freshness hint under the library list. %1$s is a relative time such as "3 days ago". -->
+    <string name="library_updated">Updated %1$s</string>
+    <string name="library_never_updated">Not loaded yet</string>
+    <string name="time_just_now">just now</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">%1$d minute ago</item>
+        <item quantity="other">%1$d minutes ago</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">%1$d hour ago</item>
+        <item quantity="other">%1$d hours ago</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <string name="action_play_folder">Play folder</string>
+    <string name="action_up">Up one level</string>
+    <string name="action_refresh">Refresh</string>
+
+    <!-- Library search. It looks through what Coil has already loaded from the box: the
+         Phoniebox interface has no search command, so there is nothing to ask it. -->
+    <string name="library_search_hint">Search the library</string>
+    <string name="action_search_clear">Clear search</string>
+    <string name="library_search_tracks">Tracks</string>
+    <string name="library_search_empty_title">Nothing found</string>
+    <string name="library_search_empty_body">Coil searches what it has loaded from the box. Albums are all there once the Albums tab has been opened; folders and tracks arrive as you open them. Settings can go through the whole library once and make everything searchable.</string>
+
+    <!-- Details sheet. Labels for what Coil already knows about an item; nothing here
+         asks the box for anything. -->
+    <string name="action_details">Details</string>
+    <!-- Folder path on the box, relative to its music library. -->
+    <string name="details_path">Path</string>
+    <string name="details_artist">Artist</string>
+    <string name="details_album">Album</string>
+    <string name="details_album_artist">Album artist</string>
+    <string name="details_track_number">Track number</string>
+    <string name="details_duration">Length</string>
+    <!-- Name of the audio file on the box. -->
+    <string name="details_file">File</string>
+
+    <!-- Favourites screen -->
+    <string name="favourites_empty_title">No favourites yet</string>
+    <string name="favourites_empty_body">Open the menu next to a folder, album or track in the library to save it here.</string>
+    <string name="favourites_added">Saved as favourite</string>
+    <string name="favourites_removed">Favourite removed</string>
+    <string name="action_add_to_home_screen">Add to home screen</string>
+    <!-- Hands out the link that starts this favourite, for automation apps, NFC tags or a
+         link in a note. It names the box, so it starts that box wherever it is used. -->
+    <string name="action_copy_link">Copy link</string>
+    <string name="action_share_link">Share link</string>
+    <!-- Only shown below Android 13, which confirms a clipboard write by itself. -->
+    <string name="favourites_link_copied">Link copied</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_move_up">Move up</string>
+    <string name="action_move_down">Move down</string>
+    <string name="shortcut_pin_unsupported">This launcher does not support home screen shortcuts.</string>
+
+    <!-- Box switcher -->
+    <string name="boxes_title">Boxes</string>
+    <string name="boxes_switch">Switch box</string>
+    <string name="action_add_box">Add box</string>
+    <string name="box_active">Active</string>
+
+    <!-- Add box flow -->
+    <string name="add_box_explainer">The box and this phone have to be on the same network. Coil talks to the box directly; nothing goes through the internet.</string>
+    <string name="add_box_discovered">Found on this network</string>
+    <string name="add_box_scanning">Scanning…</string>
+    <string name="add_box_none_found">Nothing found automatically. Enter the address by hand.</string>
+    <string name="add_box_manual">Enter address</string>
+    <string name="field_host">Hostname or IP address</string>
+    <string name="field_host_hint" translatable="false">phoniebox.local</string>
+    <string name="field_display_name">Name</string>
+    <string name="field_display_name_hint">Living room</string>
+    <string name="field_rpc_port">Command port</string>
+    <string name="field_pub_port">Status port</string>
+    <string name="action_test_connection">Test connection</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="test_running">Testing…</string>
+    <!-- %1$s is the Phoniebox version string reported by the box. -->
+    <string name="test_success">Box reached. Phoniebox %1$s.</string>
+    <string name="test_success_unknown_version">Box reached.</string>
+
+    <!-- Errors. Reserved for real failures: a box that is switched off is a
+         normal state, not an error. -->
+    <string name="error_connection_timeout">No answer from the box.</string>
+    <string name="error_connection_timeout_help">Check that the box is switched on and on the same network. Some routers and guest networks block devices from seeing each other — that setting is usually called client isolation or AP isolation.</string>
+    <string name="error_host_empty">Enter a hostname or IP address.</string>
+    <string name="error_port_invalid">Enter a port between 1 and 65535.</string>
+    <string name="error_command_failed">The box did not accept that.</string>
+    <string name="error_not_connected">Not connected to the box.</string>
+    <string name="error_library_load_failed">Could not load the library.</string>
+
+    <!-- Offline / empty states -->
+    <string name="offline_banner">Showing saved data. The box is not reachable.</string>
+    <string name="empty_no_box_body">Add your Phoniebox to get started.</string>
+
+    <!-- Settings: global -->
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_dynamic_colour">Use wallpaper colours</string>
+    <string name="settings_dynamic_colour_summary">Replaces Coil\'s green with colours taken from your wallpaper.</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_summary">Opens the system language settings for Coil.</string>
+
+    <!-- Settings: per box -->
+    <string name="settings_section_box">This box</string>
+    <string name="settings_box_address">Address</string>
+    <string name="settings_rescan">Rescan library on the box</string>
+    <string name="settings_rescan_summary">Tells the box to look for new files. Can take a while on a large library.</string>
+    <string name="settings_rescan_started">Rescan started on the box.</string>
+    <string name="settings_add_box">Add another box</string>
+    <string name="settings_add_box_summary">Coil controls one box at a time. Once a second box is set up, the name at the top of the screen switches between them.</string>
+    <!-- Walks the whole folder tree so search covers everything. Deliberately blunt about
+         the cost: while it runs, RFID cards on the box can be slow to register. -->
+    <string name="settings_index">Make the whole library searchable</string>
+    <string name="settings_index_summary">Goes through every folder once so search finds all of it. Takes a while on a large library, and cards on the box can be slow to register meanwhile. Keep this screen open while it runs.</string>
+    <string name="settings_index_stop">Stop</string>
+    <!-- %1$s is a number of folders. -->
+    <string name="settings_index_progress">%1$s folders read so far. Tap to stop; what has been read stays searchable.</string>
+    <string name="settings_index_done">Library searchable: %1$s folders read.</string>
+    <string name="settings_index_capped">Stopped after %1$s folders — this library is larger than Coil indexes in one go, so search may still miss some of it.</string>
+    <string name="settings_index_interrupted">The box stopped answering after %1$s folders. What was read stays searchable.</string>
+    <string name="settings_index_box_busy">The box is playing. Try again when it is idle, so cards keep registering promptly.</string>
+    <string name="settings_remove_box">Remove this box</string>
+    <string name="settings_remove_box_confirm">Remove %1$s? Its favourites and cached library are removed with it. The box itself is not touched.</string>
+
+    <!-- Settings: media session / background -->
+    <string name="settings_section_notification">Lock screen controls</string>
+    <string name="settings_session_mode">Show controls</string>
+    <string name="settings_session_mode_app_open">Only while Coil is open</string>
+    <string name="settings_session_mode_app_open_summary">No background connection, no battery cost.</string>
+    <string name="settings_session_mode_automatic">Whenever the box plays</string>
+    <string name="settings_session_mode_automatic_summary">Keeps a connection to the box while you are on Wi-Fi, so controls appear on their own.</string>
+    <string name="settings_session_honest_note">Android may still drop a background connection to save power, and some phones are stricter than others. When that happens, controls can take a moment to appear or stay away until you open Coil.</string>
+    <string name="settings_battery_exemption">Allow Coil to run in the background</string>
+    <string name="settings_battery_exemption_summary">Opens the system setting that stops Android from putting Coil to sleep.</string>
+    <string name="settings_auto_session_box">Automatic controls for this box</string>
+
+    <!-- Settings: data -->
+    <string name="settings_section_data">Data</string>
+    <string name="settings_export">Export settings</string>
+    <string name="settings_export_summary">Saves boxes and favourites to a file. Useful before switching between the Play Store and GitHub builds.</string>
+    <string name="settings_import">Import settings</string>
+    <string name="settings_export_done">Settings exported.</string>
+    <string name="settings_import_done">Settings imported.</string>
+    <string name="settings_import_failed">That file could not be read.</string>
+
+    <!-- Settings: about -->
+    <string name="settings_section_about">About</string>
+    <!-- %1$s is the app version, e.g. 0.1.0 -->
+    <string name="settings_version">Coil %1$s</string>
+    <!-- %1$s is the Phoniebox version reported by the box. -->
+    <string name="settings_box_version">Phoniebox %1$s</string>
+    <string name="settings_security_note">Coil is built for your home network. The box\'s command interface has no password, so do not forward those ports through your router — use a VPN if you need access from outside.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Point Coil at your box</string>
+
+    <!-- Media notification -->
+    <string name="notification_channel_playback">Playback</string>
+    <string name="notification_channel_playback_description">Controls for the Phoniebox that is playing.</string>
+    <string name="notification_channel_status">Connection</string>
+    <string name="notification_channel_status_description">Quiet note shown while Coil keeps a connection to the box.</string>
+    <string name="notification_watching_title">Ready</string>
+    <!-- %1$s is the name of a box. -->
+    <string name="notification_watching_text">Connected to %1$s</string>
+
+    <!-- Shortcuts -->
+    <!-- Toast shown when a home screen shortcut could not start playback. -->
+    <string name="shortcut_failed">Could not reach the box.</string>
+    <!-- %1$s is the name of a favourite, %2$s the name of a box. -->
+    <string name="shortcut_starting">Starting %1$s on %2$s</string>
+
+    <string name="action_more">More options</string>
+
+</resources>

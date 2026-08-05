@@ -60,6 +60,41 @@ jobs:
           path: app/build/reports/tests/
           retention-days: 14
 
+  screenshots:
+    name: Screenshots
+    needs: detect
+    if: needs.detect.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      # Compares every screen against the committed golden. Goldens recorded on a developer's
+      # machine have been checked against this runner and came out byte-identical — Robolectric
+      # brings its own fonts and Skia — so a locally recorded golden is expected to pass here.
+      #
+      # The filter excludes StoreAssetTest. Those images are products, not baselines — they are
+      # flattened after capture and so never match byte for byte, and a UI change should fail
+      # one job rather than two.
+      - name: Verify screenshots
+        run: ./gradlew :app:verifyRoborazziDebug --tests '*ScreenshotTest'
+
+      # The actual/expected/diff triptych for anything that moved — the point of the job is to
+      # be able to see what changed, not just that something did.
+      - name: Upload screenshot diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-diffs
+          path: app/build/outputs/roborazzi/
+          retention-days: 14
+
   lint:
     name: Lint
     needs: detect

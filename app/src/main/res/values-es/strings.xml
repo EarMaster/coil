@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Spanish translation.
+
+  DRAFT — not yet read by a fluent speaker. Per CONTRIBUTING, a locale ships only after a
+  human has reviewed it; missing strings fall back to English, so this file can be
+  corrected in place, a few strings at a time.
+-->
+<resources>
+
+    <string name="nav_player">Reproductor</string>
+    <string name="nav_library">Biblioteca</string>
+    <string name="nav_favourites">Favoritos</string>
+    <string name="nav_settings">Ajustes</string>
+
+    <string name="player_nothing_playing">No se está reproduciendo nada</string>
+    <string name="player_no_title">Título desconocido</string>
+    <string name="player_cover_art">Portada</string>
+    <string name="action_play">Reproducir</string>
+    <string name="action_pause">Pausa</string>
+    <string name="action_previous">Pista anterior</string>
+    <string name="action_next">Pista siguiente</string>
+    <string name="action_shuffle">Aleatorio</string>
+    <string name="action_repeat">Repetir</string>
+    <string name="action_repeat_one">Repetir una pista</string>
+    <string name="action_volume">Volumen</string>
+    <string name="action_favourite_remove">Quitar de favoritos</string>
+    <string name="volume_percent">Volumen %1$d%%</string>
+
+    <string name="connection_connected">Conectado a %1$s</string>
+    <string name="connection_connecting">Conectando con %1$s…</string>
+    <string name="connection_degraded">Reconectando con %1$s…</string>
+    <string name="connection_disconnected">Sin conexión</string>
+
+    <string name="library_tab_folders">Carpetas</string>
+    <string name="library_tab_albums">Álbumes</string>
+    <string name="library_root">Biblioteca</string>
+    <string name="library_empty_folder">Esta carpeta está vacía</string>
+    <string name="library_empty_albums">Todavía no hay álbumes. Si esperabas alguno, pide a la caja que vuelva a leer su biblioteca.</string>
+    <string name="library_unknown_album">Álbum desconocido</string>
+    <string name="library_unknown_artist">Artista desconocido</string>
+    <string name="library_updated">Actualizado %1$s</string>
+    <string name="library_never_updated">Aún no cargado</string>
+    <string name="time_just_now">ahora mismo</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">hace %1$d minuto</item>
+        <item quantity="other">hace %1$d minutos</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">hace %1$d hora</item>
+        <item quantity="other">hace %1$d horas</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">hace %1$d día</item>
+        <item quantity="other">hace %1$d días</item>
+    </plurals>
+    <string name="action_play_folder">Reproducir carpeta</string>
+    <string name="action_up">Subir un nivel</string>
+    <string name="action_refresh">Actualizar</string>
+
+    <string name="favourites_empty_title">Aún no hay favoritos</string>
+    <string name="favourites_empty_body">Mantén pulsada una carpeta o un álbum en la biblioteca para guardarlo aquí.</string>
+    <string name="favourites_added">Guardado como favorito</string>
+    <string name="favourites_removed">Favorito eliminado</string>
+    <string name="action_add_to_home_screen">Añadir a la pantalla de inicio</string>
+    <string name="action_remove">Quitar</string>
+    <string name="action_move_up">Mover arriba</string>
+    <string name="action_move_down">Mover abajo</string>
+    <string name="shortcut_pin_unsupported">Este lanzador no admite accesos directos en la pantalla de inicio.</string>
+
+    <string name="boxes_title">Cajas</string>
+    <string name="boxes_switch">Cambiar de caja</string>
+    <string name="action_add_box">Añadir caja</string>
+    <string name="box_active">Activa</string>
+
+    <string name="add_box_explainer">La caja y este teléfono tienen que estar en la misma red. Coil habla directamente con la caja; nada pasa por internet.</string>
+    <string name="add_box_discovered">Encontrado en esta red</string>
+    <string name="add_box_scanning">Buscando…</string>
+    <string name="add_box_none_found">No se ha encontrado nada automáticamente. Escribe la dirección a mano.</string>
+    <string name="add_box_manual">Escribir la dirección</string>
+    <string name="field_host">Nombre de host o dirección IP</string>
+    <string name="field_display_name">Nombre</string>
+    <string name="field_display_name_hint">Salón</string>
+    <string name="field_rpc_port">Puerto de comandos</string>
+    <string name="field_pub_port">Puerto de estado</string>
+    <string name="action_test_connection">Probar la conexión</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="test_running">Probando…</string>
+    <string name="test_success">Caja localizada. Phoniebox %1$s.</string>
+    <string name="test_success_unknown_version">Caja localizada.</string>
+
+    <string name="error_connection_timeout">La caja no responde.</string>
+    <string name="error_connection_timeout_help">Comprueba que la caja está encendida y en la misma red. Algunos routers y redes de invitados impiden que los dispositivos se vean entre sí — ese ajuste suele llamarse aislamiento de clientes o aislamiento AP.</string>
+    <string name="error_host_empty">Escribe un nombre de host o una dirección IP.</string>
+    <string name="error_port_invalid">Escribe un puerto entre 1 y 65535.</string>
+    <string name="error_command_failed">La caja no ha aceptado esa orden.</string>
+    <string name="error_not_connected">Sin conexión con la caja.</string>
+    <string name="error_library_load_failed">No se ha podido cargar la biblioteca.</string>
+
+    <string name="offline_banner">Se muestran datos guardados. La caja no está accesible.</string>
+    <string name="empty_no_box_body">Añade tu Phoniebox para empezar.</string>
+
+    <string name="settings_section_appearance">Apariencia</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_system">Seguir al sistema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_dynamic_colour">Colores del fondo de pantalla</string>
+    <string name="settings_dynamic_colour_summary">Sustituye el verde de Coil por colores tomados de tu fondo de pantalla.</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_summary">Abre los ajustes de idioma del sistema para Coil.</string>
+
+    <string name="settings_section_box">Esta caja</string>
+    <string name="settings_box_address">Dirección</string>
+    <string name="settings_rescan">Volver a leer la biblioteca en la caja</string>
+    <string name="settings_rescan_summary">Pide a la caja que busque archivos nuevos. Con una biblioteca grande puede tardar.</string>
+    <string name="settings_rescan_started">La caja está releyendo su biblioteca.</string>
+    <string name="settings_remove_box">Quitar esta caja</string>
+    <string name="settings_remove_box_confirm">¿Quitar %1$s? Sus favoritos y su biblioteca en caché se van con ella. La caja en sí no se toca.</string>
+
+    <string name="settings_section_notification">Controles en la pantalla de bloqueo</string>
+    <string name="settings_session_mode">Mostrar controles</string>
+    <string name="settings_session_mode_app_open">Solo mientras Coil está abierto</string>
+    <string name="settings_session_mode_app_open_summary">Sin conexión en segundo plano y sin gasto de batería.</string>
+    <string name="settings_session_mode_automatic">Siempre que la caja suene</string>
+    <string name="settings_session_mode_automatic_summary">Mantiene una conexión con la caja mientras estás en Wi-Fi, para que los controles aparezcan por sí solos.</string>
+    <string name="settings_session_honest_note">Android puede cortar de todos modos una conexión en segundo plano para ahorrar energía, y algunos teléfonos son más estrictos que otros. Entonces los controles pueden tardar en aparecer o no aparecer hasta que abras Coil.</string>
+    <string name="settings_battery_exemption">Permitir que Coil funcione en segundo plano</string>
+    <string name="settings_battery_exemption_summary">Abre el ajuste del sistema que evita que Android duerma a Coil.</string>
+    <string name="settings_auto_session_box">Controles automáticos para esta caja</string>
+
+    <string name="settings_section_data">Datos</string>
+    <string name="settings_export">Exportar ajustes</string>
+    <string name="settings_export_summary">Guarda las cajas y los favoritos en un archivo. Útil antes de cambiar entre la versión de Play Store y la de GitHub.</string>
+    <string name="settings_import">Importar ajustes</string>
+    <string name="settings_export_done">Ajustes exportados.</string>
+    <string name="settings_import_done">Ajustes importados.</string>
+    <string name="settings_import_failed">No se ha podido leer ese archivo.</string>
+
+    <string name="settings_section_about">Acerca de</string>
+    <string name="settings_version">Coil %1$s</string>
+    <string name="settings_box_version">Phoniebox %1$s</string>
+    <string name="settings_security_note">Coil está pensado para tu red doméstica. La interfaz de comandos de la caja no tiene contraseña, así que no redirijas esos puertos en tu router: usa una VPN si necesitas acceso desde fuera.</string>
+
+    <string name="onboarding_title">Indica tu caja a Coil</string>
+
+    <string name="notification_channel_playback">Reproducción</string>
+    <string name="notification_channel_playback_description">Controles de la Phoniebox que está reproduciendo.</string>
+    <string name="notification_channel_status">Conexión</string>
+    <string name="notification_channel_status_description">Aviso discreto mientras Coil mantiene la conexión con la caja.</string>
+    <string name="notification_watching_title">Listo</string>
+    <string name="notification_watching_text">Conectado a %1$s</string>
+
+    <string name="shortcut_failed">No se ha podido acceder a la caja.</string>
+    <string name="shortcut_starting">Reproduciendo %1$s en %2$s</string>
+
+    <string name="action_more">Más opciones</string>
+
+</resources>

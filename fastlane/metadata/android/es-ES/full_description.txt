@@ -1,0 +1,14 @@
+Phoniebox convierte una Raspberry Pi en una jukebox RFID: pones una tarjeta sobre la caja y empieza la reproducción. Incluye una interfaz web que funciona bien en el ordenador y con torpeza en el móvil.
+
+coil es una aplicación Android en toda regla para lo mismo. La abres, ves qué está sonando, eliges otra cosa y devuelves el móvil. Cuando la caja empieza a reproducir, los controles aparecen en la pantalla de bloqueo, sin necesidad de abrir la aplicación.
+
+- Reproductor con portada, barra de progreso, controles de reproducción y volumen
+- Biblioteca por carpeta o álbum, con reproducción directa de lo que encuentres
+- Controles en la pantalla de bloqueo y en la notificación, que aparecen por su cuenta cuando la caja empieza a reproducir y se pueden desactivar por completo
+- Favoritos con accesos directos en la pantalla de inicio: un toque inicia un audiolibro o un álbum sin abrir la aplicación
+- Varias cajas: una por habitación, se cambia desde la barra superior y cada una tiene sus propios favoritos
+- Las teclas de volumen del móvil controlan la caja mientras la reproducción está activa
+
+coil mantiene todo en tu dispositivo y en tu red. Sin cuenta, sin telemetría, sin nube.
+
+coil es un cliente independiente de terceros. No está afiliado al proyecto Phoniebox ni cuenta con su respaldo. Phoniebox es obra de MiczFlor y de quienes contribuyen al proyecto.

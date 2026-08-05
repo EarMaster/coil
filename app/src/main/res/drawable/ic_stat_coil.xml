@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  res/drawable/ic_stat_coil.xml - notification icon, 24dp.
+
+  Must be a white silhouette on transparent; Android tints it anyway.
+  Simplified to two windings, because three bleed together at 24dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineJoin="round"
+        android:pathData="M5,6 L19,6 A3,3 0 0 1 22,9 L22,15 A3,3 0 0 1 19,18 L5,18 A3,3 0 0 1 2,15 L2,9 A3,3 0 0 1 5,6 Z" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M5,15.5 V8.5 H19 V15.5 H8.5 V12 H15.5" />
+</vector>

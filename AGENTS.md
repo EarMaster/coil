@@ -45,10 +45,11 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 - `ci.yml` / `codeql.yml` — build/test/lint/screenshot verification and CodeQL analysis on PRs to
   `main` or `develop`. Both start with a `detect` job that checks for a root `./gradlew`; that gate
   is now satisfied, so these actually build, test and lint. `ci.yml` also has a `Pages Site` job
-  that builds `docs/pages/` with the same action `pages.yml` uses and asserts `CNAME`, `main.css`,
-  `index.html` and `privacy/index.html` all landed. It deliberately skips the `detect` gate — the
-  site has nothing to do with Gradle — and exists because `pages.yml` only runs on `main`, so
-  without it a broken template would reach the live site before anyone noticed.
+  that builds `docs/pages/` with the same action `pages.yml` uses and checks that `main.css`, both
+  pages, the galleries and the hero frame all rendered with no Liquid left unprocessed. It
+  deliberately skips the `detect` gate — the site has nothing to do with Gradle — and exists
+  because `pages.yml` only runs on `main`, so without it a broken template would reach the live
+  site before anyone noticed. It must **not** assert `_site/CNAME`; see "Landing page" for why.
 - `screenshots.yml` — re-records the golden screenshots *and* the store/website images on the
   Linux runner and commits them back to the branch. Triggered from the Actions tab, or by a push
   to `develop` whose commit message contains `[record-screenshots]`. See "Screenshot tests".
@@ -71,8 +72,9 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
   **production** when neither input is given, which is not a default to reach by accident.
 - `pages.yml` — deploys `docs/pages/` via Jekyll to GitHub Pages on push to `main` (path-filtered
   to `docs/pages/**`). GitHub Pages must be enabled in repo settings with source "GitHub Actions",
-  and the `coilforphoniebox.app` DNS must point at GitHub Pages, for the `CNAME` file in
-  `docs/pages/` to actually resolve.
+  the custom domain must be set there, and `coilforphoniebox.app` DNS must point at GitHub Pages.
+  The domain comes from that setting, **not** from `docs/pages/CNAME` — the official builder
+  strips that file from the output on purpose. See "Landing page".
 
 `main` is branch-protected: PRs required (enforced for admins too, 0 required approvals), plus
 `Build`/`Unit Tests`/`Lint`/`Analyze (Kotlin)` as required status checks (these currently pass
@@ -479,6 +481,14 @@ upstream fixes have to be merged by hand; `_config.yml`'s header comment records
 Vendoring means the MIT notice has to travel with the code, so it is reproduced in
 `docs/pages/_THEME-LICENSE.txt` — underscore-prefixed, so Jekyll keeps it out of the built site.
 MIT is GPL-compatible, so it does not conflict with Coil's own GPL-3.0.
+
+**`CNAME` never appears in the build output, and that is correct.** `github-pages build` — what
+both `pages.yml` and the CI check run — sets `exclude: [CNAME]` itself whenever the site's own
+`exclude` is Jekyll's default, which `docs/pages/_config.yml` leaves it as. The custom domain
+comes from the repository's Pages settings; for an Actions deployment nothing reads a `CNAME` file
+out of the artifact, which is why `coilforphoniebox.app` resolved long before anyone checked. Do
+not "fix" this by asserting the file exists, and be aware that a local `jekyll build` *does* copy
+it, so local output and CI output differ on this one file.
 
 The theme is built for iOS apps, and three parts of it were wrong for an Android-only client:
 

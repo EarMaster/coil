@@ -261,7 +261,13 @@ url                            : "https://coilforphoniebox.app"
 sass:
   style: compressed
 
-# Deliberately no `exclude: [CNAME]`, which the upstream theme ships. CNAME has to be
-# copied into _site or the custom domain drops on the next deploy.
+# No `exclude` key on purpose, and note what that means for CNAME: `github-pages build` adds
+# `exclude: [CNAME]` of its own accord whenever the site's `exclude` is Jekyll's default, so
+# docs/pages/CNAME never reaches _site. That is GitHub's intended behaviour — for an Actions
+# deployment the custom domain comes from the repository's Pages settings, not from a file in
+# the artifact. Setting any non-default `exclude` here would suppress that and copy CNAME
+# through; there is no reason to want that.
+#
+# A local `jekyll build` has no such rule and does copy CNAME, so the two disagree.
 
 markdown: kramdown

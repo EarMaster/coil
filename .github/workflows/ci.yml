@@ -138,11 +138,19 @@ jobs:
           source: ./docs/pages
           destination: ./_site
 
-      # The custom domain lives in docs/pages/CNAME and has to survive into the artifact.
-      - name: Check CNAME and the rendered stylesheet survived
+      # Do NOT assert that _site/CNAME exists — it never will. `github-pages build` forces
+      # `exclude => ["CNAME"]` whenever the site's own `exclude` is Jekyll's default, so the
+      # official builder strips it on purpose. The custom domain comes from the repository's
+      # Pages settings, not from a file in the artifact, which is why coilforphoniebox.app has
+      # been resolving all along without it.
+      #
+      # Worth knowing that a local `jekyll build` does copy CNAME, having no such rule, so this
+      # difference does not show up until it runs here.
+      - name: Check the pages and stylesheet rendered
         run: |
-          test -f ./_site/CNAME || { echo "::error::CNAME missing from build output"; exit 1; }
           test -s ./_site/main.css || { echo "::error::main.css missing or empty"; exit 1; }
           test -f ./_site/index.html || { echo "::error::index.html missing"; exit 1; }
           test -f ./_site/privacy/index.html || { echo "::error::privacy page missing"; exit 1; }
-          echo "CNAME: $(cat ./_site/CNAME)"
+          grep -q 'galleryItem' ./_site/index.html || { echo "::error::screenshot galleries did not render"; exit 1; }
+          grep -q 'deviceFrame' ./_site/index.html || { echo "::error::hero device frame did not render"; exit 1; }
+          if grep -q '{%' ./_site/index.html; then echo "::error::unrendered Liquid tag left in index.html"; exit 1; fi

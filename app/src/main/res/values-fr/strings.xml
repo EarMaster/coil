@@ -49,14 +49,17 @@
     <plurals name="time_minutes_ago">
         <item quantity="one">il y a %1$d minute</item>
         <item quantity="other">il y a %1$d minutes</item>
+        <item quantity="many">il y a %1$d de minutes</item>
     </plurals>
     <plurals name="time_hours_ago">
         <item quantity="one">il y a %1$d heure</item>
         <item quantity="other">il y a %1$d heures</item>
+        <item quantity="many">il y a %1$d d\'heures</item>
     </plurals>
     <plurals name="time_days_ago">
         <item quantity="one">il y a %1$d jour</item>
         <item quantity="other">il y a %1$d jours</item>
+        <item quantity="many">il y a %1$d de jours</item>
     </plurals>
     <string name="action_play_folder">Lire le dossier</string>
     <string name="action_up">Remonter d\'un niveau</string>
@@ -161,5 +164,77 @@
     <string name="shortcut_starting">Lecture de %1$s sur %2$s</string>
 
     <string name="action_more">Plus d\'options</string>
+
+
+    <!-- ===================================================================
+         Added with the features below after this file was first written.
+         Same standing as the rest of this file: a draft by the author of the
+         feature, awaiting a fluent speaker's pass. Grouped here rather than
+         merged into the sections above so a reviewer can see what is new.
+         =================================================================== -->
+
+    <!-- Player: playback options and the sleep timer. It stops playback and never switches
+         the box off, which the wording has to make unmistakable. -->
+    <string name="action_repeat_all">Tout répéter</string>
+    <string name="action_playback_options">Options de lecture</string>
+    <string name="action_sleep_timer">Minuterie d\'arrêt</string>
+    <string name="action_sleep_timer_on">La minuterie est active</string>
+    <string name="action_sleep_timer_cancel">Annuler la minuterie</string>
+    <string name="player_sleep_timer_title">Minuterie d\'arrêt</string>
+    <string name="player_sleep_timer_explainer">Arrête la lecture après le délai choisi. La box reste allumée — Coil ne l\'éteint jamais.</string>
+    <string name="player_sleep_timer_remaining">Arrêt dans %1$s</string>
+    <plurals name="duration_minutes">
+        <item quantity="one">%1$s min</item>
+        <item quantity="other">%1$s min</item>
+        <item quantity="many">%1$s min</item>
+    </plurals>
+
+    <!-- Favourites name their target: from a playing song, "save this" could mean the single
+         track or the whole folder. -->
+    <string name="action_favourite_add_folder">Enregistrer le dossier dans les favoris</string>
+    <string name="action_favourite_remove_folder">Retirer le dossier des favoris</string>
+    <string name="action_favourite_add_track">Enregistrer le titre dans les favoris</string>
+    <string name="action_favourite_remove_track">Retirer le titre des favoris</string>
+    <string name="action_favourite_add_album">Enregistrer l\'album dans les favoris</string>
+    <string name="action_favourite_remove_album">Retirer l\'album des favoris</string>
+    <string name="action_favourite_options">Options du favori</string>
+
+    <!-- Library search. It looks through what Coil has already loaded from the box. -->
+    <string name="library_search_hint">Rechercher dans la bibliothèque</string>
+    <string name="action_search_clear">Effacer la recherche</string>
+    <string name="library_search_tracks">Titres</string>
+    <string name="library_search_empty_title">Aucun résultat</string>
+    <string name="library_search_empty_body">Coil cherche dans ce qu\'il a chargé depuis la box. Les albums y sont tous dès que l\'onglet Albums a été ouvert ; les dossiers et les titres arrivent à mesure que vous les ouvrez. Les réglages permettent de parcourir toute la bibliothèque une fois pour tout rendre trouvable.</string>
+
+    <!-- Details sheet: what Coil already knows about an item. -->
+    <string name="action_details">Détails</string>
+    <string name="details_path">Chemin</string>
+    <string name="details_artist">Artiste</string>
+    <string name="details_album">Album</string>
+    <string name="details_album_artist">Artiste de l\'album</string>
+    <string name="details_track_number">Numéro de piste</string>
+    <string name="details_duration">Durée</string>
+    <string name="details_file">Fichier</string>
+
+    <!-- Links: coil://play for a favourite, coil://open for a box. -->
+    <string name="action_copy_link">Copier le lien</string>
+    <string name="action_share_link">Partager le lien</string>
+    <string name="favourites_link_copied">Lien copié</string>
+    <string name="deeplink_box_unknown">Cette box n\'est pas configurée sur ce téléphone.</string>
+    <string name="settings_box_copy_link">Copier le lien vers cette box</string>
+    <string name="settings_box_share_link">Partager le lien vers cette box</string>
+    <string name="settings_box_link_summary">Ouvre Coil sur cette box — pour une application d\'automatisation, un tag NFC ou une note. Ne démarre pas la lecture.</string>
+
+    <!-- Settings: a second box, and the opt-in crawl that makes search complete. -->
+    <string name="settings_add_box">Ajouter une autre box</string>
+    <string name="settings_add_box_summary">Coil pilote une box à la fois. Dès qu\'une deuxième box est configurée, le nom en haut de l\'écran permet de passer de l\'une à l\'autre.</string>
+    <string name="settings_index">Rendre toute la bibliothèque trouvable</string>
+    <string name="settings_index_summary">Parcourt chaque dossier une fois pour que la recherche trouve tout. Cela prend du temps sur une grande bibliothèque, et les cartes posées sur la box peuvent tarder à être reconnues pendant ce temps. Laissez cet écran ouvert pendant l\'opération.</string>
+    <string name="settings_index_stop">Arrêter</string>
+    <string name="settings_index_progress">%1$s dossiers lus. Touchez pour arrêter ; ce qui a été lu reste trouvable.</string>
+    <string name="settings_index_done">Bibliothèque trouvable : %1$s dossiers lus.</string>
+    <string name="settings_index_capped">Arrêt après %1$s dossiers — cette bibliothèque est plus grande que ce que Coil parcourt en une fois, la recherche peut donc encore en oublier une partie.</string>
+    <string name="settings_index_interrupted">La box a cessé de répondre après %1$s dossiers. Ce qui a été lu reste trouvable.</string>
+    <string name="settings_index_box_busy">La box est en train de jouer. Réessayez quand elle est au repos, pour que les cartes continuent d\'être reconnues sans délai.</string>
 
 </resources>

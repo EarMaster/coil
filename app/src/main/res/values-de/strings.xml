@@ -161,4 +161,75 @@
 
     <string name="action_more">Weitere Optionen</string>
 
+
+    <!-- ===================================================================
+         Added with the features below after this file was first written.
+         Same standing as the rest of this file: a draft by the author of the
+         feature, awaiting a fluent speaker's pass. Grouped here rather than
+         merged into the sections above so a reviewer can see what is new.
+         =================================================================== -->
+
+    <!-- Player: playback options and the sleep timer. It stops playback and never switches
+         the box off, which the wording has to make unmistakable. -->
+    <string name="action_repeat_all">Alle wiederholen</string>
+    <string name="action_playback_options">Wiedergabeoptionen</string>
+    <string name="action_sleep_timer">Einschlaftimer</string>
+    <string name="action_sleep_timer_on">Einschlaftimer ist aktiv</string>
+    <string name="action_sleep_timer_cancel">Timer abbrechen</string>
+    <string name="player_sleep_timer_title">Einschlaftimer</string>
+    <string name="player_sleep_timer_explainer">Beendet die Wiedergabe nach der gewählten Zeit. Die Box bleibt eingeschaltet — Coil schaltet sie nie aus.</string>
+    <string name="player_sleep_timer_remaining">Stoppt in %1$s</string>
+    <plurals name="duration_minutes">
+        <item quantity="one">%1$s Min.</item>
+        <item quantity="other">%1$s Min.</item>
+    </plurals>
+
+    <!-- Favourites name their target: from a playing song, "save this" could mean the single
+         track or the whole folder. -->
+    <string name="action_favourite_add_folder">Ordner als Favorit speichern</string>
+    <string name="action_favourite_remove_folder">Ordner aus den Favoriten entfernen</string>
+    <string name="action_favourite_add_track">Titel als Favorit speichern</string>
+    <string name="action_favourite_remove_track">Titel aus den Favoriten entfernen</string>
+    <string name="action_favourite_add_album">Album als Favorit speichern</string>
+    <string name="action_favourite_remove_album">Album aus den Favoriten entfernen</string>
+    <string name="action_favourite_options">Favoriten-Optionen</string>
+
+    <!-- Library search. It looks through what Coil has already loaded from the box. -->
+    <string name="library_search_hint">Bibliothek durchsuchen</string>
+    <string name="action_search_clear">Suche löschen</string>
+    <string name="library_search_tracks">Titel</string>
+    <string name="library_search_empty_title">Nichts gefunden</string>
+    <string name="library_search_empty_body">Coil durchsucht, was es von der Box geladen hat. Alben sind vollständig da, sobald der Tab „Alben“ geöffnet wurde; Ordner und Titel kommen dazu, sobald du sie öffnest. In den Einstellungen kann Coil einmal die ganze Bibliothek durchgehen und alles durchsuchbar machen.</string>
+
+    <!-- Details sheet: what Coil already knows about an item. -->
+    <string name="action_details">Details</string>
+    <string name="details_path">Pfad</string>
+    <string name="details_artist">Interpret</string>
+    <string name="details_album">Album</string>
+    <string name="details_album_artist">Album-Interpret</string>
+    <string name="details_track_number">Titelnummer</string>
+    <string name="details_duration">Länge</string>
+    <string name="details_file">Datei</string>
+
+    <!-- Links: coil://play for a favourite, coil://open for a box. -->
+    <string name="action_copy_link">Link kopieren</string>
+    <string name="action_share_link">Link teilen</string>
+    <string name="favourites_link_copied">Link kopiert</string>
+    <string name="deeplink_box_unknown">Diese Box ist auf diesem Telefon nicht eingerichtet.</string>
+    <string name="settings_box_copy_link">Link zu dieser Box kopieren</string>
+    <string name="settings_box_share_link">Link zu dieser Box teilen</string>
+    <string name="settings_box_link_summary">Öffnet Coil mit dieser Box — für eine Automatisierungs-App, einen NFC-Tag oder eine Notiz. Die Wiedergabe wird nicht gestartet.</string>
+
+    <!-- Settings: a second box, and the opt-in crawl that makes search complete. -->
+    <string name="settings_add_box">Weitere Box hinzufügen</string>
+    <string name="settings_add_box_summary">Coil steuert immer eine Box. Sobald eine zweite Box eingerichtet ist, wechselt der Name oben im Bildschirm zwischen ihnen.</string>
+    <string name="settings_index">Ganze Bibliothek durchsuchbar machen</string>
+    <string name="settings_index_summary">Geht jeden Ordner einmal durch, damit die Suche alles findet. Bei einer großen Bibliothek dauert das, und Karten werden auf der Box währenddessen langsamer erkannt. Lass diesen Bildschirm offen, solange es läuft.</string>
+    <string name="settings_index_stop">Anhalten</string>
+    <string name="settings_index_progress">%1$s Ordner gelesen. Zum Anhalten tippen; das Gelesene bleibt durchsuchbar.</string>
+    <string name="settings_index_done">Bibliothek durchsuchbar: %1$s Ordner gelesen.</string>
+    <string name="settings_index_capped">Nach %1$s Ordnern angehalten — diese Bibliothek ist größer, als Coil auf einmal erfasst, daher kann die Suche noch etwas übersehen.</string>
+    <string name="settings_index_interrupted">Die Box hat nach %1$s Ordnern nicht mehr geantwortet. Das Gelesene bleibt durchsuchbar.</string>
+    <string name="settings_index_box_busy">Die Box spielt gerade. Versuche es erneut, wenn sie im Leerlauf ist, damit Karten weiterhin sofort erkannt werden.</string>
+
 </resources>

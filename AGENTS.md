@@ -210,9 +210,24 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
   Room migration across every table.
 - **Coil (this app) vs Coil (the image-loading library):** name collision is known and accepted;
   alias the library import to keep it unambiguous in code and review.
-- **i18n is not an afterthought.** English is the source language for everything (code, comments,
-  commits, docs, UI strings). No hardcoded user-facing strings, no string concatenation, use
-  `<plurals>`, format numbers/dates via the platform. Launch locales: en, de, fr, es, nl.
+- **i18n is not an afterthought, and not a follow-up either.** English is the source language for
+  everything (code, comments, commits, docs, UI strings). No hardcoded user-facing strings, no
+  string concatenation, use `<plurals>`, format numbers/dates via the platform. Launch locales:
+  en, de, fr, es, nl.
+- **A new user-facing string lands in all five locales in the same change.** Not "English now,
+  translations later": later does not come on its own, and the gap is invisible from the English
+  build — a missing string falls back silently, so the feature looks finished while three of the
+  five launch locales show English in the middle of a translated screen. Write the four
+  translations as part of the work, flag them as drafts for a fluent speaker, and check with:
+
+  ```bash
+  ./gradlew :app:lintDebug   # MissingTranslation, MissingQuantity — both must come back clean
+  ```
+
+  A translation drafted by whoever wrote the feature and marked for review is not the "unreviewed
+  machine translation" the convention below rejects: what that rule forbids is shipping a
+  complete-looking translation nobody has read, not writing one down where the reviewer can find
+  it. Absence is the worse failure of the two, because nothing reports it.
 - **No custom fonts** — Material 3 default type scale only (keeps full Latin-1 coverage for all
   launch locales without APK cost).
 - **Dynamic colour (Material You) is off by default**, toggle in settings; brand colours are fixed
@@ -417,8 +432,9 @@ is in.
 
 The locale axis is one German golden rather than all five launch locales —
 `library/folders_de.png`, which is also the only place the translations can be *seen* without a
-phone. It shows the drift honestly: 43 of the 163 strings have no German at all yet and fall
-back to English on screen.
+phone. It used to show 43 strings falling back to English mid-screen, which is how the gap was
+noticed at all; every string is translated as of this commit, so what it now shows is German
+throughout.
 
 ## Deep links
 
@@ -485,7 +501,9 @@ coil://open?box=<boxId>     # open it showing that box
 - Project language is English throughout: code, comments, commit messages, documentation.
 - Translations are contributed as PRs against `res/values-<locale>/strings.xml`; no unreviewed
   machine translation (a partial, human-reviewed translation is fine — an unreviewed complete one
-  is not).
+  is not). This is about *quality*, and is not licence to leave a locale short: every string
+  exists in every locale as of this commit, as a draft where it has to be, and `MissingTranslation`
+  coming back clean is the check. See the i18n rule under "Architecture decisions to preserve".
 - Scope discipline: Coil is deliberately a playback remote only. Card management, box system
   settings and shutdown/reboot stay out of scope — see README "What Coil does not do" and the
   implementation plan §1 and §16. **One exception, deliberately made: the sleep timer** — see

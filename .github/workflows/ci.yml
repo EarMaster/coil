@@ -75,9 +75,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v3
 
-      # Compares every screen against the committed golden. Rendering is host-sensitive, so
-      # this runner is the reference: goldens are recorded by screenshots.yml, on Linux, and a
-      # run recorded on a developer's own machine is for looking at rather than for committing.
+      # Compares every screen against the committed golden. Goldens recorded on a developer's
+      # machine have been checked against this runner and came out byte-identical — Robolectric
+      # brings its own fonts and Skia — so a locally recorded golden is expected to pass here.
       #
       # The filter excludes StoreAssetTest. Those images are products, not baselines — they are
       # flattened after capture and so never match byte for byte, and a UI change should fail

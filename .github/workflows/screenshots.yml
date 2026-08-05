@@ -1,7 +1,8 @@
 name: Record screenshots
 
 # Re-recording is how a visual change is *accepted*, which is a decision rather than something
-# that should happen on every push. There are therefore two deliberate ways to ask for it:
+# that should happen on every push. There are therefore two deliberate ways to ask for it
+# (a local `recordRoborazziDebug` is equally valid — the files come out the same):
 #
 #   1. `workflow_dispatch` — pick the branch in the Actions tab. GitHub only offers this once
 #      the workflow exists on the default branch, which for this repo means after `screenshots.yml`
@@ -37,9 +38,10 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v3
 
-      # This runner is the reference environment. Text rendering differs enough between hosts
-      # that a golden recorded on Windows or macOS can fail here on nothing but antialiasing,
-      # so the baseline is always made where it is checked.
+      # Recording here rather than locally is about who is doing it, not about rendering: the
+      # two have been compared and produce identical files. This is the route for a change
+      # someone wants accepted without a local Android toolchain, and it keeps the baseline and
+      # the check in the same place by default.
       - name: Record goldens
         run: ./gradlew :app:recordRoborazziDebug --tests '*ScreenshotTest'
 

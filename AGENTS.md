@@ -302,12 +302,16 @@ Three levels, and the distinction matters:
 - **Nothing is written during `./gradlew test`.** `captureRoboImage` is inert unless Roborazzi's
   own tasks set its system property, so an ordinary test run only checks that every screen still
   composes — which is worth having on its own, since none of this used to be covered at all.
-- **Goldens are recorded on CI, not locally.** Text rendering differs between hosts, so a file
-  recorded on Windows can fail the Linux runner on antialiasing alone. `screenshots.yml` is a
-  manual workflow that records on the runner and commits the result; dispatch it on the branch
-  carrying the UI change (never on `main` — the push would be rejected). Recording locally is
-  for *looking* at, and `verifyRoborazziDebug` locally may disagree with CI for the same reason.
-  When a change is meant to alter the UI, that workflow *is* the way you accept the new look.
+- **Recording locally is fine, and this has been checked.** The worry going in was the usual one
+  — that text rendering differs between hosts and a golden recorded on Windows would fail the
+  Linux runner on antialiasing alone. It does not, at least here: a full run on the runner
+  against goldens recorded on Windows (JDK 23) reported every file byte-identical. Robolectric
+  brings its own fonts and its own Skia, so the host contributes less than one would expect. The
+  SDK level and the JDK major version *do* matter — see the `sdk=35` note in
+  `robolectric.properties` — so keep those in step rather than the operating system.
+  `screenshots.yml` still exists as the canonical way to accept a new look, and it is the only
+  option for a contributor whose setup differs, but a local `recordRoborazziDebug` is a
+  legitimate way to update a golden.
 - **A failing verify uploads what it saw.** `_actual` and `_compare` images land in
   `app/build/outputs/roborazzi/` and the `Screenshots` CI job uploads them. That directory is
   flat, so **golden file names must stay unique across subfolders** — two `folders_light.png`

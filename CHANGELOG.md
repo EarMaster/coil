@@ -23,6 +23,12 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
   stays where it was, in the name at the top of the screen; settings keeps the library actions,
   which act on the box Coil is controlling now
 
+### Fixed
+- **Cover art never loaded on a real box.** A Phoniebox serves artwork over plain HTTP, and Android
+  blocks cleartext HTTP by default, so every cover request was refused before it left the phone.
+  Nothing showed it: a refused request draws the same placeholder as a song with no artwork, and the
+  ZMQ sockets are raw TCP and so were never affected — which is why everything except covers worked
+
 ## [0.8.0] - 2026-08-05
 
 ### Added

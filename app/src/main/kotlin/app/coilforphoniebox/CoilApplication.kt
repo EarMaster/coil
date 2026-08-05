@@ -5,6 +5,7 @@ import app.coilforphoniebox.shortcuts.ShortcutSynchronizer
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
+import coil.util.DebugLogger
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -36,6 +37,11 @@ class CoilApplication : Application(), ImageLoaderFactory {
                     .build()
             }
             .crossfade(true)
+            // A failed cover shows the same placeholder as a song that has no artwork, so
+            // nothing on screen distinguishes "no cover" from "the request was refused".
+            // That is how a blanket cleartext block went unnoticed until a run against a
+            // real box; in a debug build the reason at least reaches logcat.
+            .apply { if (BuildConfig.DEBUG) logger(DebugLogger()) }
             .build()
 
     private companion object {

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cover art is the one thing Coil fetches over HTTP, and a Phoniebox serves it over plain
+  HTTP from its own web server on the LAN (`http://<box>/cover-cache/<file>`). There is no
+  HTTPS on a box and no certificate to trust if there were, so without this the platform
+  refuses every cover request with "Cleartext HTTP traffic to <host> not permitted" — which
+  looks exactly like a box with no artwork, because the image loader's error branch shows
+  the same placeholder either way.
+
+  It has to be `base-config` rather than a `domain-config`: the box's address is entered by
+  the user at runtime — a hostname, an mDNS name or a bare IP — and this file is fixed at
+  build time, so there is no set of domains to list.
+
+  This widens nothing beyond cover art in practice. The ZMQ sockets are raw TCP and were
+  never subject to this policy (which is why everything *except* covers worked), and the
+  app makes no other HTTP request. The LAN-only threat model is unchanged: §16 already
+  assumes an unauthenticated, unencrypted box on a trusted local network.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

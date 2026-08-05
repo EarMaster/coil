@@ -172,6 +172,22 @@ server in this repo.
   (`coverart_cache_manager.py`); an empty string means "no artwork". Only a later request returns a
   file name, so a single call never yields a cover. `LibraryParser.coverArt` models the three
   outcomes and both callers retry.
+- **Cover art is the only HTTP in the app, and the platform blocked it.** The file name resolves over
+  ZMQ, but the image comes from the box's own web server over plain `http://` — and Android refuses
+  cleartext HTTP by default at `targetSdk` 28 and up, which is every build this app has ever made.
+  `app/src/main/res/xml/network_security_config.xml` permits it (`base-config`, because the box's
+  address is entered at runtime and there is no domain list to write). Two things made this invisible
+  for a long time: the ZMQ sockets are raw TCP and were never subject to the policy, so *everything
+  except covers* worked and the transport looked innocent; and `CoverArt`'s error branch draws the
+  same placeholder as a song with genuinely no artwork, so the screen could not tell a refused
+  request from an absent cover. The image loader now carries a `DebugLogger` in debug builds for
+  exactly that reason. Verified against a real box: `get_single_coverart` answers with
+  `cover-<sha256>.jpg` and `http://<host>/cover-cache/<that>` serves the JPEG. Note the cover file
+  name is always a hash, so `Box.coverUrl` needs no URL escaping even though the *song* paths it is
+  derived from are full of spaces and umlauts.
+- **A wrong path on the box's web server answers `200`, not `404`** — the web UI is a single-page app
+  and its server falls back to `index.html`, so `/cover_cache/…` returns 609 bytes of HTML with a
+  `200`. When checking a cover URL by hand, look at `Content-Type`, not the status code.
 - **Never let cover art gate other state.** Every screen `combine`s the player state, and `combine`
   emits nothing until *all* inputs have emitted once — so a cover flow whose first value needs a
   round trip freezes the title, progress and controls with it. `PlayerRepository.coverUrl` is a
@@ -525,9 +541,14 @@ still needs doing, in rough order of importance:
 1. **First run against a real box happened and found three bugs** (all fixed): `as_thread`
    discarding every result, `core.version` not being an RPC, and the volume slider firing a command
    per frame. What is confirmed working on hardware: the DEALER framing, PubSub status, play/pause/
-   next/prev, `play_folder`, and favourites. Still unconfirmed on hardware: the library views and
-   cover art (both were broken by `as_thread` and have not been retested), the connection test,
-   mDNS discovery, the media session and notification, launcher shortcuts, and multi-box switching.
+   next/prev, `play_folder`, and favourites. A later session found a fourth on hardware — Android's
+   default cleartext-HTTP block stopping every cover fetch (see "Cover art is the only HTTP in the
+   app" above); the whole cover chain is now verified against a real box *up to the phone*
+   (`playerstatus.file` → `get_single_coverart` → the HTTP fetch), and `get_folder_content` and
+   `list_albums` answer correctly too, but **the fix itself has not yet been seen rendering in the
+   app on a device**. Still unconfirmed on hardware: the library views as screens, the connection
+   test, mDNS discovery, the media session and notification, launcher shortcuts, and multi-box
+   switching.
 2. **The four translations are unreviewed drafts.** `values-de|fr|es|nl/strings.xml` each carry a
    header saying so. Per the rule above they must be read by a fluent speaker before a release —
    missing strings fall back to English, so correcting them incrementally is safe.

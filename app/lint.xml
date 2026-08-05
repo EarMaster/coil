@@ -11,4 +11,16 @@
         <ignore path="src/main/res/mipmap-anydpi-v26" />
     </issue>
 
+    <!--
+      Permitting cleartext is the whole point of that file, so lint's warning is correct and
+      the answer to it is still "yes". A Phoniebox serves its cover art over plain HTTP from
+      the LAN and offers no HTTPS at all; the alternative to this setting is not a more
+      secure cover, it is no cover. The reasoning, and why it cannot be narrowed to a
+      domain-config, is in the file itself. Scoped to that one path so a stray cleartext
+      permission anywhere else still gets reported.
+    -->
+    <issue id="InsecureBaseConfiguration">
+        <ignore path="src/main/res/xml/network_security_config.xml" />
+    </issue>
+
 </lint>

@@ -15,6 +15,7 @@
     <string name="nav_library">Bibliotheek</string>
     <string name="nav_favourites">Favorieten</string>
     <string name="nav_settings">Instellingen</string>
+    <string name="action_back">Terug</string>
 
     <string name="player_nothing_playing">Er speelt niets</string>
     <string name="player_no_title">Onbekende titel</string>
@@ -75,6 +76,11 @@
     <string name="boxes_switch">Andere box kiezen</string>
     <string name="action_add_box">Box toevoegen</string>
     <string name="box_active">Actief</string>
+    <string name="boxes_explainer">Coil bedient één box tegelijk. Zodra er een tweede box is ingesteld, schakelt de naam boven in het scherm tussen de boxen.</string>
+    <string name="boxes_is_active">Coil bedient deze box.</string>
+    <string name="boxes_make_active">Naar deze box wisselen</string>
+    <string name="boxes_make_active_summary">De speler, bibliotheek en favorieten laten dan deze box zien.</string>
+    <string name="boxes_section_connection">Verbinding</string>
 
     <string name="add_box_explainer">De box en deze telefoon moeten in hetzelfde netwerk zitten. Coil praat direct met de box; niets gaat via internet.</string>
     <string name="add_box_discovered">Gevonden in dit netwerk</string>
@@ -115,8 +121,10 @@
     <string name="settings_language">Taal</string>
     <string name="settings_language_summary">Opent de taalinstellingen van het systeem voor Coil.</string>
 
-    <string name="settings_section_box">Deze box</string>
+    <string name="settings_manage_boxes">Boxen beheren</string>
     <string name="settings_box_address">Adres</string>
+    <string name="settings_section_library">Bibliotheek</string>
+    <string name="settings_library_active_box">Geldt voor %1$s, de box die Coil nu bedient.</string>
     <string name="settings_rescan">Bibliotheek op de box opnieuw inlezen</string>
     <string name="settings_rescan_summary">Laat de box naar nieuwe bestanden zoeken. Bij een grote bibliotheek kan dat even duren.</string>
     <string name="settings_rescan_started">De box leest haar bibliotheek opnieuw in.</string>
@@ -220,9 +228,7 @@
     <string name="settings_box_share_link">Link naar deze box delen</string>
     <string name="settings_box_link_summary">Opent Coil met deze box — voor een automatiseringsapp, een NFC-tag of een notitie. Start de weergave niet.</string>
 
-    <!-- Settings: a second box, and the opt-in crawl that makes search complete. -->
-    <string name="settings_add_box">Nog een box toevoegen</string>
-    <string name="settings_add_box_summary">Coil bedient één box tegelijk. Zodra er een tweede box is ingesteld, schakelt de naam boven in het scherm tussen de boxen.</string>
+    <!-- Settings: the opt-in crawl that makes search complete. -->
     <string name="settings_index">Hele bibliotheek doorzoekbaar maken</string>
     <string name="settings_index_summary">Loopt elke map één keer door, zodat zoeken alles vindt. Bij een grote bibliotheek duurt dat even, en kaartjes worden op de box ondertussen langzamer herkend. Houd dit scherm open zolang het loopt.</string>
     <string name="settings_index_stop">Stoppen</string>

@@ -369,9 +369,13 @@ Three levels, and the distinction matters:
   Kotlin 2.0.21 cannot read. Upgrading it means upgrading Kotlin and the Compose compiler too.
 
 Covered so far: the whole app on three devices (player light and dark, library, favourites,
-settings, offline, onboarding), the player screen (playing, paused, idle, web radio, sleep
-timer, light and dark), the library screen (folders, tracks, albums, search, no results, empty,
-light and dark) and the chrome components.
+settings top and lower half, box management, one box's page, offline, onboarding), the player
+screen (playing, paused, idle, web radio, sleep timer, light and dark), the library screen
+(folders, tracks, albums, search, no results, empty, light and dark) and the chrome components.
+
+Box management is captured with **two** boxes configured (`app/boxes_*`, `app/box_detail_*`), since
+one box is the case where those screens have least to say — and the box page golden is the
+*non-active* box, which is the state the old settings screen could not reach at all.
 
 The tablet goldens are the reason the player got a tablet layout at all: `app/player_tablet.png`
 used to be a full-screen cover with its own controls pushed off the bottom, which is obvious in a
@@ -491,8 +495,8 @@ coil://open?box=<boxId>     # open it showing that box
   Both paths are handled, and a `deepLinkHandled` flag rides in `savedInstanceState` so a rotation
   does not re-apply the link — otherwise a user who arrived by link, switched box, then turned the
   phone would be yanked back.
-- **Settings hands the link out** ("Copy link to this box" / "Share link to this box", under the box
-  section), for the same reason a favourite's menu does: the box id is a UUID shown nowhere else, so
+- **A box's own page hands the link out** ("Copy link to this box" / "Share link to this box", on
+  `BoxDetailScreen`), for the same reason a favourite's menu does: the box id is a UUID shown nowhere else, so
   `?box=` is unusable without a way to obtain it. A bare `coil://open` needs no such help and can be
   typed by hand.
 
@@ -563,14 +567,27 @@ still needs doing, in rough order of importance:
   stays in the single `strings.xml`. `:feature-shortcuts` therefore has no string resources at all.
   For the same reason the media notification's text reaches `:feature-media` through the
   `MediaNotificationTexts` interface, implemented in `:app`.
-- **"Add another box" lives on the settings screen, and is always visible there.** §7.5's collapsed
-  top bar — a plain indicator, not a switcher, while there is one box — is kept, but it made a second
-  box unreachable: the switcher sheet holds the only other "Add box" entry, and settings offered one
-  solely when *no* box existed. One box was therefore a dead end, which reads as multi-box being
-  unimplemented rather than merely hidden. Settings now also carries a box picker once there are two
-  or more, mirroring the switcher, since that is where boxes are configured. Adding a box
-  deliberately does **not** make it active: nothing should tear down a live connection the user did
-  not ask to change.
+- **Boxes are configured on their own screen, not in the settings list.** §7.5's collapsed top bar —
+  a plain indicator, not a switcher, while there is one box — is kept, but it made a second box
+  unreachable, so settings had to hold a way in. Doing that inside the settings list did not work:
+  "switch box" (a radio list), "add another box" and "this box's address" ended up as neighbouring
+  rows of the same shape, and the screen read as three overlapping ways to say *box*. Box management
+  is now `ui/boxes/BoxesScreen` (every box, plus "Add box") with `BoxDetailScreen` under it (name,
+  address, ports, that box's `coil://open` link, removing it), behind one "Manage boxes" row in
+  settings. Consequences worth keeping:
+  - Both screens address a box **by id** (`BoxesViewModel`), not through "the active box". Renaming
+    or re-addressing a non-active box no longer requires switching to it — on the settings screen
+    that was impossible, since every field there described whichever box was active.
+  - Switching boxes stays in the top bar only, and a box row *opens* the box rather than selecting
+    it. A box page for the non-active box offers "Switch to this box"; the active one just says so.
+  - The library actions (rescan, the search crawl) stay in settings, because they run against the
+    active box — on a box page, three of four pages could not offer them honestly.
+  - The rows both screens are built from live in `ui/components/SettingsRows.kt`, so box management
+    looks like the screen it was reached from.
+  - Sub-screens of a tab (box management, a box, add-box) get a back arrow in the top bar and keep
+    the settings tab lit — see `owningDestination` in `CoilApp`.
+- Adding a box deliberately does **not** make it active: nothing should tear down a live connection
+  the user did not ask to change.
 - **A single track is favouritable**, which the plan's `FOLDER | ALBUM` favourite type (§6.3, §7.2)
   does not allow. From a playing song, "save this" is genuinely ambiguous between the track and its
   folder, so both are offered by name instead of one being guessed at: a tap on the player's star

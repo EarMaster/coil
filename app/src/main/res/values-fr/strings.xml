@@ -16,6 +16,7 @@
     <string name="nav_library">Bibliothèque</string>
     <string name="nav_favourites">Favoris</string>
     <string name="nav_settings">Réglages</string>
+    <string name="action_back">Retour</string>
 
     <string name="player_nothing_playing">Aucune lecture en cours</string>
     <string name="player_no_title">Titre inconnu</string>
@@ -79,6 +80,11 @@
     <string name="boxes_switch">Changer de box</string>
     <string name="action_add_box">Ajouter une box</string>
     <string name="box_active">Active</string>
+    <string name="boxes_explainer">Coil pilote une box à la fois. Dès qu\'une deuxième box est configurée, le nom en haut de l\'écran permet de passer de l\'une à l\'autre.</string>
+    <string name="boxes_is_active">Coil pilote cette box.</string>
+    <string name="boxes_make_active">Passer à cette box</string>
+    <string name="boxes_make_active_summary">Le lecteur, la bibliothèque et les favoris affichent alors cette box.</string>
+    <string name="boxes_section_connection">Connexion</string>
 
     <string name="add_box_explainer">La box et ce téléphone doivent être sur le même réseau. Coil parle directement à la box ; rien ne passe par internet.</string>
     <string name="add_box_discovered">Trouvé sur ce réseau</string>
@@ -119,8 +125,10 @@
     <string name="settings_language">Langue</string>
     <string name="settings_language_summary">Ouvre les réglages de langue du système pour Coil.</string>
 
-    <string name="settings_section_box">Cette box</string>
+    <string name="settings_manage_boxes">Gérer les box</string>
     <string name="settings_box_address">Adresse</string>
+    <string name="settings_section_library">Bibliothèque</string>
+    <string name="settings_library_active_box">S\'applique à %1$s, la box que Coil pilote actuellement.</string>
     <string name="settings_rescan">Réanalyser la bibliothèque sur la box</string>
     <string name="settings_rescan_summary">Demande à la box de chercher de nouveaux fichiers. Cela peut prendre du temps sur une grande bibliothèque.</string>
     <string name="settings_rescan_started">La box réanalyse sa bibliothèque.</string>
@@ -225,9 +233,7 @@
     <string name="settings_box_share_link">Partager le lien vers cette box</string>
     <string name="settings_box_link_summary">Ouvre Coil sur cette box — pour une application d\'automatisation, un tag NFC ou une note. Ne démarre pas la lecture.</string>
 
-    <!-- Settings: a second box, and the opt-in crawl that makes search complete. -->
-    <string name="settings_add_box">Ajouter une autre box</string>
-    <string name="settings_add_box_summary">Coil pilote une box à la fois. Dès qu\'une deuxième box est configurée, le nom en haut de l\'écran permet de passer de l\'une à l\'autre.</string>
+    <!-- Settings: the opt-in crawl that makes search complete. -->
     <string name="settings_index">Rendre toute la bibliothèque trouvable</string>
     <string name="settings_index_summary">Parcourt chaque dossier une fois pour que la recherche trouve tout. Cela prend du temps sur une grande bibliothèque, et les cartes posées sur la box peuvent tarder à être reconnues pendant ce temps. Laissez cet écran ouvert pendant l\'opération.</string>
     <string name="settings_index_stop">Arrêter</string>

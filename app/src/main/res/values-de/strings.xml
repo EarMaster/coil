@@ -15,6 +15,7 @@
     <string name="nav_library">Bibliothek</string>
     <string name="nav_favourites">Favoriten</string>
     <string name="nav_settings">Einstellungen</string>
+    <string name="action_back">Zurück</string>
 
     <string name="player_nothing_playing">Es läuft nichts</string>
     <string name="player_no_title">Unbekannter Titel</string>
@@ -75,6 +76,11 @@
     <string name="boxes_switch">Box wechseln</string>
     <string name="action_add_box">Box hinzufügen</string>
     <string name="box_active">Aktiv</string>
+    <string name="boxes_explainer">Coil steuert immer eine Box. Sobald eine zweite Box eingerichtet ist, wechselt der Name oben im Bildschirm zwischen ihnen.</string>
+    <string name="boxes_is_active">Coil steuert diese Box.</string>
+    <string name="boxes_make_active">Zu dieser Box wechseln</string>
+    <string name="boxes_make_active_summary">Player, Bibliothek und Favoriten zeigen dann diese Box.</string>
+    <string name="boxes_section_connection">Verbindung</string>
 
     <string name="add_box_explainer">Die Box und dieses Telefon müssen im gleichen Netzwerk sein. Coil spricht direkt mit der Box; nichts läuft über das Internet.</string>
     <string name="add_box_discovered">Im Netzwerk gefunden</string>
@@ -115,8 +121,10 @@
     <string name="settings_language">Sprache</string>
     <string name="settings_language_summary">Öffnet die Spracheinstellungen des Systems für Coil.</string>
 
-    <string name="settings_section_box">Diese Box</string>
+    <string name="settings_manage_boxes">Boxen verwalten</string>
     <string name="settings_box_address">Adresse</string>
+    <string name="settings_section_library">Bibliothek</string>
+    <string name="settings_library_active_box">Gilt für %1$s, die Box, die Coil gerade steuert.</string>
     <string name="settings_rescan">Bibliothek auf der Box neu einlesen</string>
     <string name="settings_rescan_summary">Die Box sucht nach neuen Dateien. Bei einer großen Bibliothek kann das dauern.</string>
     <string name="settings_rescan_started">Die Box liest ihre Bibliothek neu ein.</string>
@@ -220,9 +228,7 @@
     <string name="settings_box_share_link">Link zu dieser Box teilen</string>
     <string name="settings_box_link_summary">Öffnet Coil mit dieser Box — für eine Automatisierungs-App, einen NFC-Tag oder eine Notiz. Die Wiedergabe wird nicht gestartet.</string>
 
-    <!-- Settings: a second box, and the opt-in crawl that makes search complete. -->
-    <string name="settings_add_box">Weitere Box hinzufügen</string>
-    <string name="settings_add_box_summary">Coil steuert immer eine Box. Sobald eine zweite Box eingerichtet ist, wechselt der Name oben im Bildschirm zwischen ihnen.</string>
+    <!-- Settings: the opt-in crawl that makes search complete. -->
     <string name="settings_index">Ganze Bibliothek durchsuchbar machen</string>
     <string name="settings_index_summary">Geht jeden Ordner einmal durch, damit die Suche alles findet. Bei einer großen Bibliothek dauert das, und Karten werden auf der Box währenddessen langsamer erkannt. Lass diesen Bildschirm offen, solange es läuft.</string>
     <string name="settings_index_stop">Anhalten</string>

@@ -11,8 +11,17 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ### Added
 - **A link that just opens Coil**, `coil://open`, alongside the existing link that starts a
-  favourite — optionally naming a box, so it opens showing that one. Settings hands the link out
-  per box under "Copy link to this box". It sends the box nothing and never starts playback
+  favourite — optionally naming a box, so it opens showing that one. Box management hands the link
+  out per box under "Copy link to this box". It sends the box nothing and never starts playback
+
+### Changed
+- **Boxes are managed on their own screen**, reached from "Manage boxes" in settings, instead of
+  being a stretch of the settings list where picking a box, adding a box and editing the current
+  box sat next to each other and looked alike. Each box now has its own page: name, address and
+  ports, its `coil://open` link, and removing it. A box that is not the active one can be renamed
+  or re-addressed without switching to it first, which was previously impossible. Switching boxes
+  stays where it was, in the name at the top of the screen; settings keeps the library actions,
+  which act on the box Coil is controlling now
 
 ## [0.8.0] - 2026-08-05
 

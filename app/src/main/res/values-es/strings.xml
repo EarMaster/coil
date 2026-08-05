@@ -12,6 +12,7 @@
     <string name="nav_library">Biblioteca</string>
     <string name="nav_favourites">Favoritos</string>
     <string name="nav_settings">Ajustes</string>
+    <string name="action_back">Atrás</string>
 
     <string name="player_nothing_playing">No se está reproduciendo nada</string>
     <string name="player_no_title">Título desconocido</string>
@@ -75,6 +76,11 @@
     <string name="boxes_switch">Cambiar de caja</string>
     <string name="action_add_box">Añadir caja</string>
     <string name="box_active">Activa</string>
+    <string name="boxes_explainer">Coil controla una caja a la vez. Cuando haya una segunda configurada, el nombre de la parte superior de la pantalla cambia entre ellas.</string>
+    <string name="boxes_is_active">Coil está controlando esta caja.</string>
+    <string name="boxes_make_active">Cambiar a esta caja</string>
+    <string name="boxes_make_active_summary">El reproductor, la biblioteca y los favoritos mostrarán esta caja.</string>
+    <string name="boxes_section_connection">Conexión</string>
 
     <string name="add_box_explainer">La caja y este teléfono tienen que estar en la misma red. Coil habla directamente con la caja; nada pasa por internet.</string>
     <string name="add_box_discovered">Encontrado en esta red</string>
@@ -115,8 +121,10 @@
     <string name="settings_language">Idioma</string>
     <string name="settings_language_summary">Abre los ajustes de idioma del sistema para Coil.</string>
 
-    <string name="settings_section_box">Esta caja</string>
+    <string name="settings_manage_boxes">Gestionar cajas</string>
     <string name="settings_box_address">Dirección</string>
+    <string name="settings_section_library">Biblioteca</string>
+    <string name="settings_library_active_box">Se aplica a %1$s, la caja que Coil controla ahora.</string>
     <string name="settings_rescan">Volver a leer la biblioteca en la caja</string>
     <string name="settings_rescan_summary">Pide a la caja que busque archivos nuevos. Con una biblioteca grande puede tardar.</string>
     <string name="settings_rescan_started">La caja está releyendo su biblioteca.</string>
@@ -221,9 +229,7 @@
     <string name="settings_box_share_link">Compartir el enlace a esta caja</string>
     <string name="settings_box_link_summary">Abre Coil mostrando esta caja — para una app de automatización, una etiqueta NFC o una nota. No inicia la reproducción.</string>
 
-    <!-- Settings: a second box, and the opt-in crawl that makes search complete. -->
-    <string name="settings_add_box">Añadir otra caja</string>
-    <string name="settings_add_box_summary">Coil controla una caja a la vez. Cuando haya una segunda configurada, el nombre de la parte superior de la pantalla cambia entre ellas.</string>
+    <!-- Settings: the opt-in crawl that makes search complete. -->
     <string name="settings_index">Hacer localizable toda la biblioteca</string>
     <string name="settings_index_summary">Recorre cada carpeta una vez para que la búsqueda lo encuentre todo. Con una biblioteca grande tarda, y mientras tanto las tarjetas pueden tardar en registrarse en la caja. Deja esta pantalla abierta mientras se ejecuta.</string>
     <string name="settings_index_stop">Detener</string>

@@ -1,0 +1,1 @@
+Primera versión. Ver qué está sonando, explorar y buscar en la biblioteca y reproducir lo que encuentres. Guardar carpetas, álbumes o pistas concretas como favoritos y ponerlos en la pantalla de inicio. Un temporizador detiene la reproducción sin apagar la caja. Los controles aparecen en la pantalla de bloqueo y se admiten varias cajas.

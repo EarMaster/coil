@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-05
+
 ### Added
 - **Player**: cover art, title and album, progress with seek, transport controls, volume slider,
   shuffle and repeat, and a star that saves the folder that is playing — with a long press to

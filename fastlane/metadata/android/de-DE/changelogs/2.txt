@@ -1,0 +1,1 @@
+Erste Version. Sehen, was läuft, die Bibliothek durchstöbern und durchsuchen und alles direkt abspielen. Ordner, Alben oder einzelne Titel als Favoriten speichern und auf den Startbildschirm legen. Ein Sleep-Timer beendet die Wiedergabe, ohne die Box auszuschalten. Die Steuerung erscheint auf dem Sperrbildschirm, und mehrere Boxen sind möglich.

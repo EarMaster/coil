@@ -133,6 +133,8 @@
 
     <string name="settings_section_notification">Controles en la pantalla de bloqueo</string>
     <string name="settings_session_mode">Mostrar controles</string>
+    <string name="settings_session_mode_off">Nunca</string>
+    <string name="settings_session_mode_off_summary">Sin notificación y sin controles en la pantalla de bloqueo. Controlas la caja desde Coil.</string>
     <string name="settings_session_mode_app_open">Solo mientras Coil está abierto</string>
     <string name="settings_session_mode_app_open_summary">Sin conexión en segundo plano y sin gasto de batería.</string>
     <string name="settings_session_mode_automatic">Siempre que la caja suene</string>

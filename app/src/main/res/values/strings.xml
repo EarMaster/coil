@@ -224,6 +224,8 @@
     <!-- Settings: media session / background -->
     <string name="settings_section_notification">Lock screen controls</string>
     <string name="settings_session_mode">Show controls</string>
+    <string name="settings_session_mode_off">Never</string>
+    <string name="settings_session_mode_off_summary">No notification and no lock screen controls. You control the box from inside Coil.</string>
     <string name="settings_session_mode_app_open">Only while Coil is open</string>
     <string name="settings_session_mode_app_open_summary">No background connection, no battery cost.</string>
     <string name="settings_session_mode_automatic">Whenever the box plays</string>

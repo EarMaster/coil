@@ -133,6 +133,8 @@
 
     <string name="settings_section_notification">Steuerung auf dem Sperrbildschirm</string>
     <string name="settings_session_mode">Steuerung anzeigen</string>
+    <string name="settings_session_mode_off">Nie</string>
+    <string name="settings_session_mode_off_summary">Keine Benachrichtigung und keine Steuerung auf dem Sperrbildschirm. Du steuerst die Box in Coil selbst.</string>
     <string name="settings_session_mode_app_open">Nur solange Coil offen ist</string>
     <string name="settings_session_mode_app_open_summary">Keine Verbindung im Hintergrund, kein Akkuverbrauch.</string>
     <string name="settings_session_mode_automatic">Immer wenn die Box spielt</string>

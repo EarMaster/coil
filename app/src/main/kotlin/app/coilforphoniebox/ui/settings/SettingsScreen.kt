@@ -249,9 +249,16 @@ fun SettingsScreen(
     }
 }
 
+/** In order of how far the session reaches: never, while the app is open, always. */
 @Composable
 private fun SessionModeRows(current: SessionMode, onSelect: (SessionMode) -> Unit) {
     GroupLabel(stringResource(R.string.settings_session_mode))
+    RadioRow(
+        label = stringResource(R.string.settings_session_mode_off),
+        subtitle = stringResource(R.string.settings_session_mode_off_summary),
+        selected = current == SessionMode.OFF,
+        onSelect = { onSelect(SessionMode.OFF) },
+    )
     RadioRow(
         label = stringResource(R.string.settings_session_mode_app_open),
         subtitle = stringResource(R.string.settings_session_mode_app_open_summary),

@@ -133,6 +133,8 @@
 
     <string name="settings_section_notification">Bediening op het vergrendelscherm</string>
     <string name="settings_session_mode">Bediening tonen</string>
+    <string name="settings_session_mode_off">Nooit</string>
+    <string name="settings_session_mode_off_summary">Geen melding en geen bediening op het vergrendelscherm. Je bedient de box in Coil zelf.</string>
     <string name="settings_session_mode_app_open">Alleen zolang Coil open is</string>
     <string name="settings_session_mode_app_open_summary">Geen verbinding op de achtergrond, geen batterijverbruik.</string>
     <string name="settings_session_mode_automatic">Zodra de box speelt</string>

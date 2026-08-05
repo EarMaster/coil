@@ -6,9 +6,11 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.util.UnstableApi
 import app.coilforphoniebox.R
+import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.FavoriteRepository
 import app.coilforphoniebox.domain.repository.PlayerRepository
+import app.coilforphoniebox.domain.repository.SettingsRepository
 import app.coilforphoniebox.media.PhonieboxMediaService
 import app.coilforphoniebox.shortcuts.PlayDeepLink
 import app.coilforphoniebox.shortcuts.ShortcutPublisher
@@ -38,6 +40,8 @@ class PlayShortcutActivity : ComponentActivity() {
 
     @Inject lateinit var shortcuts: ShortcutPublisher
 
+    @Inject lateinit var settings: SettingsRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -63,8 +67,11 @@ class PlayShortcutActivity : ComponentActivity() {
                 confirm(request.favoriteId, request.boxId)
                 // Started rather than bound: this activity finishes straight away, so there
                 // is nothing to hold a binding. The service stops itself again once the box
-                // stops playing.
-                startService(PhonieboxMediaService.serviceIntent(this@PlayShortcutActivity))
+                // stops playing. With controls switched off it is not started at all — the
+                // shortcut's own job, one `play_folder`, is already done by then.
+                if (settings.current().sessionMode != SessionMode.OFF) {
+                    startService(PhonieboxMediaService.serviceIntent(this@PlayShortcutActivity))
+                }
             }.onFailure {
                 Toast.makeText(
                     this@PlayShortcutActivity,

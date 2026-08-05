@@ -10,6 +10,11 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 ## [Unreleased]
 
 ### Added
+- **Media controls can be switched off entirely.** "Show controls" had two settings, both of which
+  put a notification up sooner or later; it now has three, with "Never" as the third. In that mode
+  no media session is created at all — no notification, no lock screen controls, no hardware volume
+  buttons reaching the box — and Coil controls the box from its own screens only. Choosing it while
+  the box is playing takes the notification down there and then rather than at the next restart
 - **A link that just opens Coil**, `coil://open`, alongside the existing link that starts a
   favourite — optionally naming a box, so it opens showing that one. Box management hands the link
   out per box under "Copy link to this box". It sends the box nothing and never starts playback

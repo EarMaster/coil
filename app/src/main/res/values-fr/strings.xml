@@ -137,6 +137,8 @@
 
     <string name="settings_section_notification">Commandes sur l\'écran de verrouillage</string>
     <string name="settings_session_mode">Afficher les commandes</string>
+    <string name="settings_session_mode_off">Jamais</string>
+    <string name="settings_session_mode_off_summary">Aucune notification et aucune commande sur l\'écran de verrouillage. Vous pilotez la box depuis Coil.</string>
     <string name="settings_session_mode_app_open">Seulement quand Coil est ouvert</string>
     <string name="settings_session_mode_app_open_summary">Aucune connexion en arrière-plan, aucune consommation de batterie.</string>
     <string name="settings_session_mode_automatic">Dès que la box joue</string>

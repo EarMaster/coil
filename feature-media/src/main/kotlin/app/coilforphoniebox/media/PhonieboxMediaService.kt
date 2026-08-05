@@ -40,7 +40,9 @@ import javax.inject.Inject
  * lives exactly as long as the UI and posts a notification only once the box actually
  * plays — media3 handles that transition. In automatic mode the service is started
  * outright and keeps a low-priority notification up while it waits, because a foreground
- * service has to be visible (§8.3).
+ * service has to be visible (§8.3). When controls are switched off entirely the service is
+ * not meant to exist at all: nothing binds or starts it, and it stops itself if it is
+ * already running when the setting changes.
  */
 @androidx.annotation.OptIn(UnstableApi::class)
 @AndroidEntryPoint
@@ -159,16 +161,31 @@ class PhonieboxMediaService : MediaSessionService() {
         stopSelf()
     }
 
-    /** Turning the automatic mode off in settings should stop the service, not wait for a reboot. */
+    /**
+     * Turning a mode off in settings should stop the service, not wait for a reboot.
+     *
+     * [SessionMode.OFF] ends the service whatever it is doing, including mid-playback:
+     * that mode's promise is that no notification exists, and this service's notification
+     * is the one thing that would break it. `stopSelf` alone cannot deliver that while the
+     * UI is bound — `MediaSessionBinder` drops the binding for the same setting, and the
+     * two together are what actually takes the notification down.
+     */
     private fun observeSessionModeSetting() {
         scope.launch {
             settingsRepository.settings
                 .map { it.sessionMode }
                 .distinctUntilChanged()
                 .collect { mode ->
-                    if (automatic && mode == SessionMode.APP_ONLY) {
-                        Log.i(TAG, "Automatic mode switched off; stopping")
-                        stopSelf()
+                    when {
+                        mode == SessionMode.OFF -> {
+                            Log.i(TAG, "Controls switched off entirely; stopping")
+                            stopSelf()
+                        }
+
+                        automatic && mode == SessionMode.APP_ONLY -> {
+                            Log.i(TAG, "Automatic mode switched off; stopping")
+                            stopSelf()
+                        }
                     }
                 }
         }

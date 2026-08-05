@@ -299,6 +299,12 @@ For the app to notice that the box has started playing, **something** has to hol
 - No persistent service; the session exists only while the app is in the foreground
 - No battery drain, no permanent notification
 
+**"Never" mode:**
+- No media session at all: nothing binds or starts the service, so there is no notification and no lock screen controls, not even while the box plays
+- Coil still controls the box from its own screens — the UI holds the connection itself while it is open, independently of the service
+- Switching to this mode takes effect immediately, mid-playback included: the service stops itself *and* the UI drops its binding, because a bound service outlives its own `stopSelf` and media3 would otherwise still post a notification on the next `state == play`
+- The hardware volume buttons stop reaching the box in this mode, since that comes from the session being active (§8.1)
+
 **Realistic expectation:** in automatic mode delivery is not completely reliable. Aggressive Doze and vendor-specific app killing (Samsung, Xiaomi, OnePlus) can drop the connection. The watchdog catches this, but it can take seconds to minutes. This belongs in a note in settings, along with a link to the battery optimisation exemption (`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`).
 
 Idle consumption itself is low: one open TCP connection with no traffic. The cost driver is the process being kept alive, not the network.

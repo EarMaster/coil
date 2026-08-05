@@ -2,6 +2,7 @@ package app.coilforphoniebox.screenshot
 
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.ConnectionState
@@ -91,6 +92,23 @@ abstract class AppScreenshotTest : ScreenshotTest() {
         showApp()
         navigateTo(R.string.nav_settings)
         captureRoot("app/settings_$device")
+    }
+
+    /**
+     * The per-box rows, which start below the fold on a phone — address, rescan, the crawl, and
+     * the `coil://open` link for this box.
+     *
+     * Scrolled to by name rather than by gesture, so the golden lands on the same rows every
+     * time. Without this the settings golden would only ever show the appearance section, and a
+     * change to anything under "This box" would pass unseen.
+     */
+    @Test
+    fun settings_box_section() {
+        showApp()
+        navigateTo(R.string.nav_settings)
+        compose.onNodeWithText(string(R.string.settings_box_copy_link)).performScrollTo()
+        compose.waitForIdle()
+        captureRoot("app/settings_box_$device")
     }
 
     /**

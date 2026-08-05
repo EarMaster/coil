@@ -34,15 +34,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.coilforphoniebox.BuildConfig
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
+import app.coilforphoniebox.ui.components.shareLink
 import app.coilforphoniebox.ui.components.formatNumber
 import androidx.compose.foundation.text.KeyboardOptions
 import kotlinx.coroutines.launch
@@ -59,6 +62,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
 
     var showRemoveDialog by remember { mutableStateOf(false) }
@@ -215,6 +219,23 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_rescan),
                 subtitle = stringResource(R.string.settings_rescan_summary),
                 onClick = viewModel::rescanLibrary,
+            )
+
+            // The link that opens Coil on this box. It lives here rather than in the switcher
+            // because this is where a box is configured, and it exists at all because the box
+            // id inside it is a UUID shown nowhere — so the link cannot be written by hand.
+            val boxLink = remember(box.id) { viewModel.openLinkFor(box) }
+            ActionRow(
+                title = stringResource(R.string.settings_box_copy_link),
+                subtitle = stringResource(R.string.settings_box_link_summary),
+                onClick = {
+                    clipboard.setText(AnnotatedString(boxLink))
+                    viewModel.onLinkCopied()
+                },
+            )
+            ActionRow(
+                title = stringResource(R.string.settings_box_share_link),
+                onClick = { context.shareLink(boxLink, box.displayName) },
             )
 
             // Says plainly what it costs. A crawl shares the socket the box uses for its card

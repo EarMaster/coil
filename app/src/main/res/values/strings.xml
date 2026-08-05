@@ -255,6 +255,11 @@
     <string name="shortcut_failed">Could not reach the box.</string>
     <!-- %1$s is the name of a favourite, %2$s the name of a box. -->
     <string name="shortcut_starting">Starting %1$s on %2$s</string>
+    <!-- Toast shown when a coil://open link names a box this phone does not have. -->
+    <string name="deeplink_box_unknown">That box is not set up on this phone.</string>
+    <string name="settings_box_copy_link">Copy link to this box</string>
+    <string name="settings_box_share_link">Share link to this box</string>
+    <string name="settings_box_link_summary">Opens Coil showing this box — for an automation app, an NFC tag or a note. It does not start playback.</string>
 
     <string name="action_more">More options</string>
 

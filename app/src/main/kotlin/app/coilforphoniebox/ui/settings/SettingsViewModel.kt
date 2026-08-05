@@ -1,5 +1,6 @@
 package app.coilforphoniebox.ui.settings
 
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
@@ -16,6 +17,7 @@ import app.coilforphoniebox.domain.repository.LibraryRepository
 import app.coilforphoniebox.domain.repository.PlayerRepository
 import app.coilforphoniebox.domain.repository.SettingsRepository
 import app.coilforphoniebox.media.AutoSessionStarter
+import app.coilforphoniebox.shortcuts.OpenDeepLink
 import app.coilforphoniebox.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -153,6 +155,26 @@ class SettingsViewModel @Inject constructor(
                 .onSuccess { messageChannel.emit(UiMessage(R.string.settings_rescan_started)) }
                 .onFailure { messageChannel.emit(UiMessage(R.string.error_not_connected)) }
         }
+    }
+
+    /**
+     * `coil://open?box=…` for [box] — a link that opens Coil showing that box.
+     *
+     * Handing it out is the only way to get at it, for the same reason a favourite's link has
+     * to be copyable: the box id is a UUID that appears nowhere in the UI, so a link naming a
+     * particular box cannot be written by hand. Unlike a favourite's link this one sends the
+     * box nothing at all; it only decides which box the app comes up on.
+     */
+    fun openLinkFor(box: Box): String = OpenDeepLink.uriFor(box.id).toString()
+
+    /**
+     * Android 13 shows its own confirmation whenever an app writes to the clipboard, so saying
+     * it twice is worse than not saying it at all. Same reasoning as the favourites screen,
+     * and the same string: what the user did is identical, whichever link it was.
+     */
+    fun onLinkCopied() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return
+        viewModelScope.launch { messageChannel.emit(UiMessage(R.string.favourites_link_copied)) }
     }
 
     fun removeActiveBox() {

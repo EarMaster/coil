@@ -23,7 +23,7 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 | `core-transport/` | ZeroMQ client: `ZmqRpcClient` (DEALER), `ZmqStatusSubscriber` (SUB), `PhonieboxSession` (watchdog, reconnect), `ConnectionManager` (active box, reference-counted lifetime), `Commands`, the payload parsers, `HostDiscovery` (mDNS), `BoxProbe`. |
 | `core-data/` | Room database and DAOs, DataStore settings, repository implementations, settings export/import. |
 | `feature-media/` | `PhonieboxPlayer` (`SimpleBasePlayer`), `PhonieboxMediaService` (`MediaSessionService`), notification handling, `AutoSessionStarter`, `BootReceiver`, `MediaSessionBinder`. |
-| `feature-shortcuts/` | `ShortcutPublisher` (dynamic and pinned shortcuts), `ShortcutSynchronizer`, `PlayDeepLink` (`coil://play?box=…`). |
+| `feature-shortcuts/` | `ShortcutPublisher` (dynamic and pinned shortcuts), `ShortcutSynchronizer`, `PlayDeepLink` (`coil://play?box=…`), `OpenDeepLink` (`coil://open?box=…`). |
 | `app/src/testDebug/` | Screenshot tests and their golden PNGs — the app module's only tests. In the *debug* unit test source set, not `test`, because they compose into a debug-only activity. See "Screenshot tests". |
 | `app/src/debug/` | `HiltTestActivity` and the manifest entry for it: an empty, unexported Hilt entry point the screenshot tests compose into. Debug builds only. |
 | `docs/implementation-plan.md` | Full architecture/design spec — tech stack, module layout, transport design, data model, media session, multi-box design, branding, i18n rules, phased build plan. **Read before implementing anything non-trivial.** |
@@ -420,7 +420,11 @@ The locale axis is one German golden rather than all five launch locales —
 phone. It shows the drift honestly: 43 of the 163 strings have no German at all yet and fall
 back to English on screen.
 
-## The `coil://play` deep link
+## Deep links
+
+Two hosts, and the split is the point: `coil://play` reaches the box, `coil://open` does not.
+
+### `coil://play` — start a favourite
 
 `PlayDeepLink` in `:feature-shortcuts` owns the format; `PlayShortcutActivity` in `:app` answers it.
 It is **exported** (`AndroidManifest.xml`), so it is not a private shortcut mechanism: an automation
@@ -446,6 +450,35 @@ coil://play?box=<boxId>&type=track&url=<mpd url>
   to add is `host=<hostname>` resolved against the configured boxes, not a second id scheme.
 - Adding anything to this format means widening what an unprivileged external intent can ask Coil to
   do. Keep it to starting playback — the same limit the RPC surface itself observes.
+
+### `coil://open` — open the app
+
+`OpenDeepLink` in `:feature-shortcuts` owns the format; `MainActivity` answers it, via a second
+`intent-filter` on the launcher activity.
+
+```
+coil://open                 # open the app, leaving the active box alone
+coil://open?box=<boxId>     # open it showing that box
+```
+
+- **`box` is optional here**, unlike in a `play` link where it is required. A folder path means
+  nothing without the box it came from; "just open the app" is a complete request on its own. A
+  blank `box=` is treated as absent rather than as an error.
+- **It sends the box nothing.** All an outside caller gets is what tapping the launcher icon already
+  does, plus which of the user's own boxes the app comes up on — so this is the *less* privileged of
+  the two links, and it cannot start, stop or change playback.
+- **The id is checked before it is used.** `BoxRepository.setActive` writes straight to settings
+  without validating, so a stale link — a reset phone, a hand-written id — would otherwise leave the
+  app pointed at a box that does not exist. `MainActivity` looks it up first and says so with a
+  toast if it is gone.
+- **A later link arrives at `onNewIntent`, not `onCreate`**, because the activity is `singleTask`.
+  Both paths are handled, and a `deepLinkHandled` flag rides in `savedInstanceState` so a rotation
+  does not re-apply the link — otherwise a user who arrived by link, switched box, then turned the
+  phone would be yanked back.
+- **Settings hands the link out** ("Copy link to this box" / "Share link to this box", under the box
+  section), for the same reason a favourite's menu does: the box id is a UUID shown nowhere else, so
+  `?box=` is unusable without a way to obtain it. A bare `coil://open` needs no such help and can be
+  typed by hand.
 
 ## Project conventions
 

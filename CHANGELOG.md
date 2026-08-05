@@ -9,6 +9,11 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Added
+- **A link that just opens Coil**, `coil://open`, alongside the existing link that starts a
+  favourite — optionally naming a box, so it opens showing that one. Settings hands the link out
+  per box under "Copy link to this box". It sends the box nothing and never starts playback
+
 ## [0.8.0] - 2026-08-05
 
 ### Added

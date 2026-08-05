@@ -47,6 +47,7 @@ import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.ui.components.CoverArt
 import app.coilforphoniebox.ui.components.EmptyState
+import app.coilforphoniebox.ui.components.shareLink
 
 @Composable
 fun FavoritesScreen(
@@ -197,21 +198,4 @@ private fun FavoriteCell(
         )
         Spacer(Modifier.size(4.dp))
     }
-}
-
-/**
- * Hands the link to the share sheet. [label] rides along as the sheet's preview title, so
- * the target says which favourite it is rather than showing a bare URI — it is the name the
- * user gave the favourite and goes out as it is (§12.4).
- *
- * A launcher with no app able to take plain text is possible, if unlikely; the link is on
- * the clipboard route in that case, so this stays silent rather than raising an error.
- */
-private fun Context.shareLink(link: String, label: String) {
-    val send = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, link)
-        putExtra(Intent.EXTRA_TITLE, label)
-    }
-    runCatching { startActivity(Intent.createChooser(send, null)) }
 }

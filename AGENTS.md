@@ -60,8 +60,11 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
   file's `versionName` disagrees with the tag. Release notes come from
   `fastlane/metadata/android/{locale}/changelogs/{versionCode}.txt`, gated by
   `tools/check_store_metadata.sh` — a missing or over-limit locale fails the deploy. It does
-  **not** upload listing text (title/descriptions) yet; `r0adkll/upload-google-play` handles only
-  the AAB, mapping and release notes.
+  **not** upload listing text (title/descriptions) or screenshots yet; `r0adkll/upload-google-play`
+  handles only the AAB, mapping and release notes. The track reaches that action as `tracks` — the
+  singular `track` is deprecated there, and setting both is a hard error. This workflow's own input
+  stays singular because it passes exactly one, and it defaults twice over: the action uploads to
+  **production** when neither input is given, which is not a default to reach by accident.
 - `pages.yml` — deploys `docs/pages/` via Jekyll to GitHub Pages on push to `main` (path-filtered
   to `docs/pages/**`). GitHub Pages must be enabled in repo settings with source "GitHub Actions",
   and the `coilforphoniebox.app` DNS must point at GitHub Pages, for the `CNAME` file in

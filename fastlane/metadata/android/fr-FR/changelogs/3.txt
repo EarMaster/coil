@@ -1,0 +1,5 @@
+Les commandes dans la notification peuvent désormais être désactivées entièrement, en plus de "seulement quand Coil est ouvert" et "dès que la box joue".
+
+Chaque box a sa propre page sous "Gérer les box" : la renommer ou changer son adresse sans y basculer, et un lien qui ouvre Coil sur cette box.
+
+Corrigé : les pochettes restaient vides sur une vraie box.

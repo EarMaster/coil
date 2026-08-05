@@ -1,0 +1,84 @@
+<dialog class="lightbox" aria-label="Screenshot viewer">
+	<button class="lightboxButton lightboxClose" type="button" aria-label="Close">
+		<i class="fas fa-times" aria-hidden="true"></i>
+	</button>
+	<button class="lightboxButton lightboxPrev" type="button" aria-label="Previous screenshot">
+		<i class="fas fa-chevron-left" aria-hidden="true"></i>
+	</button>
+	<button class="lightboxButton lightboxNext" type="button" aria-label="Next screenshot">
+		<i class="fas fa-chevron-right" aria-hidden="true"></i>
+	</button>
+	<figure class="lightboxFigure">
+		<img class="lightboxImage" src="" alt="">
+		<figcaption class="lightboxCaption"></figcaption>
+	</figure>
+</dialog>
+
+<script>
+	// Built on <dialog>.showModal(), which gives Escape-to-close, the backdrop and a focus trap
+	// without any of it being reimplemented here. If the browser has no <dialog>, this bails out
+	// and every thumbnail stays what it already is in the markup: a link to the full-size image.
+	(function () {
+		var dialog = document.querySelector('.lightbox');
+		if (!dialog || typeof dialog.showModal !== 'function') return;
+
+		var image = dialog.querySelector('.lightboxImage');
+		var caption = dialog.querySelector('.lightboxCaption');
+		var previous = dialog.querySelector('.lightboxPrev');
+		var next = dialog.querySelector('.lightboxNext');
+		var group = [];
+		var index = 0;
+		var opener = null;
+
+		function show(target) {
+			if (!group.length) return;
+			index = (target + group.length) % group.length;
+			var zoom = group[index];
+			var thumbnail = zoom.querySelector('img');
+			image.src = zoom.getAttribute('href');
+			image.alt = thumbnail ? thumbnail.alt : '';
+			caption.textContent = zoom.getAttribute('data-caption') || '';
+			// Nothing to page through when the strip holds one image — the hero, for instance.
+			var many = group.length > 1;
+			previous.hidden = !many;
+			next.hidden = !many;
+		}
+
+		document.addEventListener('click', function (event) {
+			var zoom = event.target.closest ? event.target.closest('.galleryZoom') : null;
+			if (!zoom) return;
+			event.preventDefault();
+			// Arrow keys page within the strip that was clicked, so the phone and tablet
+			// galleries stay separate. The hero has no strip and is a group of one.
+			var strip = zoom.closest('.galleryStrip');
+			group = strip ? Array.prototype.slice.call(strip.querySelectorAll('.galleryZoom')) : [zoom];
+			opener = zoom;
+			show(group.indexOf(zoom));
+			dialog.showModal();
+		});
+
+		// Clicking the backdrop. The dialog is a flex container padded around the figure, so a
+		// click landing on the element itself rather than a descendant means outside the image.
+		dialog.addEventListener('click', function (event) {
+			if (event.target === dialog) dialog.close();
+		});
+
+		dialog.querySelector('.lightboxClose').addEventListener('click', function () {
+			dialog.close();
+		});
+		previous.addEventListener('click', function () { show(index - 1); });
+		next.addEventListener('click', function () { show(index + 1); });
+
+		dialog.addEventListener('keydown', function (event) {
+			if (event.key === 'ArrowLeft') { event.preventDefault(); show(index - 1); }
+			if (event.key === 'ArrowRight') { event.preventDefault(); show(index + 1); }
+		});
+
+		// Drop the src so a closed lightbox is not holding a full-size decode, and put focus
+		// back where it came from rather than at the top of the document.
+		dialog.addEventListener('close', function () {
+			image.removeAttribute('src');
+			if (opener) { opener.focus(); opener = null; }
+		});
+	})();
+</script>

@@ -23,12 +23,12 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 | `core-transport/` | ZeroMQ client: `ZmqRpcClient` (DEALER), `ZmqStatusSubscriber` (SUB), `PhonieboxSession` (watchdog, reconnect), `ConnectionManager` (active box, reference-counted lifetime), `Commands`, the payload parsers, `HostDiscovery` (mDNS), `BoxProbe`. |
 | `core-data/` | Room database and DAOs, DataStore settings, repository implementations, settings export/import. |
 | `feature-media/` | `PhonieboxPlayer` (`SimpleBasePlayer`), `PhonieboxMediaService` (`MediaSessionService`), notification handling, `AutoSessionStarter`, `BootReceiver`, `MediaSessionBinder`. |
-| `feature-shortcuts/` | `ShortcutPublisher` (dynamic and pinned shortcuts), `ShortcutSynchronizer`, `PlayDeepLink` (`coil://play?box=…`). |
+| `feature-shortcuts/` | `ShortcutPublisher` (dynamic and pinned shortcuts), `ShortcutSynchronizer`, `PlayDeepLink` (`coil://play?box=…`), `OpenDeepLink` (`coil://open?box=…`). |
 | `app/src/testDebug/` | Screenshot tests and their golden PNGs — the app module's only tests. In the *debug* unit test source set, not `test`, because they compose into a debug-only activity. See "Screenshot tests". |
 | `app/src/debug/` | `HiltTestActivity` and the manifest entry for it: an empty, unexported Hilt entry point the screenshot tests compose into. Debug builds only. |
 | `docs/implementation-plan.md` | Full architecture/design spec — tech stack, module layout, transport design, data model, media session, multi-box design, branding, i18n rules, phased build plan. **Read before implementing anything non-trivial.** |
 | `docs/protocol-notes.md` | Condensed Phoniebox v3 ZMQ protocol reference, distilled from the upstream Python source. |
-| `docs/pages/` | The GitHub Pages site (Jekyll), deployed by `pages.yml` — landing page (with generated screenshots in `assets/screenshots/`) and privacy policy, served at `coilforphoniebox.app` via the `CNAME` file in this folder. Kept separate from the planning docs above so the Pages *site* only contains user-facing content — the planning docs are still public in the repo, just not part of the deployed website. |
+| `docs/pages/` | The GitHub Pages site (Jekyll), deployed by `pages.yml` — landing page (with generated screenshots in `assets/screenshots/`) and privacy policy, served at `coilforphoniebox.app` via the `CNAME` file in this folder. Kept separate from the planning docs above so the Pages *site* only contains user-facing content — the planning docs are still public in the repo, just not part of the deployed website. See "Landing page" below for the theme it is built on. |
 | `spike/` | Standalone Gradle/Kotlin JVM project validating the transport approach (JeroMQ DEALER client) against a real box, independent of Android. |
 | `tools/check_store_metadata.sh` | Validates `fastlane/metadata/android/` against Play's per-locale character limits (title 30, short 80, full 4000, release notes 500) **and its listing images** (24-bit PNG, no alpha, 320–3840 px a side, long side at most twice the short one, at least two per set). Pass a versionCode to also require release notes in every launch locale. Run by `/release` and by `google-play.yml`. Counts characters as bytes-minus-UTF-8-continuation-bytes rather than using `wc -m`, which silently counts bytes in a non-UTF-8 shell locale. |
 | `tools/probe_phoniebox.py` | Python/pyzmq script that does the same validation from the other side (REQ vs DEALER framing, pipelining, PubSub schema dump) — used to sanity-check protocol assumptions against a live box before trusting them in Kotlin. |
@@ -44,7 +44,12 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 
 - `ci.yml` / `codeql.yml` — build/test/lint/screenshot verification and CodeQL analysis on PRs to
   `main` or `develop`. Both start with a `detect` job that checks for a root `./gradlew`; that gate
-  is now satisfied, so these actually build, test and lint.
+  is now satisfied, so these actually build, test and lint. `ci.yml` also has a `Pages Site` job
+  that builds `docs/pages/` with the same action `pages.yml` uses and checks that `main.css`, both
+  pages, the galleries and the hero frame all rendered with no Liquid left unprocessed. It
+  deliberately skips the `detect` gate — the site has nothing to do with Gradle — and exists
+  because `pages.yml` only runs on `main`, so without it a broken template would reach the live
+  site before anyone noticed. It must **not** assert `_site/CNAME`; see "Landing page" for why.
 - `screenshots.yml` — re-records the golden screenshots *and* the store/website images on the
   Linux runner and commits them back to the branch. Triggered from the Actions tab, or by a push
   to `develop` whose commit message contains `[record-screenshots]`. See "Screenshot tests".
@@ -60,12 +65,16 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
   file's `versionName` disagrees with the tag. Release notes come from
   `fastlane/metadata/android/{locale}/changelogs/{versionCode}.txt`, gated by
   `tools/check_store_metadata.sh` — a missing or over-limit locale fails the deploy. It does
-  **not** upload listing text (title/descriptions) yet; `r0adkll/upload-google-play` handles only
-  the AAB, mapping and release notes.
+  **not** upload listing text (title/descriptions) or screenshots yet; `r0adkll/upload-google-play`
+  handles only the AAB, mapping and release notes. The track reaches that action as `tracks` — the
+  singular `track` is deprecated there, and setting both is a hard error. This workflow's own input
+  stays singular because it passes exactly one, and it defaults twice over: the action uploads to
+  **production** when neither input is given, which is not a default to reach by accident.
 - `pages.yml` — deploys `docs/pages/` via Jekyll to GitHub Pages on push to `main` (path-filtered
   to `docs/pages/**`). GitHub Pages must be enabled in repo settings with source "GitHub Actions",
-  and the `coilforphoniebox.app` DNS must point at GitHub Pages, for the `CNAME` file in
-  `docs/pages/` to actually resolve.
+  the custom domain must be set there, and `coilforphoniebox.app` DNS must point at GitHub Pages.
+  The domain comes from that setting, **not** from `docs/pages/CNAME` — the official builder
+  strips that file from the output on purpose. See "Landing page".
 
 `main` is branch-protected: PRs required (enforced for admins too, 0 required approvals), plus
 `Build`/`Unit Tests`/`Lint`/`Analyze (Kotlin)` as required status checks (these currently pass
@@ -169,6 +178,22 @@ server in this repo.
   (`coverart_cache_manager.py`); an empty string means "no artwork". Only a later request returns a
   file name, so a single call never yields a cover. `LibraryParser.coverArt` models the three
   outcomes and both callers retry.
+- **Cover art is the only HTTP in the app, and the platform blocked it.** The file name resolves over
+  ZMQ, but the image comes from the box's own web server over plain `http://` — and Android refuses
+  cleartext HTTP by default at `targetSdk` 28 and up, which is every build this app has ever made.
+  `app/src/main/res/xml/network_security_config.xml` permits it (`base-config`, because the box's
+  address is entered at runtime and there is no domain list to write). Two things made this invisible
+  for a long time: the ZMQ sockets are raw TCP and were never subject to the policy, so *everything
+  except covers* worked and the transport looked innocent; and `CoverArt`'s error branch draws the
+  same placeholder as a song with genuinely no artwork, so the screen could not tell a refused
+  request from an absent cover. The image loader now carries a `DebugLogger` in debug builds for
+  exactly that reason. Verified against a real box: `get_single_coverart` answers with
+  `cover-<sha256>.jpg` and `http://<host>/cover-cache/<that>` serves the JPEG. Note the cover file
+  name is always a hash, so `Box.coverUrl` needs no URL escaping even though the *song* paths it is
+  derived from are full of spaces and umlauts.
+- **A wrong path on the box's web server answers `200`, not `404`** — the web UI is a single-page app
+  and its server falls back to `index.html`, so `/cover_cache/…` returns 609 bytes of HTML with a
+  `200`. When checking a cover URL by hand, look at `Content-Type`, not the status code.
 - **Never let cover art gate other state.** Every screen `combine`s the player state, and `combine`
   emits nothing until *all* inputs have emitted once — so a cover flow whose first value needs a
   round trip freezes the title, progress and controls with it. `PlayerRepository.coverUrl` is a
@@ -207,9 +232,24 @@ These are settled decisions from `docs/implementation-plan.md`, not open questio
   Room migration across every table.
 - **Coil (this app) vs Coil (the image-loading library):** name collision is known and accepted;
   alias the library import to keep it unambiguous in code and review.
-- **i18n is not an afterthought.** English is the source language for everything (code, comments,
-  commits, docs, UI strings). No hardcoded user-facing strings, no string concatenation, use
-  `<plurals>`, format numbers/dates via the platform. Launch locales: en, de, fr, es, nl.
+- **i18n is not an afterthought, and not a follow-up either.** English is the source language for
+  everything (code, comments, commits, docs, UI strings). No hardcoded user-facing strings, no
+  string concatenation, use `<plurals>`, format numbers/dates via the platform. Launch locales:
+  en, de, fr, es, nl.
+- **A new user-facing string lands in all five locales in the same change.** Not "English now,
+  translations later": later does not come on its own, and the gap is invisible from the English
+  build — a missing string falls back silently, so the feature looks finished while three of the
+  five launch locales show English in the middle of a translated screen. Write the four
+  translations as part of the work, flag them as drafts for a fluent speaker, and check with:
+
+  ```bash
+  ./gradlew :app:lintDebug   # MissingTranslation, MissingQuantity — both must come back clean
+  ```
+
+  A translation drafted by whoever wrote the feature and marked for review is not the "unreviewed
+  machine translation" the convention below rejects: what that rule forbids is shipping a
+  complete-looking translation nobody has read, not writing one down where the reviewer can find
+  it. Absence is the worse failure of the two, because nothing reports it.
 - **No custom fonts** — Material 3 default type scale only (keeps full Latin-1 coverage for all
   launch locales without APK cost).
 - **Dynamic colour (Material You) is off by default**, toggle in settings; brand colours are fixed
@@ -351,9 +391,13 @@ Three levels, and the distinction matters:
   Kotlin 2.0.21 cannot read. Upgrading it means upgrading Kotlin and the Compose compiler too.
 
 Covered so far: the whole app on three devices (player light and dark, library, favourites,
-settings, offline, onboarding), the player screen (playing, paused, idle, web radio, sleep
-timer, light and dark), the library screen (folders, tracks, albums, search, no results, empty,
-light and dark) and the chrome components.
+settings top and lower half, box management, one box's page, offline, onboarding), the player
+screen (playing, paused, idle, web radio, sleep timer, light and dark), the library screen
+(folders, tracks, albums, search, no results, empty, light and dark) and the chrome components.
+
+Box management is captured with **two** boxes configured (`app/boxes_*`, `app/box_detail_*`), since
+one box is the case where those screens have least to say — and the box page golden is the
+*non-active* box, which is the state the old settings screen could not reach at all.
 
 The tablet goldens are the reason the player got a tablet layout at all: `app/player_tablet.png`
 used to be a full-screen cover with its own controls pushed off the bottom, which is obvious in a
@@ -375,8 +419,11 @@ commits the result back to the branch. Its own commit carries no marker, so it c
 `StoreAssetTest` generates the Play listing screenshots and the website's, from the same fakes
 and the same harness as the goldens, into `fastlane/metadata/android/en-US/images/` —
 `phoneScreenshots` (1233×2460), `sevenInchScreenshots` (1200×1920) and `tenInchScreenshots`
-(2560×1600), five images each. The phone set is copied to `docs/pages/assets/screenshots/`,
-which is what the landing page shows.
+(2560×1600), five images each. All three sets are copied into `docs/pages/assets/screenshots/`
+— the phone set at the top level, then `tablet7/` and `tablet10/` — because the website is served
+from `docs/pages` only and cannot link into the fastlane tree. Everything is copied, not just what
+the site currently shows, so changing which tablet shots appear is an edit to
+`docs/pages/_config.yml` alone and never needs Gradle or a re-record.
 
 **They are products, not baselines**, and the distinction runs through everything here:
 
@@ -404,9 +451,15 @@ which is what the landing page shows.
 - **English only, deliberately.** Another locale is one more subclass with a locale qualifier,
   but three of the five translations are unreviewed drafts missing 43 strings, and a store
   screenshot with English fallbacks visible in it is worse than no localised screenshot.
-- The **10-inch set shows the untouched tablet layout** — a phone layout stretched across
-  1280 dp. It is accurate and not flattering; publishing the phone set alone may serve the
-  listing better until that layout is addressed.
+- The **10-inch set is now mixed, not uniformly bad.** The player and sleep timer genuinely use
+  the width — since "put the cover beside the controls on a wide screen" they are a two-pane
+  layout with the cover beside the title and transport controls. Library, favourites and search
+  are still the phone layout stretched across 1280 dp, which leaves folder names on the far left
+  with their action icons about 1500 px away, and over half the favourites grid empty. Accurate,
+  and not flattering. The landing page shows the two that work and skips the three that do not
+  (see "Landing page"); the same split is worth making if these are ever uploaded to Play.
+- The **7-inch set holds up throughout** — at 1200×1920 it is portrait, so it reads as a roomier
+  phone rather than a stretched one.
 
 Neither `google-play.yml` nor `r0adkll/upload-google-play` uploads images yet, so these files
 are the canonical source waiting for a tool that reads them — the same position the listing text
@@ -414,10 +467,96 @@ is in.
 
 The locale axis is one German golden rather than all five launch locales —
 `library/folders_de.png`, which is also the only place the translations can be *seen* without a
-phone. It shows the drift honestly: 43 of the 163 strings have no German at all yet and fall
-back to English on screen.
+phone. It used to show 43 strings falling back to English mid-screen, which is how the gap was
+noticed at all; every string is translated as of this commit, so what it now shows is German
+throughout.
 
-## The `coil://play` deep link
+## Landing page
+
+`docs/pages/` is built on **[automatic-app-landing-page](https://github.com/emilbaehr/automatic-app-landing-page)**
+by Emil Baehr, MIT. The theme is **vendored** — `_layouts/`, `_includes/`, `_sass/` and
+`main.scss` are copies, not a `remote_theme` — because it keeps `index.html` and `main.scss` at
+its repo root, and `remote_theme` only pulls `_layouts`, `_includes`, `_sass` and `assets`. So
+upstream fixes have to be merged by hand; `_config.yml`'s header comment records what diverged.
+Vendoring means the MIT notice has to travel with the code, so it is reproduced in
+`docs/pages/_THEME-LICENSE.txt` — underscore-prefixed, so Jekyll keeps it out of the built site.
+MIT is GPL-compatible, so it does not conflict with Coil's own GPL-3.0.
+
+**`CNAME` never appears in the build output, and that is correct.** `github-pages build` — what
+both `pages.yml` and the CI check run — sets `exclude: [CNAME]` itself whenever the site's own
+`exclude` is Jekyll's default, which `docs/pages/_config.yml` leaves it as. The custom domain
+comes from the repository's Pages settings; for an Actions deployment nothing reads a `CNAME` file
+out of the artifact, which is why `coilforphoniebox.app` resolved long before anyone checked. Do
+not "fix" this by asserting the file exists, and be aware that a local `jekyll build` *does* copy
+it, so local output and CI output differ on this one file.
+
+The theme is built for iOS apps, and three parts of it were wrong for an Android-only client:
+
+- **The device frame was an iPhone** — body PNGs plus a notched SVG clip-path sized for
+  1125×2436 (0.462). The store screenshots are 1233×2460 (0.501), so they came out squashed.
+  Replaced with a bezel drawn in CSS that takes its height from the image, so it cannot squash
+  whatever gets dropped in later.
+- **It showed one screenshot.** `screencontent.html` looped the files in `assets/screenshot/`
+  but assigned every one to the same `<img>`, so the last silently won. Replaced by a captioned
+  `overflow-x` strip driven by the `screenshots:` list in `_config.yml`, plus the first entry in
+  the hero frame. No carousel script — images a reader can flick through beat images behind a
+  JS state machine, and it survives JS being off.
+- **The App Store badge rendered unconditionally** and the "smart app banner" was
+  `apple-itunes-app`. Both gone; the Play badge and a GitHub Releases button replace them. The
+  `itunes.apple.com` lookup that filled in icon, name and price at runtime is gone too, along
+  with the jQuery it needed.
+
+Beyond the theme, three things were added:
+
+- **A second, tablet strip.** `gallery.html` is shared by both and takes `include.items`,
+  `include.heading`, `include.area` and `include.variant`. Two details there have bitten once
+  each: Jekyll exposes include parameters as `include.*`, and a bare `{% if items %}` silently
+  renders nothing; and both strips carry the same `.gallery` class, so the grid area has to come
+  from a per-strip modifier or the second lands on top of the first. The tablet strip mixes
+  landscape and portrait shots, so its cards size by image *height* and take their width from the
+  image (`width: min-content`) — sized off the caption instead, a 182px portrait shot ends up
+  centred in a 530px landscape-shaped card.
+- **A lightbox**, in `_includes/lightbox.html`. Native `<dialog>` + `showModal()`, so Escape,
+  the backdrop and the focus trap are the browser's job, and roughly 40 lines cover the rest:
+  click to open, arrow keys and buttons to page within the clicked strip, and the `src` dropped
+  on close. Every thumbnail is a real `<a>` to its own image file, so with no JS or no `<dialog>`
+  the click still opens the full-size image. The hero is zoomable too and forms a group of one.
+- **A side-links panel** (`sidelinks.html`, `side_links:` in `_config.yml`) filling the four
+  columns beside the prose, which is capped at a 780px measure and otherwise left that band
+  empty. A url containing `://` is treated as external and gets `target="_blank"` plus the
+  outward arrow.
+
+Every thumbnail needs `width`/`height` in `_config.yml`. They are not decoration: the images are
+lazy-loaded and the tablet strip sizes by height, so with no intrinsic ratio to work from the
+browser collapses each one to 1px wide until it loads. Note also that the thumbnails sit inside
+the lightbox anchor, so CSS must reach them with a descendant selector — `.galleryItem > img`
+matches nothing and the images silently fall back to natural size, 2560px wide in one case.
+
+Two things about it are load-bearing:
+
+- **`.coverWrapper`'s height is a magic number, per breakpoint.** It wraps the whole page in
+  `default.html`, so it cannot size to content without tinting the features and footer as well.
+  Everything in `.appInfo` is light text, so anything that spills past the band lands on the
+  white body and vanishes — `.downloadNote` is last and goes first. Sweep the widths after
+  touching the hero. The tightest case is where the download buttons stack; buttons stack at
+  ≤600px rather than the theme's ≤528px precisely because `flex-wrap` used to drop the second
+  one to its own row somewhere in between and add an unaccounted row of height.
+- **Two logo variants.** `assets/coil-mark.svg` (deep green card, white coil) is the favicon and
+  the hero icon, and the header on the white privacy page. It is a copy of `brand/coil-mark.svg`
+  — Jekyll only copies files from the site source, so the two can drift; keep them in step.
+  `assets/coil-mark-header.svg` inverts
+  it — white card, green coil — for the header on the green cover, where the standard mark has
+  almost no contrast. Its viewBox is cropped to the card so the logo is not mostly dead space.
+  The layout picks one via `{% include header.html inverse=true %}`.
+
+Font Awesome still loads from `use.fontawesome.com` for the 14 feature and social icons — the
+one third-party request left on the site.
+
+## Deep links
+
+Two hosts, and the split is the point: `coil://play` reaches the box, `coil://open` does not.
+
+### `coil://play` — start a favourite
 
 `PlayDeepLink` in `:feature-shortcuts` owns the format; `PlayShortcutActivity` in `:app` answers it.
 It is **exported** (`AndroidManifest.xml`), so it is not a private shortcut mechanism: an automation
@@ -444,12 +583,43 @@ coil://play?box=<boxId>&type=track&url=<mpd url>
 - Adding anything to this format means widening what an unprivileged external intent can ask Coil to
   do. Keep it to starting playback — the same limit the RPC surface itself observes.
 
+### `coil://open` — open the app
+
+`OpenDeepLink` in `:feature-shortcuts` owns the format; `MainActivity` answers it, via a second
+`intent-filter` on the launcher activity.
+
+```
+coil://open                 # open the app, leaving the active box alone
+coil://open?box=<boxId>     # open it showing that box
+```
+
+- **`box` is optional here**, unlike in a `play` link where it is required. A folder path means
+  nothing without the box it came from; "just open the app" is a complete request on its own. A
+  blank `box=` is treated as absent rather than as an error.
+- **It sends the box nothing.** All an outside caller gets is what tapping the launcher icon already
+  does, plus which of the user's own boxes the app comes up on — so this is the *less* privileged of
+  the two links, and it cannot start, stop or change playback.
+- **The id is checked before it is used.** `BoxRepository.setActive` writes straight to settings
+  without validating, so a stale link — a reset phone, a hand-written id — would otherwise leave the
+  app pointed at a box that does not exist. `MainActivity` looks it up first and says so with a
+  toast if it is gone.
+- **A later link arrives at `onNewIntent`, not `onCreate`**, because the activity is `singleTask`.
+  Both paths are handled, and a `deepLinkHandled` flag rides in `savedInstanceState` so a rotation
+  does not re-apply the link — otherwise a user who arrived by link, switched box, then turned the
+  phone would be yanked back.
+- **A box's own page hands the link out** ("Copy link to this box" / "Share link to this box", on
+  `BoxDetailScreen`), for the same reason a favourite's menu does: the box id is a UUID shown nowhere else, so
+  `?box=` is unusable without a way to obtain it. A bare `coil://open` needs no such help and can be
+  typed by hand.
+
 ## Project conventions
 
 - Project language is English throughout: code, comments, commit messages, documentation.
 - Translations are contributed as PRs against `res/values-<locale>/strings.xml`; no unreviewed
   machine translation (a partial, human-reviewed translation is fine — an unreviewed complete one
-  is not).
+  is not). This is about *quality*, and is not licence to leave a locale short: every string
+  exists in every locale as of this commit, as a draft where it has to be, and `MissingTranslation`
+  coming back clean is the check. See the i18n rule under "Architecture decisions to preserve".
 - Scope discipline: Coil is deliberately a playback remote only. Card management, box system
   settings and shutdown/reboot stay out of scope — see README "What Coil does not do" and the
   implementation plan §1 and §16. **One exception, deliberately made: the sleep timer** — see
@@ -467,9 +637,14 @@ still needs doing, in rough order of importance:
 1. **First run against a real box happened and found three bugs** (all fixed): `as_thread`
    discarding every result, `core.version` not being an RPC, and the volume slider firing a command
    per frame. What is confirmed working on hardware: the DEALER framing, PubSub status, play/pause/
-   next/prev, `play_folder`, and favourites. Still unconfirmed on hardware: the library views and
-   cover art (both were broken by `as_thread` and have not been retested), the connection test,
-   mDNS discovery, the media session and notification, launcher shortcuts, and multi-box switching.
+   next/prev, `play_folder`, and favourites. A later session found a fourth on hardware — Android's
+   default cleartext-HTTP block stopping every cover fetch (see "Cover art is the only HTTP in the
+   app" above); the whole cover chain is now verified against a real box *up to the phone*
+   (`playerstatus.file` → `get_single_coverart` → the HTTP fetch), and `get_folder_content` and
+   `list_albums` answer correctly too, but **the fix itself has not yet been seen rendering in the
+   app on a device**. Still unconfirmed on hardware: the library views as screens, the connection
+   test, mDNS discovery, the media session and notification, launcher shortcuts, and multi-box
+   switching.
 2. **The four translations are unreviewed drafts.** `values-de|fr|es|nl/strings.xml` each carry a
    header saying so. Per the rule above they must be read by a fluent speaker before a release —
    missing strings fall back to English, so correcting them incrementally is safe.
@@ -509,14 +684,27 @@ still needs doing, in rough order of importance:
   stays in the single `strings.xml`. `:feature-shortcuts` therefore has no string resources at all.
   For the same reason the media notification's text reaches `:feature-media` through the
   `MediaNotificationTexts` interface, implemented in `:app`.
-- **"Add another box" lives on the settings screen, and is always visible there.** §7.5's collapsed
-  top bar — a plain indicator, not a switcher, while there is one box — is kept, but it made a second
-  box unreachable: the switcher sheet holds the only other "Add box" entry, and settings offered one
-  solely when *no* box existed. One box was therefore a dead end, which reads as multi-box being
-  unimplemented rather than merely hidden. Settings now also carries a box picker once there are two
-  or more, mirroring the switcher, since that is where boxes are configured. Adding a box
-  deliberately does **not** make it active: nothing should tear down a live connection the user did
-  not ask to change.
+- **Boxes are configured on their own screen, not in the settings list.** §7.5's collapsed top bar —
+  a plain indicator, not a switcher, while there is one box — is kept, but it made a second box
+  unreachable, so settings had to hold a way in. Doing that inside the settings list did not work:
+  "switch box" (a radio list), "add another box" and "this box's address" ended up as neighbouring
+  rows of the same shape, and the screen read as three overlapping ways to say *box*. Box management
+  is now `ui/boxes/BoxesScreen` (every box, plus "Add box") with `BoxDetailScreen` under it (name,
+  address, ports, that box's `coil://open` link, removing it), behind one "Manage boxes" row in
+  settings. Consequences worth keeping:
+  - Both screens address a box **by id** (`BoxesViewModel`), not through "the active box". Renaming
+    or re-addressing a non-active box no longer requires switching to it — on the settings screen
+    that was impossible, since every field there described whichever box was active.
+  - Switching boxes stays in the top bar only, and a box row *opens* the box rather than selecting
+    it. A box page for the non-active box offers "Switch to this box"; the active one just says so.
+  - The library actions (rescan, the search crawl) stay in settings, because they run against the
+    active box — on a box page, three of four pages could not offer them honestly.
+  - The rows both screens are built from live in `ui/components/SettingsRows.kt`, so box management
+    looks like the screen it was reached from.
+  - Sub-screens of a tab (box management, a box, add-box) get a back arrow in the top bar and keep
+    the settings tab lit — see `owningDestination` in `CoilApp`.
+- Adding a box deliberately does **not** make it active: nothing should tear down a live connection
+  the user did not ask to change.
 - **A single track is favouritable**, which the plan's `FOLDER | ALBUM` favourite type (§6.3, §7.2)
   does not allow. From a playing song, "save this" is genuinely ambiguous between the track and its
   folder, so both are offered by name instead of one being guessed at: a tap on the player's star

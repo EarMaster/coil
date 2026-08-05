@@ -249,6 +249,9 @@ Per box there is an `autoSessionEnabled` flag, so a box in a guest room can be e
 - A box switcher in the top app bar: name plus connection dot, tapping opens a bottom sheet with all boxes and their reachability
 - With exactly one box configured, the switcher collapses to a plain connection indicator — no one should pay UI complexity for a feature they do not use
 - Adding a box: mDNS scan results plus manual entry, connection test, name it
+- **Configuring boxes is its own screen**, reached from one row in settings ("Manage boxes"), with a page per box underneath it: name, address, ports, that box's `coil://open` link, removing it. Everything there addresses a box by id, so a box that is not active can still be edited
+- The split is deliberate: *switching* is a frequent, one-tap act and belongs in the top bar; *configuring* is rare and belongs behind a row. Interleaving the two in the settings list — pick a box, add a box, edit the current box, all as neighbouring rows of the same shape — was the part users read twice
+- Settings keeps what is global plus the actions that run against the active box (rescan, the search crawl), because those cannot be offered from a box page that is not the active box's
 
 ### 7.6 Migration safety
 
@@ -295,6 +298,12 @@ For the app to notice that the box has started playing, **something** has to hol
 **"Only while the app is open" mode (default):**
 - No persistent service; the session exists only while the app is in the foreground
 - No battery drain, no permanent notification
+
+**"Never" mode:**
+- No media session at all: nothing binds or starts the service, so there is no notification and no lock screen controls, not even while the box plays
+- Coil still controls the box from its own screens — the UI holds the connection itself while it is open, independently of the service
+- Switching to this mode takes effect immediately, mid-playback included: the service stops itself *and* the UI drops its binding, because a bound service outlives its own `stopSelf` and media3 would otherwise still post a notification on the next `state == play`
+- The hardware volume buttons stop reaching the box in this mode, since that comes from the session being active (§8.1)
 
 **Realistic expectation:** in automatic mode delivery is not completely reliable. Aggressive Doze and vendor-specific app killing (Samsung, Xiaomi, OnePlus) can drop the connection. The watchdog catches this, but it can take seconds to minutes. This belongs in a note in settings, along with a link to the battery optimisation exemption (`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`).
 
@@ -428,7 +437,8 @@ Material You would replace the brand colour with the user's wallpaper palette. *
 1. **Player** (start screen) — large cover, title and album, progress with seek, transport controls, volume slider, shuffle/repeat, favourite star, box switcher with connection state
 2. **Library** — tabs for "Folders" (drill-down) and "Albums" (grid with covers); tap to play, long press to favourite
 3. **Favourites** — grid, drag to reorder, context menu for "Add to home screen"
-4. **Settings** — split into global (theme, dynamic colour, language) and per box (host, ports, connection test, automatic session, network, rescan library)
+4. **Settings** — global (theme, dynamic colour, language, lock screen controls, data), the actions that run against the active box (rescan, search crawl), and one row into box management
+5. **Boxes** — every configured box, and a page per box for host, ports, name, its link and removing it (§7.5). Reached from settings, not from the navigation bar: it is set-up, not a place to be
 
 A persistent mini player sits at the bottom across all screens.
 

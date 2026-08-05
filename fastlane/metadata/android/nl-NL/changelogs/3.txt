@@ -1,0 +1,5 @@
+De bediening in de melding kan nu helemaal uit, naast "alleen zolang Coil open is" en "zodra de box speelt".
+
+Elke box heeft zijn eigen pagina onder "Boxen beheren": hernoemen of een ander adres geven zonder eerst te wisselen, en een link die Coil met die box opent.
+
+Opgelost: hoesjes bleven leeg bij een echte box.

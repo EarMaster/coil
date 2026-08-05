@@ -9,6 +9,33 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-05
+
+### Added
+- **Media controls can be switched off entirely.** "Show controls" had two settings, both of which
+  put a notification up sooner or later; it now has three, with "Never" as the third. In that mode
+  no media session is created at all — no notification, no lock screen controls, no hardware volume
+  buttons reaching the box — and Coil controls the box from its own screens only. Choosing it while
+  the box is playing takes the notification down there and then rather than at the next restart
+- **A link that just opens Coil**, `coil://open`, alongside the existing link that starts a
+  favourite — optionally naming a box, so it opens showing that one. Box management hands the link
+  out per box under "Copy link to this box". It sends the box nothing and never starts playback
+
+### Changed
+- **Boxes are managed on their own screen**, reached from "Manage boxes" in settings, instead of
+  being a stretch of the settings list where picking a box, adding a box and editing the current
+  box sat next to each other and looked alike. Each box now has its own page: name, address and
+  ports, its `coil://open` link, and removing it. A box that is not the active one can be renamed
+  or re-addressed without switching to it first, which was previously impossible. Switching boxes
+  stays where it was, in the name at the top of the screen; settings keeps the library actions,
+  which act on the box Coil is controlling now
+
+### Fixed
+- **Cover art never loaded on a real box.** A Phoniebox serves artwork over plain HTTP, and Android
+  blocks cleartext HTTP by default, so every cover request was refused before it left the phone.
+  Nothing showed it: a refused request draws the same placeholder as a song with no artwork, and the
+  ZMQ sockets are raw TCP and so were never affected — which is why everything except covers worked
+
 ## [0.8.0] - 2026-08-05
 
 ### Added

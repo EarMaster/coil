@@ -1,29 +1,42 @@
 ---
-title: Coil
+layout: default
 permalink: /
 ---
 
-# Coil
+## What Coil does not do
 
-A native Android remote for [Phoniebox](https://github.com/MiczFlor/RPi-Jukebox-RFID).
+Card management, system settings and shutdown stay in the Phoniebox web UI. Coil covers the
+thing you do twenty times a day — putting something on — and deliberately leaves administration
+alone. Beyond keeping the app focused, it means Coil never sends a command that could take the
+box down.
 
-Open it, see what is playing, pick something else, hand the phone back.
+That applies to timers too. The box can shut itself down on a timer, or after being idle for a
+while; Coil offers neither. Its sleep timer is the one that stops the player and leaves the box
+on.
 
-<!--
-  The same images as the Play listing's phone set. They are generated from the app itself —
-  `./gradlew :app:recordRoborazziDebug --tests '*StoreAssetTest'` renders them and copies them
-  here — so they cannot drift away from what the app actually looks like.
+## Requirements
 
-  Inline styles rather than a stylesheet: this site is four files and a CNAME, and a scrolling
-  strip is not worth a build step.
--->
-<div style="display:flex;gap:1rem;overflow-x:auto;padding:0.5rem 0;margin:1.5rem 0;">
-  <img src="/assets/screenshots/01_player.png" alt="The player screen, showing cover art, the track title and transport controls" style="height:520px;width:auto;border-radius:12px;">
-  <img src="/assets/screenshots/02_library.png" alt="Browsing the library by folder, with a mini player at the bottom" style="height:520px;width:auto;border-radius:12px;">
-  <img src="/assets/screenshots/03_favourites.png" alt="Saved favourites as a grid of covers" style="height:520px;width:auto;border-radius:12px;">
-  <img src="/assets/screenshots/04_search.png" alt="Searching the cached library, with folder, album and track results" style="height:520px;width:auto;border-radius:12px;">
-  <img src="/assets/screenshots/05_sleep_timer.png" alt="The player with a sleep timer running, counting down to when playback stops" style="height:520px;width:auto;border-radius:12px;">
-</div>
+- A Phoniebox running **v3** (`future3/main`). Earlier versions are not supported
+- The box and the phone on the **same local network**
+- Android 8.0 or newer
 
-- [Source on GitHub](https://github.com/EarMaster/coil)
-- [Privacy Policy](/privacy/)
+Coil talks to the box over its ZeroMQ interface. That interface is unauthenticated and
+unencrypted, so Coil is built for local network use only. Don't forward those ports — use a VPN
+if you need access from outside the house.
+
+## Open source
+
+Coil is free software under the [GPL-3.0](https://github.com/EarMaster/coil/blob/main/LICENSE),
+and the [source is on GitHub](https://github.com/EarMaster/coil). Issues, pull requests and
+translations are welcome — for anything substantial, please open an issue first, since direction
+is still worth discussing.
+
+Testing against your own box is the most useful thing you can offer. Different Phoniebox
+versions, library sizes and hardware turn up problems that no amount of reading the source will.
+
+## Relationship to Phoniebox
+
+Coil is an independent third-party client. It is **not affiliated with or endorsed by** the
+Phoniebox project. Phoniebox is the work of
+[MiczFlor and contributors](https://github.com/MiczFlor/RPi-Jukebox-RFID); questions about the
+box itself belong there.

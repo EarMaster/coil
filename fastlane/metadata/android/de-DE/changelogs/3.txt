@@ -1,0 +1,5 @@
+Die Steuerung in der Benachrichtigung lässt sich jetzt ganz abschalten — neben "nur solange Coil offen ist" und "immer wenn die Box spielt".
+
+Jede Box hat ihre eigene Seite unter "Boxen verwalten": umbenennen oder umadressieren, ohne vorher zu wechseln, und ein Link, der Coil mit dieser Box öffnet.
+
+Behoben: Cover blieben an einer echten Box leer.

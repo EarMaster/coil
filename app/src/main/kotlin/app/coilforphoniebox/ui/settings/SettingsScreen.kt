@@ -7,61 +7,53 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.coilforphoniebox.BuildConfig
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
+import app.coilforphoniebox.ui.components.ActionRow
+import app.coilforphoniebox.ui.components.GroupLabel
+import app.coilforphoniebox.ui.components.RadioRow
+import app.coilforphoniebox.ui.components.SectionDivider
+import app.coilforphoniebox.ui.components.SectionHeader
+import app.coilforphoniebox.ui.components.SwitchRow
 import app.coilforphoniebox.ui.components.formatNumber
-import androidx.compose.foundation.text.KeyboardOptions
 import kotlinx.coroutines.launch
 
 /**
- * Split into global settings and settings for the active box, which is the same split the
- * data model makes (§7.2).
+ * Global settings, plus the actions that operate on whichever box is active.
+ *
+ * Configuring the boxes themselves is one row from here and a screen of its own (§7.5): mixing
+ * "which box" with "this box's address" in one list was the part people read twice.
  */
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onAddBox: () -> Unit,
+    onManageBoxes: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-
-    var showRemoveDialog by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
@@ -156,13 +148,7 @@ fun SettingsScreen(
         }
 
         SectionDivider()
-        // The heading follows what the section actually contains: with a second box the
-        // rows below are no longer about one box only.
-        SectionHeader(
-            stringResource(
-                if (state.boxes.size > 1) R.string.boxes_title else R.string.settings_section_box,
-            ),
-        )
+        SectionHeader(stringResource(R.string.boxes_title))
 
         val box = state.activeBox
         if (box == null) {
@@ -174,42 +160,28 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
             Button(onClick = onAddBox) { Text(stringResource(R.string.action_add_box)) }
         } else {
-            // The same "exactly one box is active" choice the top bar's switcher offers,
-            // repeated here because this is where the boxes themselves are configured.
-            if (state.boxes.size > 1) {
-                GroupLabel(stringResource(R.string.boxes_switch))
-                state.boxes.forEach { configured ->
-                    RadioRow(
-                        label = configured.displayName,
-                        subtitle = configured.host,
-                        selected = configured.id == box.id,
-                        onSelect = { viewModel.selectBox(configured.id) },
-                    )
-                }
-                Spacer(Modifier.height(8.dp))
-            }
-
-            // Always offered, and this is the only place it can live: the switcher in the
-            // top bar collapses to a plain indicator while there is a single box, so a
-            // second one was previously unreachable from anywhere in the app.
+            // One row for all of it — every box, its address and ports, its link, removing it.
+            // The names are the summary: with one box that reads as "Boxes — Living room", and
+            // with three it says which three without opening anything.
             ActionRow(
-                title = stringResource(R.string.settings_add_box),
-                subtitle = stringResource(R.string.settings_add_box_summary),
-                onClick = onAddBox,
+                title = stringResource(R.string.settings_manage_boxes),
+                subtitle = state.boxes.joinToString(separator = ", ") { it.displayName },
+                onClick = onManageBoxes,
             )
 
-            // Which box the fields below belong to needs saying once there is more than one.
+            SectionDivider()
+            // Library actions, not box configuration: they run against the box the app is
+            // controlling right now, which is why they stay here rather than moving to a box's
+            // own page, where three of four pages could not offer them.
+            SectionHeader(stringResource(R.string.settings_section_library))
+
             if (state.boxes.size > 1) {
-                GroupLabel(stringResource(R.string.settings_section_box))
+                Text(
+                    text = stringResource(R.string.settings_library_active_box, box.displayName),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-
-            BoxFields(
-                initialName = box.displayName,
-                initialHost = box.host,
-                initialRpcPort = box.rpcPort,
-                initialPubPort = box.pubPort,
-                onSave = viewModel::updateActiveBox,
-            )
 
             ActionRow(
                 title = stringResource(R.string.settings_rescan),
@@ -236,12 +208,6 @@ fun SettingsScreen(
                 onClick = {
                     if (indexState.running) viewModel.stopIndexing() else viewModel.indexLibrary()
                 },
-            )
-
-            ActionRow(
-                title = stringResource(R.string.settings_remove_box),
-                onClick = { showRemoveDialog = true },
-                destructive = true,
             )
         }
 
@@ -281,33 +247,18 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(32.dp))
     }
-
-    if (showRemoveDialog && state.activeBox != null) {
-        val name = state.activeBox?.displayName.orEmpty()
-        AlertDialog(
-            onDismissRequest = { showRemoveDialog = false },
-            title = { Text(stringResource(R.string.settings_remove_box)) },
-            text = { Text(stringResource(R.string.settings_remove_box_confirm, name)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showRemoveDialog = false
-                        viewModel.removeActiveBox()
-                    },
-                ) { Text(stringResource(R.string.action_delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRemoveDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            },
-        )
-    }
 }
 
+/** In order of how far the session reaches: never, while the app is open, always. */
 @Composable
 private fun SessionModeRows(current: SessionMode, onSelect: (SessionMode) -> Unit) {
     GroupLabel(stringResource(R.string.settings_session_mode))
+    RadioRow(
+        label = stringResource(R.string.settings_session_mode_off),
+        subtitle = stringResource(R.string.settings_session_mode_off_summary),
+        selected = current == SessionMode.OFF,
+        onSelect = { onSelect(SessionMode.OFF) },
+    )
     RadioRow(
         label = stringResource(R.string.settings_session_mode_app_open),
         subtitle = stringResource(R.string.settings_session_mode_app_open_summary),
@@ -320,190 +271,6 @@ private fun SessionModeRows(current: SessionMode, onSelect: (SessionMode) -> Uni
         selected = current == SessionMode.AUTOMATIC,
         onSelect = { onSelect(SessionMode.AUTOMATIC) },
     )
-}
-
-@Composable
-private fun BoxFields(
-    initialName: String,
-    initialHost: String,
-    initialRpcPort: Int,
-    initialPubPort: Int,
-    onSave: (host: String, rpcPort: Int, pubPort: Int, displayName: String) -> Unit,
-) {
-    var name by remember(initialName) { mutableStateOf(initialName) }
-    var host by remember(initialHost) { mutableStateOf(initialHost) }
-    var rpcPort by remember(initialRpcPort) { mutableStateOf(initialRpcPort.toString()) }
-    var pubPort by remember(initialPubPort) { mutableStateOf(initialPubPort.toString()) }
-
-    val changed = name != initialName ||
-        host != initialHost ||
-        rpcPort != initialRpcPort.toString() ||
-        pubPort != initialPubPort.toString()
-
-    OutlinedTextField(
-        value = name,
-        onValueChange = { name = it },
-        label = { Text(stringResource(R.string.field_display_name)) },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    Spacer(Modifier.height(8.dp))
-    OutlinedTextField(
-        value = host,
-        onValueChange = { host = it },
-        label = { Text(stringResource(R.string.settings_box_address)) },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(
-            value = rpcPort,
-            onValueChange = { rpcPort = it },
-            label = { Text(stringResource(R.string.field_rpc_port)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.weight(1f),
-        )
-        OutlinedTextField(
-            value = pubPort,
-            onValueChange = { pubPort = it },
-            label = { Text(stringResource(R.string.field_pub_port)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.weight(1f),
-        )
-    }
-    Spacer(Modifier.height(8.dp))
-    Button(
-        onClick = {
-            onSave(
-                host,
-                rpcPort.toIntOrNull() ?: initialRpcPort,
-                pubPort.toIntOrNull() ?: initialPubPort,
-                name,
-            )
-        },
-        enabled = changed,
-    ) { Text(stringResource(R.string.action_save)) }
-    Spacer(Modifier.height(8.dp))
-}
-
-@Composable
-private fun SectionHeader(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-    )
-}
-
-/** Label above a group of radio rows, so each group says what it is choosing. */
-@Composable
-private fun GroupLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 8.dp),
-    )
-}
-
-@Composable
-private fun SectionDivider() {
-    Spacer(Modifier.height(16.dp))
-    HorizontalDivider()
-}
-
-@Composable
-private fun RadioRow(
-    label: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
-    subtitle: String? = null,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onSelect)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = onSelect)
-        Column(Modifier.padding(start = 4.dp)) {
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SwitchRow(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    subtitle: String? = null,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
-
-@Composable
-private fun ActionRow(
-    title: String,
-    onClick: () -> Unit,
-    subtitle: String? = null,
-    destructive: Boolean = false,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            // Error is reserved for things that actually go wrong; removing a box is one
-            // of the few genuinely destructive actions in the app (§10.7).
-            color = if (destructive) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
-        )
-        if (subtitle != null) {
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
 }
 
 /** Android 13 and later have a per-app language screen; earlier versions do not. */

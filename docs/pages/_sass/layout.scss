@@ -1,0 +1,1077 @@
+// Screenshots are 1233 x 2460, so height = width * 1.99513. The Android frame below
+// derives its screen height from the image itself rather than a fixed value, which is
+// why nothing here hard-codes a device height.
+
+// The coloured band behind the header and hero.
+//
+// The height is fixed rather than derived, because .coverWrapper wraps the whole page in
+// default.html — letting it size to content would tint the features and footer too. That
+// makes the number load-bearing: everything in .appInfo is light text, so anything that
+// spills past the band lands on the white body and turns invisible. .downloadNote is last
+// and therefore the first thing to disappear.
+//
+// So: if you add to the hero, or make the note longer, re-check every width. The heights
+// below leave the note ~80px of clearance at each breakpoint, the tightest being the point
+// where the download buttons go full-width and stack.
+.coverWrapper {
+	height: 800px;
+	background: linear-gradient(160deg, $cover-gradient-start 0%, $cover-gradient-end 100%);
+	border-radius: 0px 0px 40px 40px;
+}
+
+// Below 600px the download buttons stack full-width, which adds ~95px, and the note wraps
+// to three or four lines. 1120px keeps clearance positive all the way down to a 320px
+// viewport; the surplus green below the note is covered by the phone, which follows
+// immediately in the stacked order.
+@media only screen and (max-width: 600px) {
+
+	.coverWrapper {
+		height: 1120px;
+	}
+
+}
+
+.headerBackground {
+	height: 115px;
+	background-color: rgba($header-color, $header-transparency);
+}
+
+@media only screen and (max-width: 768px) {
+
+	.headerBackground {
+		height: 80px;
+	}
+
+}
+
+.subPageHeaderBackground {
+	background-color: #fff;
+}
+
+.container {					// Set up the container for the site content
+	display: grid;
+	margin: auto;
+	max-width: $content-width;
+	padding-left: 15px;
+	padding-right: 15px;
+	grid-template-columns: repeat(12, 1fr);
+	grid-template-rows: 115px auto auto auto auto auto auto;
+	grid-column-gap: 30px;
+	grid-template-areas:
+		"h  h  h  h  h  h  h  h  h  h  h  h"
+		"p  p  p  p  p  i  i  i  i  i  i  i"
+		"c  c  c  c  c  c  c  c  c  c  c  c"
+		"g  g  g  g  g  g  g  g  g  g  g  g"
+		"t  t  t  t  t  t  t  t  t  t  t  t"
+		"n  n  n  n  n  n  n  n  a  a  a  a"
+		"f  f  f  f  f  f  f  f  f  f  f  f";
+}
+
+.subPageContainer {
+	background-color: #fff;
+	grid-template-rows: 115px auto;
+	grid-template-areas:
+		"h  h  h  h  h  h  h  h  h  h  h  h"
+		"pg pg pg pg pg pg pg pg pg pg pg pg";
+}
+
+@media only screen and (max-width: 992px) {
+
+	.container {
+		grid-column-gap: 0px;
+		grid-template-rows: 115px auto auto auto auto auto auto auto;
+		grid-template-areas:
+			"h  h  h  h  h  h  h  h  h  h  h  h"
+			"i  i  i  i  i  i  i  i  i  i  i  i"
+			"p  p  p  p  p  p  p  p  p  p  p  p"
+			"c  c  c  c  c  c  c  c  c  c  c  c"
+			"g  g  g  g  g  g  g  g  g  g  g  g"
+			"t  t  t  t  t  t  t  t  t  t  t  t"
+			"n  n  n  n  n  n  n  n  n  n  n  n"
+			"a  a  a  a  a  a  a  a  a  a  a  a"
+			"f  f  f  f  f  f  f  f  f  f  f  f";
+	}
+
+	.subPageContainer {
+		grid-template-rows: 115px auto;
+	}
+}
+
+.page {
+	grid-area: pg;
+	max-width: 780px;
+	margin: 30px auto 70px auto;
+}
+
+
+header {
+	grid-area: h;
+	display: flex;
+	margin-right: -15px;
+}
+
+.logo {
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	height: 115px;
+	margin-right: 30px;
+}
+
+.headerName {
+	color: $header-title-color;
+	white-space: nowrap;
+	display: flex;
+	font-weight: bold;
+	margin-left: 15px;
+}
+
+@media only screen and (max-width: 768px) {
+
+	.logo {
+		height: 80px;
+		margin-right: 0px;
+	}
+
+	.headerName {
+		display: none;
+	}
+
+}
+
+// The Coil mark is a wide RFID-card shape, not a square app icon, so no squircle clip-path
+// and no plate behind it — each header just uses the variant that contrasts with its own
+// background. The standard mark, on the white privacy page header.
+.headerIcon {
+	width: 50px;
+	height: 50px;
+}
+
+// The inverted mark, on the green cover. Its viewBox is cropped to the card, so it is sized
+// by height and left to work out its own width.
+.headerIconInverse {
+	width: auto;
+	height: 34px;
+}
+
+@media only screen and (max-width: 768px) {
+
+	.divider {
+		position: relative;
+		min-width: 1px;
+		max-width: 1px;
+		background-color: rgba(127, 127, 127, 0.2);
+		display: inline-block;
+		margin-left: 15px;
+	}
+
+}
+
+
+// Navigation Links
+.scroll {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: flex-end;
+
+	height: 115px;
+
+	white-space: nowrap;
+	overflow-x: auto;
+	overflow-y: hidden;
+	-webkit-overflow-scrolling: touch;
+	-ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+@media only screen and (max-width: 768px) {
+
+	.scroll {
+		height: 80px;
+		padding-top: 100px;
+		padding-bottom: 100px;
+		margin-top: -60px;
+		justify-content: flex-start;
+	}
+
+}
+
+.scroll::-webkit-scrollbar {
+	display: none;
+}
+
+
+nav > ul {
+	color: #fff;
+	display: flex;
+	list-style-type: none;
+}
+
+nav > ul li {
+	padding-left: 30px;
+}
+
+@media only screen and (max-width: 768px) {
+
+	nav > ul li {
+		padding-left: 20px;
+	}
+
+}
+
+nav > ul li:first-child {
+	padding-left: 15px;
+}
+
+nav > ul li:last-child {
+	padding-right: 15px;
+}
+
+nav > ul li a:link,
+nav > ul li a:visited {
+	text-decoration: none;
+	color: rgba($header-title-color, 0.6);
+}
+
+nav > ul li a:hover,
+nav > ul li a:active {
+	text-decoration: none;
+	color: rgba($header-title-color, 1);
+}
+
+
+// Sub Page Header Styling
+.subPageHeaderBackground .headerName {
+	color: #000;
+}
+
+.subPageHeaderBackground nav > ul li a:link,
+.subPageHeaderBackground nav > ul li a:visited {
+	color: rgba(#000, 0.6);
+}
+
+.subPageHeaderBackground nav > ul li a:hover,
+.subPageHeaderBackground nav > ul li a:active {
+	color: rgba(#000, 1);
+}
+
+
+// App Title, Description and Download Links
+
+.appInfo {
+	grid-area: i;
+	display: flex;
+	flex-wrap: wrap;
+	padding-top: 110px;
+	align-content: flex-start;
+}
+
+@media only screen and (max-width: 992px) {
+
+	.appInfo {
+		padding-top: 50px;
+		justify-content: center;
+	}
+
+}
+
+.appIconLarge {
+	width: 120px;
+	height: 120px;
+	padding: 12px;
+	border-radius: 28px;
+	background-color: $device-screen-color;
+	filter: $drop-shadow;
+}
+
+.appNameContainer {
+	display: flex;
+	flex: 0 1 auto;
+	flex-direction: column;
+	align-items: start;
+	justify-content: center;
+	margin-left: 30px;
+}
+
+.appName {
+	color: $app-title-color;
+	font-size: 4rem;
+}
+
+@media only screen and (max-width: 768px) {
+
+	.appNameContainer {
+		width: 100%;
+		margin-left: 0px;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.appName {
+		margin-top: 30px;
+		text-align: center;
+	}
+
+}
+
+.appDescriptionContainer {
+	width: 100%;
+	align-items: flex-start;
+	margin-top: 45px;
+	flex: 0 1 auto;
+}
+
+.appDescription {
+	color: $app-description-color;
+	font-size: 2.5rem;
+	font-weight: normal;
+	line-height: 1.5;
+}
+
+.appDescriptionSecondary {
+	color: rgba($app-description-color, 0.75);
+	font-size: 1.8rem;
+	font-weight: normal;
+	line-height: 1.6;
+	margin-top: 18px;
+}
+
+@media only screen and (max-width: 992px) {
+
+	// Centred and full width, a 960px line is far too long a measure to read comfortably.
+	.appDescriptionContainer {
+		max-width: 620px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.appDescription,
+	.appDescriptionSecondary {
+		text-align: center;
+	}
+
+}
+
+.downloadButtonsContainer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	margin-top: 42px;
+}
+
+@media only screen and (max-width: 992px) {
+
+	.downloadButtonsContainer {
+		justify-content: center;
+	}
+
+}
+
+.playStoreLink {
+	display: block;
+	margin-right: 24px;
+	filter: $drop-shadow;
+}
+
+.playStore {
+	height: 75px;
+	display: block;
+}
+
+.secondaryButton {
+	display: inline-flex;
+	align-items: center;
+	height: 75px;
+	padding: 0px 30px;
+	border: 1px solid rgba(#fff, 0.45);
+	border-radius: 12px;
+	font-size: 2rem;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.secondaryButton > i {
+	margin-right: 14px;
+}
+
+.downloadButtonsContainer .secondaryButton:link,
+.downloadButtonsContainer .secondaryButton:visited {
+	color: rgba(#fff, 0.9);
+}
+
+.downloadButtonsContainer .secondaryButton:hover,
+.downloadButtonsContainer .secondaryButton:active {
+	color: #fff;
+	border-color: rgba(#fff, 0.9);
+	background-color: rgba(#fff, 0.08);
+}
+
+// 600px, not 528px: between roughly 530 and 600 the two buttons no longer fit on one line
+// and flex-wrap dropped the second one to a new row on its own. That silently added a row's
+// height and pushed .downloadNote off the bottom of the cover. Stacking them deliberately
+// across the whole range keeps the hero's height predictable.
+@media only screen and (max-width: 600px) {
+
+	.playStoreLink {
+		margin-right: 0px;
+		margin-bottom: 20px;
+	}
+
+	.playStoreLink,
+	.secondaryButton {
+		width: 100%;
+	}
+
+	.secondaryButton {
+		justify-content: center;
+	}
+
+}
+
+.downloadNote {
+	color: rgba($app-description-color, 0.65);
+	font-size: 1.5rem;
+	line-height: 1.6;
+	margin-top: 24px;
+	max-width: 480px;
+}
+
+@media only screen and (max-width: 992px) {
+
+	.downloadNote {
+		text-align: center;
+	}
+
+}
+
+
+// Android Device Preview
+//
+// The upstream theme painted an iPhone body PNG behind the screenshot and clipped the
+// image with a notched SVG path. Coil is Android only, so the body is drawn in CSS:
+// a dark bezel with rounded corners, no notch, and no fixed aspect ratio of its own —
+// the screenshot sets the height, so it can never be squashed.
+
+.devicePreview {
+	grid-area: p;
+	display: flex;
+	justify-content: flex-start;
+	margin-top: 68px;
+}
+
+.deviceFrame {
+	width: 400px;
+	padding: 14px;
+	border-radius: 42px;
+	background-color: $device-bezel-color;
+	box-shadow:
+		inset 0px 0px 0px 1px rgba(#fff, 0.12),
+		0px 24px 48px rgba(#000, 0.32),
+		0px 4px 12px rgba(#000, 0.24);
+}
+
+.deviceScreen {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: 30px;
+	background-color: $device-screen-color;
+}
+
+@media only screen and (max-width: 1070px) {
+
+	.deviceFrame {
+		width: 356px;
+		border-radius: 38px;
+		padding: 12px;
+	}
+
+	.deviceScreen {
+		border-radius: 28px;
+	}
+
+}
+
+@media only screen and (max-width: 992px) {
+
+	.devicePreview {
+		justify-content: center;
+		margin-top: 47px;
+		padding-bottom: 75px;
+	}
+
+	.deviceFrame {
+		width: 300px;
+		border-radius: 34px;
+		padding: 11px;
+	}
+
+	.deviceScreen {
+		border-radius: 24px;
+	}
+
+}
+
+@media only screen and (max-width: 375px) {
+
+	.deviceFrame {
+		width: 260px;
+		border-radius: 30px;
+		padding: 10px;
+	}
+
+	.deviceScreen {
+		border-radius: 21px;
+	}
+
+}
+
+
+// Feature List
+
+.features {
+	grid-area: c;
+	display: flex;
+	flex: 0 1 auto;
+	align-content: flex-start;
+	justify-content: flex-start;
+	flex-grow: 1;
+	flex-wrap: wrap;
+	margin-top: 93px;
+}
+
+.feature {
+	display: flex;
+	padding-top: 63px;
+	padding-left: 15px;
+	padding-right: 15px;
+	width: calc(100%/3);
+}
+
+.feature:nth-child(-n+3) {
+	padding-top: 0px;
+}
+
+.feature:nth-child(3n) {
+	padding-right: 0px;
+}
+
+.feature:nth-child(3n+1) {
+	padding-left: 0px;
+}
+
+.iconBack {
+	color: $feature-icons-background-color;
+}
+
+.iconTop {
+	color: $feature-icons-foreground-color;
+}
+
+.socialIconBack {
+	color: $social-icons-background-color;
+}
+
+.socialIconTop {
+	color: $social-icons-foreground-color;
+}
+
+.featureText {
+	margin-left: 18px;
+}
+
+.featureText > h3 {
+	color: $feature-title-color;
+}
+
+.featureText > p {
+	color: $feature-text-color;
+	margin-top: 8px;
+	line-height: 1.5;
+}
+
+@media only screen and (max-width: 992px) {
+
+	.features {
+		flex-grow: 1;
+		flex-direction: row;
+		flex-wrap: wrap;
+		margin-top: 11px;
+	}
+
+	.feature {
+		display: flex;
+		padding-top: 41px;
+		padding-left: 15px;
+		padding-right: 15px;
+		width: 100%;
+	}
+
+	.feature:nth-child(-n+3) {
+		padding-top: 41px;
+	}
+
+	.feature:nth-child(1) {
+		padding-top: 0px;
+	}
+
+	.feature:nth-child(3n) {
+		padding-right: 15px;
+	}
+
+	.feature:nth-child(3n+1) {
+		padding-left: 15px;
+	}
+
+}
+
+@media only screen and (max-width: 375px) {
+
+	.feature,
+	.feature:nth-child(3n),
+	.feature:nth-child(3n+1) {
+		padding-left: 0px;
+		padding-right: 0px;
+	}
+
+}
+
+
+// Screenshot Gallery
+
+// Two strips, two grid areas. Without the per-variant rules both would land in area "g" and
+// render on top of each other.
+.gallery {
+	margin-top: 93px;
+}
+
+.gallery--g {
+	grid-area: g;
+}
+
+.gallery--t {
+	grid-area: t;
+}
+
+.galleryHeading {
+	color: $feature-title-color;
+	font-size: 2.6rem;
+	margin-bottom: 34px;
+}
+
+.galleryStrip {
+	display: flex;
+	list-style-type: none;
+	overflow-x: auto;
+	scroll-snap-type: x proximity;
+	-webkit-overflow-scrolling: touch;
+	padding-bottom: 20px;
+}
+
+.galleryItem {
+	flex: 0 0 auto;
+	margin-right: 30px;
+	scroll-snap-align: start;
+}
+
+.galleryItem:last-child {
+	margin-right: 0px;
+}
+
+// Descendant selectors, not child: the thumbnails are wrapped in a .galleryZoom anchor for the
+// lightbox, so an `.galleryItem > img` rule matches nothing and the images fall back to their
+// natural size — 2560px wide, in the tablet strip's case.
+.galleryItem img {
+	display: block;
+	border-radius: 18px;
+	border: 1px solid rgba(#000, 0.08);
+	box-shadow: 0px 8px 20px rgba(#000, 0.10);
+	background-color: $device-screen-color;
+}
+
+// Phone shots are all one aspect, so a fixed card width lines the captions up.
+.galleryStrip--phone .galleryItem {
+	width: 240px;
+}
+
+.galleryStrip--phone .galleryItem img {
+	width: 100%;
+	height: auto;
+}
+
+// The tablet strip mixes 2560×1600 landscape with 1200×1920 portrait. Sizing by height instead
+// keeps them visually comparable — matching widths would make the portrait shot tower over the
+// landscape ones. The anchor takes its width from the image so a portrait card hugs its shot
+// rather than sitting in a landscape-shaped box; min-width is there for the caption's sake.
+// width: min-content makes the card take its width from the image rather than from the caption
+// text. Without it the caption sets the intrinsic width and a 182px-wide portrait shot ends up
+// in a 530px-wide card, which reads as a landscape frame with the screenshot floating in it.
+.galleryStrip--tablet .galleryItem {
+	width: min-content;
+	// A floor for the caption's measure, not the image's — at 200px the portrait card's caption
+	// ran to four lines against the landscape cards' two.
+	min-width: 240px;
+}
+
+// Centres a shot narrower than its card, so the slack reads as deliberate padding rather than
+// the image being stuck against the left edge.
+.galleryStrip--tablet .galleryZoom {
+	width: fit-content;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.galleryStrip--tablet .galleryItem img {
+	width: auto;
+	height: 290px;
+}
+
+.galleryCaption > h3 {
+	color: $feature-title-color;
+	margin-top: 18px;
+}
+
+.galleryCaption > p {
+	color: $feature-text-color;
+	font-size: 1.7rem;
+	line-height: 1.5;
+	margin-top: 8px;
+}
+
+@media only screen and (max-width: 992px) {
+
+	.gallery {
+		margin-top: 70px;
+	}
+
+	.galleryItem {
+		margin-right: 20px;
+	}
+
+	.galleryStrip--phone .galleryItem {
+		width: 200px;
+	}
+
+	.galleryStrip--tablet .galleryItem img {
+		height: 230px;
+	}
+
+}
+
+
+// Landing Page Prose, and the links beside it
+//
+// The prose is capped at a readable measure and sits in 8 of the 12 columns; the side links
+// occupy the remaining 4 so that band is not just empty page.
+
+.landingProse {
+	grid-area: n;
+	max-width: 780px;
+	margin-top: 93px;
+}
+
+.sideLinks {
+	grid-area: a;
+	margin-top: 93px;
+	align-self: start;
+}
+
+.sideLinksHeading {
+	color: $feature-title-color;
+	font-size: 2.6rem;
+	margin-bottom: 24px;
+}
+
+.sideLinksPanel {
+	border: 1px solid rgba(#000, 0.09);
+	border-radius: 18px;
+	overflow: hidden;			// keeps the first and last row's hover fill inside the radius
+	background-color: #fff;
+	box-shadow: 0px 6px 18px rgba(#000, 0.05);
+}
+
+.sideLink {
+	display: flex;
+	align-items: center;
+	padding: 18px 20px;
+	border-top: 1px solid rgba(#000, 0.07);
+	transition: background-color 120ms ease-out;
+}
+
+.sideLink:first-child {
+	border-top: 0px;
+}
+
+.sideLinksPanel .sideLink:hover,
+.sideLinksPanel .sideLink:active {
+	background-color: rgba($feature-icons-foreground-color, 0.055);
+}
+
+.sideLinkIcon {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	margin-right: 16px;
+	border-radius: 50%;
+	background-color: $feature-icons-background-color;
+	color: $feature-icons-foreground-color;
+	font-size: 1.7rem;
+}
+
+.sideLinkText {
+	flex: 1 1 auto;
+	min-width: 0px;				// lets a long description wrap instead of widening the row
+}
+
+.sideLinkTitle {
+	display: block;
+	color: $feature-title-color;
+	font-size: 1.8rem;
+	font-weight: 600;
+}
+
+.sideLinkDescription {
+	display: block;
+	color: $feature-text-color;
+	font-size: 1.5rem;
+	line-height: 1.45;
+	margin-top: 4px;
+}
+
+.sideLinkArrow {
+	flex: 0 0 auto;
+	margin-left: 14px;
+	color: rgba($feature-text-color, 0.5);
+	font-size: 1.4rem;
+}
+
+.sideLink:hover .sideLinkArrow {
+	color: $feature-icons-foreground-color;
+}
+
+@media only screen and (max-width: 992px) {
+
+	.landingProse {
+		margin-top: 70px;
+	}
+
+	.sideLinks {
+		margin-top: 60px;
+	}
+
+}
+
+
+// Footer
+
+footer {
+	grid-area: f;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.footerText {
+	color: $footer-text-color;
+	display: block;
+	line-height: 1.5;
+	width: 100%;
+	max-width: 780px;
+	text-align: center;
+	font-size: 1.7rem;
+	padding-top: 70px;
+	padding-bottom: 40px;
+	margin: 0px auto;
+}
+
+.footerIcons {
+	padding-bottom: 40px;
+	display: flex;
+	flex: 0 0 100%;
+	justify-content: center;
+}
+
+.footerLinks {
+	display: flex;
+	text-align: center;
+	padding-bottom: 70px;
+	font-size: 1.7rem;
+}
+
+.footerLinks a {
+	margin-right: 30px;
+}
+
+.footerLinks a:last-child {
+	margin-right: 0px;
+}
+
+@media only screen and (max-width: 768px) {
+
+	.footerLinks {
+		flex-direction: column;
+	}
+
+	.footerLinks a {
+		justify-content: stretch;
+		margin-right: 0px;
+		margin-top: 20px;
+	}
+
+	.footerLinks a:first-child {
+		margin-top: 0px;
+	}
+
+}
+
+@media only screen and (max-width: 992px) {
+
+	.footerText {
+		padding-top: 54px;
+		padding-bottom: 34px;
+	}
+
+}
+
+// Lightbox
+//
+// Markup and behaviour in _includes/lightbox.html. Every thumbnail is a link to its own image
+// file, so with no <dialog> support or no JavaScript the click still opens the full-size image
+// and none of this is reached.
+
+.galleryZoom {
+	display: block;
+	cursor: zoom-in;
+}
+
+.galleryZoom:focus-visible {
+	outline: 3px solid $feature-icons-foreground-color;
+	outline-offset: 3px;
+}
+
+.lightbox {
+	// A <dialog> is display:none until opened, so the flex layout only applies when it is.
+	padding: 0px;
+	border: 0px;
+	max-width: 100vw;
+	max-height: 100vh;
+	width: 100%;
+	height: 100%;
+	background: transparent;
+	overflow: hidden;
+}
+
+.lightbox[open] {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.lightbox::backdrop {
+	background-color: rgba(#05100e, 0.88);
+}
+
+.lightboxFigure {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	max-width: 92vw;
+	max-height: 94vh;
+	margin: 0px;
+}
+
+.lightboxImage {
+	display: block;
+	max-width: 92vw;
+	// Leaves room for the caption beneath.
+	max-height: 84vh;
+	width: auto;
+	height: auto;
+	border-radius: 12px;
+	background-color: $device-screen-color;
+	box-shadow: 0px 24px 60px rgba(#000, 0.5);
+}
+
+.lightboxCaption {
+	color: rgba(#fff, 0.85);
+	font-size: 1.7rem;
+	text-align: center;
+	margin-top: 18px;
+}
+
+.lightboxButton {
+	position: fixed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 52px;
+	height: 52px;
+	border: 0px;
+	border-radius: 50%;
+	background-color: rgba(#fff, 0.12);
+	color: #fff;
+	font-size: 2rem;
+	cursor: pointer;
+	transition: background-color 120ms ease-out;
+}
+
+.lightboxButton:hover {
+	background-color: rgba(#fff, 0.24);
+}
+
+.lightboxButton:focus-visible {
+	outline: 3px solid #fff;
+	outline-offset: 2px;
+}
+
+.lightboxButton[hidden] {
+	display: none;
+}
+
+.lightboxClose {
+	top: 24px;
+	right: 24px;
+}
+
+.lightboxPrev {
+	left: 24px;
+	top: 50%;
+	margin-top: -26px;
+}
+
+.lightboxNext {
+	right: 24px;
+	top: 50%;
+	margin-top: -26px;
+}
+
+@media only screen and (max-width: 600px) {
+
+	// Side buttons would sit on top of the image at this width, so they move to the bottom
+	// corners where the caption area gives them room.
+	.lightboxPrev {
+		top: auto;
+		bottom: 20px;
+		left: 20px;
+		margin-top: 0px;
+	}
+
+	.lightboxNext {
+		top: auto;
+		bottom: 20px;
+		right: 20px;
+		margin-top: 0px;
+	}
+
+	.lightboxImage {
+		max-height: 74vh;
+	}
+
+}
+
+.hidden {
+	display: none;
+}

@@ -15,6 +15,7 @@
     <string name="nav_library">Bibliotheek</string>
     <string name="nav_favourites">Favorieten</string>
     <string name="nav_settings">Instellingen</string>
+    <string name="action_back">Terug</string>
 
     <string name="player_nothing_playing">Er speelt niets</string>
     <string name="player_no_title">Onbekende titel</string>
@@ -75,6 +76,11 @@
     <string name="boxes_switch">Andere box kiezen</string>
     <string name="action_add_box">Box toevoegen</string>
     <string name="box_active">Actief</string>
+    <string name="boxes_explainer">Coil bedient één box tegelijk. Zodra er een tweede box is ingesteld, schakelt de naam boven in het scherm tussen de boxen.</string>
+    <string name="boxes_is_active">Coil bedient deze box.</string>
+    <string name="boxes_make_active">Naar deze box wisselen</string>
+    <string name="boxes_make_active_summary">De speler, bibliotheek en favorieten laten dan deze box zien.</string>
+    <string name="boxes_section_connection">Verbinding</string>
 
     <string name="add_box_explainer">De box en deze telefoon moeten in hetzelfde netwerk zitten. Coil praat direct met de box; niets gaat via internet.</string>
     <string name="add_box_discovered">Gevonden in dit netwerk</string>
@@ -115,8 +121,10 @@
     <string name="settings_language">Taal</string>
     <string name="settings_language_summary">Opent de taalinstellingen van het systeem voor Coil.</string>
 
-    <string name="settings_section_box">Deze box</string>
+    <string name="settings_manage_boxes">Boxen beheren</string>
     <string name="settings_box_address">Adres</string>
+    <string name="settings_section_library">Bibliotheek</string>
+    <string name="settings_library_active_box">Geldt voor %1$s, de box die Coil nu bedient.</string>
     <string name="settings_rescan">Bibliotheek op de box opnieuw inlezen</string>
     <string name="settings_rescan_summary">Laat de box naar nieuwe bestanden zoeken. Bij een grote bibliotheek kan dat even duren.</string>
     <string name="settings_rescan_started">De box leest haar bibliotheek opnieuw in.</string>
@@ -125,6 +133,8 @@
 
     <string name="settings_section_notification">Bediening op het vergrendelscherm</string>
     <string name="settings_session_mode">Bediening tonen</string>
+    <string name="settings_session_mode_off">Nooit</string>
+    <string name="settings_session_mode_off_summary">Geen melding en geen bediening op het vergrendelscherm. Je bedient de box in Coil zelf.</string>
     <string name="settings_session_mode_app_open">Alleen zolang Coil open is</string>
     <string name="settings_session_mode_app_open_summary">Geen verbinding op de achtergrond, geen batterijverbruik.</string>
     <string name="settings_session_mode_automatic">Zodra de box speelt</string>
@@ -160,5 +170,74 @@
     <string name="shortcut_starting">%1$s starten op %2$s</string>
 
     <string name="action_more">Meer opties</string>
+
+
+    <!-- ===================================================================
+         Added with the features below after this file was first written.
+         Same standing as the rest of this file: a draft by the author of the
+         feature, awaiting a fluent speaker's pass. Grouped here rather than
+         merged into the sections above so a reviewer can see what is new.
+         =================================================================== -->
+
+    <!-- Player: playback options and the sleep timer. It stops playback and never switches
+         the box off, which the wording has to make unmistakable. -->
+    <string name="action_repeat_all">Alles herhalen</string>
+    <string name="action_playback_options">Weergaveopties</string>
+    <string name="action_sleep_timer">Slaaptimer</string>
+    <string name="action_sleep_timer_on">Slaaptimer staat aan</string>
+    <string name="action_sleep_timer_cancel">Timer annuleren</string>
+    <string name="player_sleep_timer_title">Slaaptimer</string>
+    <string name="player_sleep_timer_explainer">Stopt de weergave na de tijd die je kiest. De box blijft aan — Coil zet hem nooit uit.</string>
+    <string name="player_sleep_timer_remaining">Stopt over %1$s</string>
+    <plurals name="duration_minutes">
+        <item quantity="one">%1$s min</item>
+        <item quantity="other">%1$s min</item>
+    </plurals>
+
+    <!-- Favourites name their target: from a playing song, "save this" could mean the single
+         track or the whole folder. -->
+    <string name="action_favourite_add_folder">Map als favoriet opslaan</string>
+    <string name="action_favourite_remove_folder">Map uit favorieten verwijderen</string>
+    <string name="action_favourite_add_track">Nummer als favoriet opslaan</string>
+    <string name="action_favourite_remove_track">Nummer uit favorieten verwijderen</string>
+    <string name="action_favourite_add_album">Album als favoriet opslaan</string>
+    <string name="action_favourite_remove_album">Album uit favorieten verwijderen</string>
+    <string name="action_favourite_options">Favorietopties</string>
+
+    <!-- Library search. It looks through what Coil has already loaded from the box. -->
+    <string name="library_search_hint">Bibliotheek doorzoeken</string>
+    <string name="action_search_clear">Zoekopdracht wissen</string>
+    <string name="library_search_tracks">Nummers</string>
+    <string name="library_search_empty_title">Niets gevonden</string>
+    <string name="library_search_empty_body">Coil zoekt in wat het van de box heeft geladen. Albums staan er allemaal in zodra het tabblad Albums is geopend; mappen en nummers komen erbij zodra je ze opent. Bij de instellingen kan Coil de hele bibliotheek één keer doorlopen en alles doorzoekbaar maken.</string>
+
+    <!-- Details sheet: what Coil already knows about an item. -->
+    <string name="action_details">Details</string>
+    <string name="details_path">Pad</string>
+    <string name="details_artist">Artiest</string>
+    <string name="details_album">Album</string>
+    <string name="details_album_artist">Albumartiest</string>
+    <string name="details_track_number">Tracknummer</string>
+    <string name="details_duration">Lengte</string>
+    <string name="details_file">Bestand</string>
+
+    <!-- Links: coil://play for a favourite, coil://open for a box. -->
+    <string name="action_copy_link">Link kopiëren</string>
+    <string name="action_share_link">Link delen</string>
+    <string name="favourites_link_copied">Link gekopieerd</string>
+    <string name="deeplink_box_unknown">Die box is niet ingesteld op deze telefoon.</string>
+    <string name="settings_box_copy_link">Link naar deze box kopiëren</string>
+    <string name="settings_box_share_link">Link naar deze box delen</string>
+    <string name="settings_box_link_summary">Opent Coil met deze box — voor een automatiseringsapp, een NFC-tag of een notitie. Start de weergave niet.</string>
+
+    <!-- Settings: the opt-in crawl that makes search complete. -->
+    <string name="settings_index">Hele bibliotheek doorzoekbaar maken</string>
+    <string name="settings_index_summary">Loopt elke map één keer door, zodat zoeken alles vindt. Bij een grote bibliotheek duurt dat even, en kaartjes worden op de box ondertussen langzamer herkend. Houd dit scherm open zolang het loopt.</string>
+    <string name="settings_index_stop">Stoppen</string>
+    <string name="settings_index_progress">%1$s mappen gelezen. Tik om te stoppen; wat gelezen is blijft doorzoekbaar.</string>
+    <string name="settings_index_done">Bibliotheek doorzoekbaar: %1$s mappen gelezen.</string>
+    <string name="settings_index_capped">Gestopt na %1$s mappen — deze bibliotheek is groter dan Coil in één keer indexeert, dus zoeken kan nog iets missen.</string>
+    <string name="settings_index_interrupted">De box antwoordde niet meer na %1$s mappen. Wat gelezen is blijft doorzoekbaar.</string>
+    <string name="settings_index_box_busy">De box speelt. Probeer het als hij niets doet, zodat kaartjes snel herkend blijven worden.</string>
 
 </resources>

@@ -1,3 +1,273 @@
-title: Coil
-description: A native Android remote for Phoniebox.
-url: "https://coilforphoniebox.app"
+# Coil's landing page.
+#
+# Adapted from the "Automatic App Landing Page" Jekyll theme by Emil Baehr
+# (https://github.com/emilbaehr/automatic-app-landing-page), vendored rather than
+# used via remote_theme because the theme puts index.html and main.scss at its repo
+# root, and remote_theme only pulls _layouts, _includes, _sass and assets.
+#
+# Three parts of the upstream theme were iOS-only and have been replaced:
+#   - the iPhone body PNGs and notched clip-path  -> a CSS-drawn Android frame
+#   - the itunes.apple.com lookup that filled in icon/name/price at runtime
+#                                                 -> the plain values below
+#   - the unconditional App Store badge           -> Play Store + GitHub buttons
+# The jQuery and itunes.apple.com round trips the theme did on every page load are gone.
+# Font Awesome is still pulled from use.fontawesome.com for the feature and social icons —
+# the one remaining third-party request. Swapping those 14 icons for inline SVG would make
+# the site fully self-contained; worth doing if the CDN hop ever bothers us.
+
+# Page title
+page_title                     : Coil — a native Android remote for Phoniebox
+
+# App info
+app_name                       : Coil
+app_icon                       : assets/coil-mark.svg
+# Used by the header on the green cover only, where the standard mark's deep green card has
+# almost no contrast. The privacy page's header sits on white and uses app_icon instead.
+header_icon_inverse            : assets/coil-mark-header.svg
+app_description                : A native Android remote for Phoniebox.
+app_description_secondary      : Open it, see what is playing, pick something else, hand the phone back. When the box starts playing, playback controls appear on your lock screen — no app launch needed.
+
+playstore_link                 : https://play.google.com/store/apps/details?id=app.coilforphoniebox
+github_link                    : https://github.com/EarMaster/coil
+releases_link                  : https://github.com/EarMaster/coil/releases
+
+# Shown in small print under the download buttons. Leave blank to hide.
+download_note                  : Pick one and stay with it. Play Store builds and GitHub APKs carry different signatures, which Android treats as different apps.
+
+# Information about yourself
+your_name                      : Nico Wiedemann
+your_link                      : https://github.com/EarMaster
+email_address                  : coil@wiedemann.rocks
+github_username                : EarMaster
+
+# Feature list                 Edit, add or remove features to be presented.
+#                              Icon names are Font Awesome 5 free solid icons.
+features                       :
+
+  - title                      : Player
+    description                : Cover art, scrubbing, transport controls and volume, all on one screen.
+    fontawesome_icon_name      : play-circle
+
+  - title                      : Library browsing
+    description                : Browse by folder or album and play anything you find.
+    fontawesome_icon_name      : folder-open
+
+  - title                      : Search
+    description                : Find a folder, album or track. Ignores case and accents.
+    fontawesome_icon_name      : search
+
+  - title                      : Sleep timer
+    description                : Stops playback after a set time and leaves the box switched on.
+    fontawesome_icon_name      : moon
+
+  - title                      : Lock screen controls
+    description                : Appear on their own when the box starts playing, and can be switched off entirely.
+    fontawesome_icon_name      : lock
+
+  - title                      : Favourites
+    description                : Save a folder, an album or a single track, then reach it from a home screen shortcut — or a link, for an automation app or an NFC tag.
+    fontawesome_icon_name      : star
+
+  - title                      : Multiple boxes
+    description                : One per room, switched from the top bar, each with its own favourites.
+    fontawesome_icon_name      : boxes
+
+  - title                      : Hardware volume buttons
+    description                : Control the box while the media session is active.
+    fontawesome_icon_name      : volume-up
+
+  - title                      : Dark mode
+    description                : Built for bedtime rather than bolted on.
+    fontawesome_icon_name      : adjust
+
+  - title                      : Five languages
+    description                : English, German, French, Spanish and Dutch.
+    fontawesome_icon_name      : language
+
+  - title                      : Nothing leaves your network
+    description                : No account, no telemetry, no cloud. Coil talks only to the boxes you configure.
+    fontawesome_icon_name      : shield-alt
+
+  - title                      : Open source
+    description                : GPL-3.0, on GitHub. Issues, pull requests and translations are welcome.
+    fontawesome_icon_name      : code-branch
+
+# Screenshot gallery           The same images as the Play listing's phone set. They are
+#                              generated from the app itself —
+#                              `./gradlew :app:recordRoborazziDebug --tests '*StoreAssetTest'`
+#                              renders them and copies them here — so they cannot drift
+#                              away from what the app actually looks like.
+#
+#                              The first entry is also the one shown in the hero device frame.
+#
+#                              width/height are the file's real pixel dimensions and are required,
+#                              not decoration: the images are lazy-loaded, and the tablet strip
+#                              sizes cards by height, so without an intrinsic ratio to lay out
+#                              from the browser collapses each one to 1px wide until it loads.
+gallery_heading                : Screenshots
+screenshots                    :
+
+  - image                      : assets/screenshots/01_player.png
+    width                      : 1233
+    height                     : 2460
+    title                      : Player
+    description                : Cover art, the track title, scrubbing and transport controls.
+    alt                        : The player screen, showing cover art, the track title, a scrubbing bar and transport controls
+
+  - image                      : assets/screenshots/02_library.png
+    width                      : 1233
+    height                     : 2460
+    title                      : Library
+    description                : Browse by folder or album, with the mini player docked at the bottom.
+    alt                        : Browsing the library by folder, with a mini player at the bottom
+
+  - image                      : assets/screenshots/03_favourites.png
+    width                      : 1233
+    height                     : 2460
+    title                      : Favourites
+    description                : Saved folders, albums and tracks as a grid of covers.
+    alt                        : Saved favourites shown as a grid of covers
+
+  - image                      : assets/screenshots/04_search.png
+    width                      : 1233
+    height                     : 2460
+    title                      : Search
+    description                : Folder, album and track results, grouped and ready to play.
+    alt                        : Searching the library, with folder, album and track results grouped under headings
+
+  - image                      : assets/screenshots/05_sleep_timer.png
+    width                      : 1233
+    height                     : 2460
+    title                      : Sleep timer
+    description                : Counting down to when playback stops. The box stays switched on.
+    alt                        : The player with a sleep timer running, counting down to when playback stops
+
+# Tablet gallery                A curated subset, not the whole set. `flattenStoreAssets` copies all
+#                               ten tablet images to assets/screenshots/tablet7 (1200×1920) and
+#                               tablet10 (2560×1600), so anything below can be swapped in by editing
+#                               this list alone.
+#
+#                               Left out on purpose: the 10-inch library, favourites and search.
+#                               Those screens still stretch the phone layout across 1280 dp, which
+#                               leaves folder names on the far left and their action icons about
+#                               1500 px away, and over half the favourites grid empty. Accurate, but
+#                               it advertises the weakest thing about the tablet build. Add them
+#                               once that layout is addressed.
+#
+#                               Cards in this strip are sized by height, so portrait and landscape
+#                               shots can sit side by side.
+tablet_gallery_heading         : On a tablet
+tablet_screenshots             :
+
+  - image                      : assets/screenshots/tablet10/01_player.png
+    width                      : 2560
+    height                     : 1600
+    title                      : Player
+    description                : On a wide screen the cover moves beside the controls instead of above them.
+    alt                        : The player on a landscape tablet, with cover art filling the left half and the title, scrubbing bar and transport controls on the right
+
+  - image                      : assets/screenshots/tablet7/02_library.png
+    width                      : 1200
+    height                     : 1920
+    title                      : Library
+    description                : The same folder and album browsing, with room for more of it at once.
+    alt                        : Browsing the library by folder on a portrait tablet, with the mini player docked at the bottom
+
+  - image                      : assets/screenshots/tablet10/05_sleep_timer.png
+    width                      : 2560
+    height                     : 1600
+    title                      : Sleep timer
+    description                : The countdown sits under the transport controls, where it does on a phone.
+    alt                        : The player on a landscape tablet with a sleep timer running, showing Stops in 25:00 beneath the transport controls
+
+# Side links                    Fills the column beside the prose section, which is capped at a
+#                               780px measure for readability and would otherwise leave a wide
+#                               band of empty page next to it.
+#
+#                               A url containing "://" is treated as external: it opens in a new
+#                               tab and gets the outward arrow. Icons are Font Awesome 5 free;
+#                               set style to "fab" for a brand icon, otherwise it defaults to fas.
+side_links_heading             : Elsewhere
+side_links                     :
+
+  - title                      : Phoniebox
+    description                : phoniebox.de — the RFID jukebox Coil is a remote for
+    url                        : https://phoniebox.de
+    fontawesome_icon_name      : compact-disc
+
+  - title                      : Phoniebox on GitHub
+    description                : Install guide and issues for the box itself
+    url                        : https://github.com/MiczFlor/RPi-Jukebox-RFID
+    fontawesome_icon_name      : microchip
+
+  - title                      : Coil on GitHub
+    description                : Source, issues and pull requests
+    url                        : https://github.com/EarMaster/coil
+    fontawesome_icon_name      : github
+    fontawesome_icon_style     : fab
+
+  - title                      : Releases
+    description                : Signed APKs, and the changelog for each version
+    url                        : https://github.com/EarMaster/coil/releases
+    fontawesome_icon_name      : download
+
+  - title                      : Privacy policy
+    description                : What Coil stores, and what it never sends anywhere
+    url                        : /privacy/
+    fontawesome_icon_name      : lock
+
+# Theme settings
+#
+# The upstream theme darkens the top bar over the cover image to separate the two. Coil's
+# cover is a flat gradient rather than a photo, so that overlay just read as a second,
+# mismatched green stripe — transparency 0 lets the header sit on one continuous gradient.
+# Raise it again if the cover ever becomes a photograph.
+topbar_color                   : "#000000"
+topbar_transparency            : 0
+topbar_title_color             : "#ffffff"
+
+cover_gradient_start           : "#137a66"
+cover_gradient_end             : "#093f36"
+
+device_bezel_color             : "#14201d"
+device_screen_color            : "#f1f8f5"
+
+body_background_color          : "#ffffff"
+
+link_color                     : "#0f6b5c"
+
+app_title_color                : "#ffffff"
+app_description_color          : "#ffffff"
+
+feature_title_color            : "#10201c"
+feature_text_color             : "#5a6b66"
+
+feature_icons_foreground_color : "#0f6b5c"
+feature_icons_background_color : "#e2f0ea"
+
+social_icons_foreground_color  : "#5a6b66"
+social_icons_background_color  : "#e6edea"
+
+footer_text_color              : "#5a6b66"
+
+####################################################
+### Jekyll Configuration. No need to touch this. ###
+####################################################
+
+title                          : Coil
+description                    : A native Android remote for Phoniebox.
+url                            : "https://coilforphoniebox.app"
+
+sass:
+  style: compressed
+
+# No `exclude` key on purpose, and note what that means for CNAME: `github-pages build` adds
+# `exclude: [CNAME]` of its own accord whenever the site's `exclude` is Jekyll's default, so
+# docs/pages/CNAME never reaches _site. That is GitHub's intended behaviour — for an Actions
+# deployment the custom domain comes from the repository's Pages settings, not from a file in
+# the artifact. Setting any non-default `exclude` here would suppress that and copy CNAME
+# through; there is no reason to want that.
+#
+# A local `jekyll build` has no such rule and does copy CNAME, so the two disagree.
+
+markdown: kramdown

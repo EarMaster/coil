@@ -1,0 +1,5 @@
+Los controles de la notificación ya se pueden desactivar por completo, junto a "solo mientras Coil está abierto" y "siempre que la caja suene".
+
+Cada caja tiene su propia página en "Gestionar cajas": renombrarla o cambiar su dirección sin pasar a ella, y un enlace que abre Coil con esa caja.
+
+Corregido: las portadas quedaban vacías en una caja real.

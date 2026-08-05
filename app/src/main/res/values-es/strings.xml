@@ -12,6 +12,7 @@
     <string name="nav_library">Biblioteca</string>
     <string name="nav_favourites">Favoritos</string>
     <string name="nav_settings">Ajustes</string>
+    <string name="action_back">Atrás</string>
 
     <string name="player_nothing_playing">No se está reproduciendo nada</string>
     <string name="player_no_title">Título desconocido</string>
@@ -45,14 +46,17 @@
     <plurals name="time_minutes_ago">
         <item quantity="one">hace %1$d minuto</item>
         <item quantity="other">hace %1$d minutos</item>
+        <item quantity="many">hace %1$d de minutos</item>
     </plurals>
     <plurals name="time_hours_ago">
         <item quantity="one">hace %1$d hora</item>
         <item quantity="other">hace %1$d horas</item>
+        <item quantity="many">hace %1$d de horas</item>
     </plurals>
     <plurals name="time_days_ago">
         <item quantity="one">hace %1$d día</item>
         <item quantity="other">hace %1$d días</item>
+        <item quantity="many">hace %1$d de días</item>
     </plurals>
     <string name="action_play_folder">Reproducir carpeta</string>
     <string name="action_up">Subir un nivel</string>
@@ -72,6 +76,11 @@
     <string name="boxes_switch">Cambiar de caja</string>
     <string name="action_add_box">Añadir caja</string>
     <string name="box_active">Activa</string>
+    <string name="boxes_explainer">Coil controla una caja a la vez. Cuando haya una segunda configurada, el nombre de la parte superior de la pantalla cambia entre ellas.</string>
+    <string name="boxes_is_active">Coil está controlando esta caja.</string>
+    <string name="boxes_make_active">Cambiar a esta caja</string>
+    <string name="boxes_make_active_summary">El reproductor, la biblioteca y los favoritos mostrarán esta caja.</string>
+    <string name="boxes_section_connection">Conexión</string>
 
     <string name="add_box_explainer">La caja y este teléfono tienen que estar en la misma red. Coil habla directamente con la caja; nada pasa por internet.</string>
     <string name="add_box_discovered">Encontrado en esta red</string>
@@ -112,8 +121,10 @@
     <string name="settings_language">Idioma</string>
     <string name="settings_language_summary">Abre los ajustes de idioma del sistema para Coil.</string>
 
-    <string name="settings_section_box">Esta caja</string>
+    <string name="settings_manage_boxes">Gestionar cajas</string>
     <string name="settings_box_address">Dirección</string>
+    <string name="settings_section_library">Biblioteca</string>
+    <string name="settings_library_active_box">Se aplica a %1$s, la caja que Coil controla ahora.</string>
     <string name="settings_rescan">Volver a leer la biblioteca en la caja</string>
     <string name="settings_rescan_summary">Pide a la caja que busque archivos nuevos. Con una biblioteca grande puede tardar.</string>
     <string name="settings_rescan_started">La caja está releyendo su biblioteca.</string>
@@ -122,6 +133,8 @@
 
     <string name="settings_section_notification">Controles en la pantalla de bloqueo</string>
     <string name="settings_session_mode">Mostrar controles</string>
+    <string name="settings_session_mode_off">Nunca</string>
+    <string name="settings_session_mode_off_summary">Sin notificación y sin controles en la pantalla de bloqueo. Controlas la caja desde Coil.</string>
     <string name="settings_session_mode_app_open">Solo mientras Coil está abierto</string>
     <string name="settings_session_mode_app_open_summary">Sin conexión en segundo plano y sin gasto de batería.</string>
     <string name="settings_session_mode_automatic">Siempre que la caja suene</string>
@@ -157,5 +170,75 @@
     <string name="shortcut_starting">Reproduciendo %1$s en %2$s</string>
 
     <string name="action_more">Más opciones</string>
+
+
+    <!-- ===================================================================
+         Added with the features below after this file was first written.
+         Same standing as the rest of this file: a draft by the author of the
+         feature, awaiting a fluent speaker's pass. Grouped here rather than
+         merged into the sections above so a reviewer can see what is new.
+         =================================================================== -->
+
+    <!-- Player: playback options and the sleep timer. It stops playback and never switches
+         the box off, which the wording has to make unmistakable. -->
+    <string name="action_repeat_all">Repetir todo</string>
+    <string name="action_playback_options">Opciones de reproducción</string>
+    <string name="action_sleep_timer">Temporizador</string>
+    <string name="action_sleep_timer_on">El temporizador está activo</string>
+    <string name="action_sleep_timer_cancel">Cancelar el temporizador</string>
+    <string name="player_sleep_timer_title">Temporizador</string>
+    <string name="player_sleep_timer_explainer">Detiene la reproducción después del tiempo que elijas. La caja se queda encendida — Coil nunca la apaga.</string>
+    <string name="player_sleep_timer_remaining">Se detiene en %1$s</string>
+    <plurals name="duration_minutes">
+        <item quantity="one">%1$s min</item>
+        <item quantity="other">%1$s min</item>
+        <item quantity="many">%1$s min</item>
+    </plurals>
+
+    <!-- Favourites name their target: from a playing song, "save this" could mean the single
+         track or the whole folder. -->
+    <string name="action_favourite_add_folder">Guardar la carpeta como favorito</string>
+    <string name="action_favourite_remove_folder">Quitar la carpeta de favoritos</string>
+    <string name="action_favourite_add_track">Guardar la pista como favorito</string>
+    <string name="action_favourite_remove_track">Quitar la pista de favoritos</string>
+    <string name="action_favourite_add_album">Guardar el álbum como favorito</string>
+    <string name="action_favourite_remove_album">Quitar el álbum de favoritos</string>
+    <string name="action_favourite_options">Opciones del favorito</string>
+
+    <!-- Library search. It looks through what Coil has already loaded from the box. -->
+    <string name="library_search_hint">Buscar en la biblioteca</string>
+    <string name="action_search_clear">Borrar la búsqueda</string>
+    <string name="library_search_tracks">Pistas</string>
+    <string name="library_search_empty_title">No se encontró nada</string>
+    <string name="library_search_empty_body">Coil busca en lo que ha cargado de la caja. Los álbumes están todos en cuanto se abre la pestaña Álbumes; las carpetas y las pistas van llegando a medida que las abres. En los ajustes, Coil puede recorrer toda la biblioteca una vez y hacer que todo sea localizable.</string>
+
+    <!-- Details sheet: what Coil already knows about an item. -->
+    <string name="action_details">Detalles</string>
+    <string name="details_path">Ruta</string>
+    <string name="details_artist">Artista</string>
+    <string name="details_album">Álbum</string>
+    <string name="details_album_artist">Artista del álbum</string>
+    <string name="details_track_number">Número de pista</string>
+    <string name="details_duration">Duración</string>
+    <string name="details_file">Archivo</string>
+
+    <!-- Links: coil://play for a favourite, coil://open for a box. -->
+    <string name="action_copy_link">Copiar el enlace</string>
+    <string name="action_share_link">Compartir el enlace</string>
+    <string name="favourites_link_copied">Enlace copiado</string>
+    <string name="deeplink_box_unknown">Esa caja no está configurada en este teléfono.</string>
+    <string name="settings_box_copy_link">Copiar el enlace a esta caja</string>
+    <string name="settings_box_share_link">Compartir el enlace a esta caja</string>
+    <string name="settings_box_link_summary">Abre Coil mostrando esta caja — para una app de automatización, una etiqueta NFC o una nota. No inicia la reproducción.</string>
+
+    <!-- Settings: the opt-in crawl that makes search complete. -->
+    <string name="settings_index">Hacer localizable toda la biblioteca</string>
+    <string name="settings_index_summary">Recorre cada carpeta una vez para que la búsqueda lo encuentre todo. Con una biblioteca grande tarda, y mientras tanto las tarjetas pueden tardar en registrarse en la caja. Deja esta pantalla abierta mientras se ejecuta.</string>
+    <string name="settings_index_stop">Detener</string>
+    <string name="settings_index_progress">%1$s carpetas leídas. Toca para detener; lo leído sigue siendo localizable.</string>
+    <string name="settings_index_done">Biblioteca localizable: %1$s carpetas leídas.</string>
+    <string name="settings_index_capped">Se detuvo tras %1$s carpetas — esta biblioteca es mayor de lo que Coil indexa de una vez, así que la búsqueda puede seguir sin encontrar parte de ella.</string>
+    <string name="settings_index_interrupted">La caja dejó de responder tras %1$s carpetas. Lo leído sigue siendo localizable.</string>
+    <string name="settings_index_box_busy">La caja está reproduciendo. Inténtalo cuando esté en reposo, para que las tarjetas se sigan registrando enseguida.</string>
 
 </resources>

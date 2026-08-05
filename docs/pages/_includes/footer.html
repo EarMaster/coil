@@ -1,0 +1,39 @@
+<footer>
+	{% if site.your_name %}
+		<p class="footerText">Made by {% if site.your_link %}<a href="{{ site.your_link }}" target="_blank" rel="noopener">{% endif %}{{ site.your_name }}{% if site.your_link %}</a>{% endif %}. Coil is an independent third-party client, not affiliated with or endorsed by the Phoniebox project.</p>
+	{% endif %}
+	<div class="footerIcons">
+
+		{% if site.github_username %}
+			<a href="https://github.com/{{ site.github_username }}" target="_blank" rel="noopener" aria-label="GitHub">
+				<span class="fa-stack fa-1x">
+					<i class="socialIconBack fas fa-circle fa-stack-2x"></i>
+					<i class="socialIconTop fab fa-github fa-stack-1x"></i>
+				</span>
+			</a>
+		{% endif %}
+
+		{% if site.email_address %}
+			<a href="mailto:{{ site.email_address }}" aria-label="Email">
+				<span class="fa-stack fa-1x">
+					<i class="socialIconBack fas fa-circle fa-stack-2x"></i>
+					<i class="socialIconTop fas fa-envelope fa-stack-1x"></i>
+				</span>
+			</a>
+		{% endif %}
+
+	</div>
+	<div class="footerLinks">
+		{% for p in site.pages %}
+			{% if p.include_in_footer %}
+				<a href="{{ p.url | relative_url }}">{{ p.title }}</a>
+			{% endif %}
+		{% endfor %}
+		{% if site.github_link %}
+			<a href="{{ site.github_link }}" target="_blank" rel="noopener">Source on GitHub</a>
+		{% endif %}
+		{% if site.releases_link %}
+			<a href="{{ site.releases_link }}" target="_blank" rel="noopener">Releases</a>
+		{% endif %}
+	</div>
+</footer>

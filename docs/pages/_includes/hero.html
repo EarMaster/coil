@@ -1,0 +1,38 @@
+{% assign hero = site.screenshots.first %}
+
+<div class="devicePreview">
+	<div class="deviceFrame">
+		<a class="galleryZoom deviceScreenLink" href="{{ hero.image | relative_url }}" data-caption="{{ hero.title | escape }}">
+			<img class="deviceScreen" src="{{ hero.image | relative_url }}" alt="{{ hero.alt }}" width="{{ hero.width }}" height="{{ hero.height }}">
+		</a>
+	</div>
+</div>
+
+<div class="appInfo">
+	<img class="appIconLarge" src="{{ site.app_icon | relative_url }}" alt="">
+	<div class="appNameContainer">
+		<h1 class="appName">{{ site.app_name }}</h1>
+	</div>
+	<div class="appDescriptionContainer">
+		<p class="appDescription">{{ site.app_description }}</p>
+		{% if site.app_description_secondary %}
+			<p class="appDescriptionSecondary">{{ site.app_description_secondary }}</p>
+		{% endif %}
+	</div>
+	<div class="downloadButtonsContainer">
+		{% if site.playstore_link %}
+			<a class="playStoreLink" href="{{ site.playstore_link }}" target="_blank" rel="noopener">
+				<img class="playStore" src="{{ 'assets/playstore.png' | relative_url }}" alt="Get it on Google Play">
+			</a>
+		{% endif %}
+		{% if site.releases_link %}
+			<a class="secondaryButton" href="{{ site.releases_link }}" target="_blank" rel="noopener">
+				<i class="fas fa-download"></i>
+				<span>APK on GitHub</span>
+			</a>
+		{% endif %}
+	</div>
+	{% if site.download_note %}
+		<p class="downloadNote">{{ site.download_note }}</p>
+	{% endif %}
+</div>

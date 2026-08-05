@@ -2,6 +2,7 @@ package app.coilforphoniebox.screenshot
 
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.ConnectionState
@@ -91,6 +92,57 @@ abstract class AppScreenshotTest : ScreenshotTest() {
         showApp()
         navigateTo(R.string.nav_settings)
         captureRoot("app/settings_$device")
+    }
+
+    /**
+     * The settings rows that start below the fold on a phone — the row into box management, and
+     * the library actions that run against whichever box is active.
+     *
+     * Scrolled to by name rather than by gesture, so the golden lands on the same rows every
+     * time. Without this the settings golden would only ever show the appearance section, and a
+     * change further down would pass unseen.
+     */
+    @Test
+    fun settings_lower_section() {
+        showApp()
+        navigateTo(R.string.nav_settings)
+        compose.onNodeWithText(string(R.string.settings_index)).performScrollTo()
+        compose.waitForIdle()
+        captureRoot("app/settings_lower_$device")
+    }
+
+    /**
+     * Box management, reached the way a user reaches it: settings, then the row that leads out
+     * of settings. Two boxes, because one box is the case where this screen has least to say.
+     */
+    @Test
+    fun boxes() {
+        boxes.boxes.value = listOf(Fixtures.livingRoom, Fixtures.bedroom)
+        showApp()
+        navigateTo(R.string.nav_settings)
+        openBoxManagement()
+        captureRoot("app/boxes_$device")
+    }
+
+    /**
+     * One box's own page — the fields that used to sit in the settings list, on the box that is
+     * *not* active, which is the case the settings screen could not offer at all.
+     */
+    @Test
+    fun box_detail() {
+        boxes.boxes.value = listOf(Fixtures.livingRoom, Fixtures.bedroom)
+        showApp()
+        navigateTo(R.string.nav_settings)
+        openBoxManagement()
+        compose.onNodeWithText(Fixtures.bedroom.displayName).performClick()
+        compose.waitForIdle()
+        captureRoot("app/box_detail_$device")
+    }
+
+    private fun openBoxManagement() {
+        compose.onNodeWithText(string(R.string.settings_manage_boxes)).performScrollTo()
+        compose.onNodeWithText(string(R.string.settings_manage_boxes)).performClick()
+        compose.waitForIdle()
     }
 
     /**

@@ -1,0 +1,23 @@
+{% if site.side_links and site.side_links.size > 0 %}
+	<aside class="sideLinks">
+		{% if site.side_links_heading %}
+			<h2 class="sideLinksHeading">{{ site.side_links_heading }}</h2>
+		{% endif %}
+		<div class="sideLinksPanel">
+			{% for link in site.side_links %}
+				{% assign is_external = false %}
+				{% if link.url contains '://' %}{% assign is_external = true %}{% endif %}
+				<a class="sideLink" href="{{ link.url | relative_url }}"{% if is_external %} target="_blank" rel="noopener"{% endif %}>
+					<span class="sideLinkIcon">
+						<i class="{{ link.fontawesome_icon_style | default: 'fas' }} fa-{{ link.fontawesome_icon_name }}"></i>
+					</span>
+					<span class="sideLinkText">
+						<strong class="sideLinkTitle">{{ link.title }}</strong>
+						<span class="sideLinkDescription">{{ link.description }}</span>
+					</span>
+					<i class="sideLinkArrow fas {% if is_external %}fa-external-link-alt{% else %}fa-chevron-right{% endif %}"></i>
+				</a>
+			{% endfor %}
+		</div>
+	</aside>
+{% endif %}

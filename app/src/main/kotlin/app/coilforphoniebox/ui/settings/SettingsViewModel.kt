@@ -43,7 +43,7 @@ class SettingsViewModel @Inject constructor(
     data class State(
         val settings: AppSettings = AppSettings(),
         val activeBox: Box? = null,
-        /** Every configured box, so this screen can switch between them and add one. */
+        /** Every configured box, so the row leading to box management can name them. */
         val boxes: List<Box> = emptyList(),
         val boxVersion: String? = null,
     )
@@ -67,16 +67,6 @@ class SettingsViewModel @Inject constructor(
             boxVersion = version,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
-
-    /**
-     * Makes another box the active one. The connection follows on its own — the transport
-     * watches the active box and rebuilds its sockets (§7.3) — and every per-box row on this
-     * screen then describes the box that was just picked.
-     */
-    fun selectBox(boxId: String) {
-        if (boxId == state.value.activeBox?.id) return
-        viewModelScope.launch { boxes.setActive(boxId) }
-    }
 
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch { settings.setThemeMode(mode) }
 
@@ -152,25 +142,6 @@ class SettingsViewModel @Inject constructor(
             library.rescanBoxLibrary(boxId)
                 .onSuccess { messageChannel.emit(UiMessage(R.string.settings_rescan_started)) }
                 .onFailure { messageChannel.emit(UiMessage(R.string.error_not_connected)) }
-        }
-    }
-
-    fun removeActiveBox() {
-        val box = state.value.activeBox ?: return
-        viewModelScope.launch { boxes.delete(box.id) }
-    }
-
-    fun updateActiveBox(host: String, rpcPort: Int, pubPort: Int, displayName: String) {
-        val box = state.value.activeBox ?: return
-        viewModelScope.launch {
-            boxes.update(
-                box.copy(
-                    host = host.trim().ifBlank { box.host },
-                    rpcPort = rpcPort,
-                    pubPort = pubPort,
-                    displayName = displayName.trim().ifBlank { box.displayName },
-                ),
-            )
         }
     }
 

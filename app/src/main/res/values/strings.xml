@@ -17,6 +17,8 @@
     <string name="nav_library">Library</string>
     <string name="nav_favourites">Favourites</string>
     <string name="nav_settings">Settings</string>
+    <!-- Spoken label of the top bar's back arrow, on the screens reached from settings. -->
+    <string name="action_back">Back</string>
 
     <!-- Player screen -->
     <string name="player_nothing_playing">Nothing playing</string>
@@ -135,11 +137,18 @@
     <string name="action_move_down">Move down</string>
     <string name="shortcut_pin_unsupported">This launcher does not support home screen shortcuts.</string>
 
-    <!-- Box switcher -->
+    <!-- Box switcher and box management -->
     <string name="boxes_title">Boxes</string>
     <string name="boxes_switch">Switch box</string>
     <string name="action_add_box">Add box</string>
     <string name="box_active">Active</string>
+    <string name="boxes_explainer">Coil controls one box at a time. Once a second box is set up, the name at the top of the screen switches between them.</string>
+    <!-- Shown on the page of the box the app is currently controlling. -->
+    <string name="boxes_is_active">Coil is controlling this box.</string>
+    <string name="boxes_make_active">Switch to this box</string>
+    <string name="boxes_make_active_summary">The player, library and favourites then show this box.</string>
+    <!-- Heading above one box's address and ports. -->
+    <string name="boxes_section_connection">Connection</string>
 
     <!-- Add box flow -->
     <string name="add_box_explainer">The box and this phone have to be on the same network. Coil talks to the box directly; nothing goes through the internet.</string>
@@ -188,13 +197,16 @@
     <string name="settings_language_summary">Opens the system language settings for Coil.</string>
 
     <!-- Settings: per box -->
-    <string name="settings_section_box">This box</string>
+    <!-- Row leading to the box management screen; its summary lists the box names. -->
+    <string name="settings_manage_boxes">Manage boxes</string>
     <string name="settings_box_address">Address</string>
+    <!-- These act on the box Coil is controlling right now, hence the heading and the note. -->
+    <string name="settings_section_library">Library</string>
+    <!-- %1$s is the name of the active box. -->
+    <string name="settings_library_active_box">Applies to %1$s, the box Coil is controlling now.</string>
     <string name="settings_rescan">Rescan library on the box</string>
     <string name="settings_rescan_summary">Tells the box to look for new files. Can take a while on a large library.</string>
     <string name="settings_rescan_started">Rescan started on the box.</string>
-    <string name="settings_add_box">Add another box</string>
-    <string name="settings_add_box_summary">Coil controls one box at a time. Once a second box is set up, the name at the top of the screen switches between them.</string>
     <!-- Walks the whole folder tree so search covers everything. Deliberately blunt about
          the cost: while it runs, RFID cards on the box can be slow to register. -->
     <string name="settings_index">Make the whole library searchable</string>
@@ -212,6 +224,8 @@
     <!-- Settings: media session / background -->
     <string name="settings_section_notification">Lock screen controls</string>
     <string name="settings_session_mode">Show controls</string>
+    <string name="settings_session_mode_off">Never</string>
+    <string name="settings_session_mode_off_summary">No notification and no lock screen controls. You control the box from inside Coil.</string>
     <string name="settings_session_mode_app_open">Only while Coil is open</string>
     <string name="settings_session_mode_app_open_summary">No background connection, no battery cost.</string>
     <string name="settings_session_mode_automatic">Whenever the box plays</string>
@@ -255,6 +269,11 @@
     <string name="shortcut_failed">Could not reach the box.</string>
     <!-- %1$s is the name of a favourite, %2$s the name of a box. -->
     <string name="shortcut_starting">Starting %1$s on %2$s</string>
+    <!-- Toast shown when a coil://open link names a box this phone does not have. -->
+    <string name="deeplink_box_unknown">That box is not set up on this phone.</string>
+    <string name="settings_box_copy_link">Copy link to this box</string>
+    <string name="settings_box_share_link">Share link to this box</string>
+    <string name="settings_box_link_summary">Opens Coil showing this box — for an automation app, an NFC tag or a note. It does not start playback.</string>
 
     <string name="action_more">More options</string>
 

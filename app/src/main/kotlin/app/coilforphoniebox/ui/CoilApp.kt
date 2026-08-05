@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Settings
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -40,6 +42,9 @@ import androidx.navigation.compose.rememberNavController
 import app.coilforphoniebox.R
 import app.coilforphoniebox.ui.boxes.AddBoxScreen
 import app.coilforphoniebox.ui.boxes.AddBoxViewModel
+import app.coilforphoniebox.ui.boxes.BoxDetailScreen
+import app.coilforphoniebox.ui.boxes.BoxesScreen
+import app.coilforphoniebox.ui.boxes.BoxesViewModel
 import app.coilforphoniebox.ui.components.BoxIndicator
 import app.coilforphoniebox.ui.components.BoxSwitcherSheet
 import app.coilforphoniebox.ui.components.MiniPlayer
@@ -66,6 +71,22 @@ private enum class Destination(
 }
 
 private const val ROUTE_ADD_BOX = "add-box"
+private const val ROUTE_BOXES = "boxes"
+private const val ARG_BOX_ID = "boxId"
+private const val ROUTE_BOX_DETAIL = "box/{$ARG_BOX_ID}"
+
+private fun boxDetailRoute(boxId: String) = "box/$boxId"
+
+/**
+ * Which tab a route belongs under. Box management sits behind settings rather than in the
+ * navigation bar, so the settings tab has to stay lit while the user is in there — an
+ * unselected bar reads as "you left the app's structure behind".
+ */
+private fun owningDestination(route: String?): Destination? = when (route) {
+    null -> null
+    ROUTE_BOXES, ROUTE_ADD_BOX, ROUTE_BOX_DETAIL -> Destination.SETTINGS
+    else -> Destination.entries.firstOrNull { it.route == route }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,6 +111,7 @@ fun CoilApp(appViewModel: AppViewModel) {
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    val selectedDestination = owningDestination(currentRoute)
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -106,6 +128,18 @@ fun CoilApp(appViewModel: AppViewModel) {
                         },
                     )
                 },
+                // Only for the screens that are pushed on top of a tab. The tabs themselves
+                // are not a stack, so a back arrow there would be a lie.
+                navigationIcon = {
+                    if (currentRoute != null && Destination.entries.none { it.route == currentRoute }) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = stringResource(R.string.action_back),
+                            )
+                        }
+                    }
+                },
             )
         },
         bottomBar = {
@@ -118,7 +152,7 @@ fun CoilApp(appViewModel: AppViewModel) {
                         onToggle = appViewModel::togglePlayback,
                     )
                 }
-                BottomBar(navController = navController, currentRoute = currentRoute)
+                BottomBar(navController = navController, selected = selectedDestination)
             }
         },
     ) { padding ->
@@ -163,6 +197,27 @@ fun CoilApp(appViewModel: AppViewModel) {
                     SettingsScreen(
                         viewModel = viewModel,
                         onAddBox = { navController.navigate(ROUTE_ADD_BOX) },
+                        onManageBoxes = { navController.navigate(ROUTE_BOXES) },
+                    )
+                }
+
+                composable(ROUTE_BOXES) {
+                    val viewModel = hiltViewModel<BoxesViewModel>()
+                    SnackbarMessages(viewModel.messages, snackbarHostState)
+                    BoxesScreen(
+                        viewModel = viewModel,
+                        onOpenBox = { boxId -> navController.navigate(boxDetailRoute(boxId)) },
+                        onAddBox = { navController.navigate(ROUTE_ADD_BOX) },
+                    )
+                }
+
+                composable(ROUTE_BOX_DETAIL) { entry ->
+                    val viewModel = hiltViewModel<BoxesViewModel>()
+                    SnackbarMessages(viewModel.messages, snackbarHostState)
+                    BoxDetailScreen(
+                        viewModel = viewModel,
+                        boxId = entry.arguments?.getString(ARG_BOX_ID).orEmpty(),
+                        onRemoved = { navController.popBackStack() },
                     )
                 }
 
@@ -197,11 +252,11 @@ fun CoilApp(appViewModel: AppViewModel) {
 }
 
 @Composable
-private fun BottomBar(navController: NavHostController, currentRoute: String?) {
+private fun BottomBar(navController: NavHostController, selected: Destination?) {
     NavigationBar {
         Destination.entries.forEach { destination ->
             NavigationBarItem(
-                selected = currentRoute == destination.route,
+                selected = selected == destination,
                 onClick = { navController.navigateSingleTop(destination.route) },
                 icon = { Icon(imageVector = destination.icon, contentDescription = null) },
                 label = { Text(stringResource(destination.label)) },

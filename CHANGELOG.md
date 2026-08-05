@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-06
+
 ### Added
 - **Favourites can be shown as a compact list**, switched with the new button in the top bar of that
   tab. Covers stay the default — they are what makes a favourite something a child can aim at

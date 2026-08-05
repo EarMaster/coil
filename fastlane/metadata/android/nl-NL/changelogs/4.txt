@@ -1,0 +1,3 @@
+Favorieten tonen nu hun hoes. Voorheen lieten bijna alle favorieten alleen een pictogram zien: Coil bewaart de hoes nu bij het opslaan van een favoriet en haalt ontbrekende hoezen op.
+
+Nieuw: de knop boven aan het tabblad Favorieten schakelt tussen grote hoezen en een compacte lijst, voor wanneer je favorieten niet meer op één scherm passen.

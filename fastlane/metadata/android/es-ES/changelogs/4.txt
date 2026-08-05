@@ -1,0 +1,3 @@
+Los favoritos ya muestran su carátula. Antes casi todos mostraban solo un icono: ahora Coil guarda la carátula al añadir un favorito y busca las que faltan.
+
+Novedad: el botón de la parte superior de la pestaña Favoritos alterna entre carátulas grandes y una lista compacta, para cuando los favoritos no caben en una pantalla.

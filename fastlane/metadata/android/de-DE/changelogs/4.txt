@@ -1,0 +1,3 @@
+Favoriten zeigen jetzt ihr Cover. Bisher war fast überall nur ein Symbol zu sehen: Coil merkt sich das Cover beim Speichern eines Favoriten und lädt fehlende nach.
+
+Neu: Die Schaltfläche oben im Favoriten-Tab wechselt zwischen großen Covern und einer kompakten Liste, wenn die Favoriten nicht mehr auf einen Bildschirm passen.

@@ -1,0 +1,3 @@
+Les favoris affichent enfin leur pochette. Jusqu'ici, presque tous n'affichaient qu'une icône : Coil conserve désormais la pochette au moment où vous enregistrez un favori et récupère celles qui manquent.
+
+Nouveau : le bouton en haut de l'onglet Favoris bascule entre grandes pochettes et liste compacte, quand les favoris ne tiennent plus sur un écran.

@@ -7,6 +7,10 @@
 #   tools/check_store_metadata.sh            # listing text only (title, descriptions)
 #   tools/check_store_metadata.sh <code>     # also require changelogs/<code>.txt everywhere
 #
+# Checked in executable (mode 100755) and invoked by path everywhere — CI, /release, by hand.
+# Keep the mode: a plain `git add` of a new tool here will not set it, and a workflow step that
+# runs it by path fails with exit 126 rather than with anything that names the real problem.
+#
 # <code> is the app's versionCode, not the versionName — fastlane names release-note files
 # after the versionCode (changelogs/7.txt), which is also what the Play API keys them by.
 #

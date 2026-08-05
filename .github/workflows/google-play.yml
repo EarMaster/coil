@@ -72,7 +72,7 @@ jobs:
       # Invoked via `bash` deliberately: the repo is developed on Windows with core.filemode=false,
       # so the script's executable bit is not recorded and `./tools/...` would fail here.
       - name: Validate store metadata
-        run: bash tools/check_store_metadata.sh "${{ steps.resolve.outputs.code }}"
+        run: tools/check_store_metadata.sh "${{ steps.resolve.outputs.code }}"
 
       - name: Download AAB and mapping from GitHub Release
         env:

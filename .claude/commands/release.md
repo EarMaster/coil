@@ -87,7 +87,7 @@ Google Play's 500-character What's New limit is per locale and counted in charac
 Run the validator with the **new** versionCode:
 
 ```
-bash tools/check_store_metadata.sh {NEW_VERSION_CODE}
+tools/check_store_metadata.sh {NEW_VERSION_CODE}
 ```
 
 (Invoke it through `bash` — the repo is developed on Windows with `core.filemode=false`, so the script's executable bit is not recorded in git.)

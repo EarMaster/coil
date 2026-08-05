@@ -62,8 +62,8 @@ gradle-play-publisher, either of which would read this tree as-is.
 ## Checking character limits
 
 ```sh
-bash tools/check_store_metadata.sh        # listing text
-bash tools/check_store_metadata.sh 7      # also require release notes for versionCode 7
+tools/check_store_metadata.sh        # listing text
+tools/check_store_metadata.sh 7      # also require release notes for versionCode 7
 ```
 
 Play enforces every limit per locale, in characters. Do not hand-count with `wc -m`: it only

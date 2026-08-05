@@ -114,7 +114,38 @@ Replace the line `## [Unreleased]` (at the top of the Unreleased section) with:
 
 This preserves an empty Unreleased section for future work and stamps the release with today's date.
 
-## Step 5 — Commit
+## Step 5 — Check the screenshot goldens
+
+A release commit is the last chance to catch a stale golden before CI fails on it. The screenshot
+tests compare the UI against committed PNGs in `app/src/testDebug/screenshots/`, so any change to a
+Compose screen — a new row, a reworded string, a spacing tweak — makes the matching golden wrong.
+Nothing in an ordinary build catches this: `./gradlew test` only checks that every screen still
+composes, so a stale golden passes locally right up until `ci.yml` runs `verifyRoborazziDebug`.
+
+Work out whether that is likely for this release — did it touch the UI or any user-visible string?
+
+```
+git diff --stat $(git describe --tags --abbrev=0)..HEAD -- 'app/src/main/kotlin/**/ui/**' 'app/src/main/res/values/strings.xml' 'app/src/testDebug/screenshots/'
+```
+
+If UI or strings changed but the `screenshots/` folder did not, tell the user the goldens are
+probably stale and confirm it:
+
+```
+./gradlew :app:verifyRoborazziDebug --tests '*ScreenshotTest'
+```
+
+On failure, look at the `_compare` images in `app/build/outputs/roborazzi/` and check the diff is
+the intended change rather than a regression, then accept the new look:
+
+```
+./gradlew :app:recordRoborazziDebug --tests '*ScreenshotTest'
+```
+
+The `--tests` filter is not optional, and recording locally is legitimate — see AGENTS.md's
+"Screenshot tests" for both points. Include the updated PNGs in the release commit.
+
+## Step 6 — Commit
 
 Run:
 ```

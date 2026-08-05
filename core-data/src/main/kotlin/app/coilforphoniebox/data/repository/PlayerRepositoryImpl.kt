@@ -58,6 +58,15 @@ class PlayerRepositoryImpl @Inject constructor(
     private val _coverUrl = MutableStateFlow<String?>(null)
 
     /**
+     * The same cover as [_coverUrl], as the bare file name.
+     *
+     * Kept beside the URL rather than derived from it: a favourite stores the file name, and
+     * picking it back out of a URL would make [Box.coverUrl] a format two places have to
+     * agree on.
+     */
+    private val _coverFile = MutableStateFlow<String?>(null)
+
+    /**
      * Deliberately a [StateFlow] with a value from the start, resolved in the background,
      * rather than a flow that maps the current song to an RPC.
      *
@@ -69,6 +78,8 @@ class PlayerRepositoryImpl @Inject constructor(
      * able to hold up the rest.
      */
     override val coverUrl: StateFlow<String?> = _coverUrl.asStateFlow()
+
+    override fun currentCoverFile(): String? = _coverFile.value
 
     init {
         scope.launch { resolveCoversForCurrentSong() }
@@ -86,11 +97,14 @@ class PlayerRepositoryImpl @Inject constructor(
                 val key = cacheKey(file, box)
                 if (key != lastKey) {
                     // Showing the previous song's artwork would be worse than showing none.
+                    _coverFile.value = null
                     _coverUrl.value = null
                     lastKey = key
                 }
                 if (file != null && box != null) {
-                    _coverUrl.value = resolveCover(file, box)
+                    val coverFile = resolveCoverFile(file, box)
+                    _coverFile.value = coverFile
+                    _coverUrl.value = coverFile?.let { box.coverUrl(it) }
                 }
             }
     }
@@ -100,10 +114,10 @@ class PlayerRepositoryImpl @Inject constructor(
      * artwork on a worker thread, so a single request never returns a usable name. This
      * asks again a few times before giving up.
      */
-    private suspend fun resolveCover(file: String, box: Box): String? {
+    private suspend fun resolveCoverFile(file: String, box: Box): String? {
         val key = "${box.id}|$file"
         if (key in songsWithoutArt) return null
-        resolvedCovers[key]?.let { return box.coverUrl(it) }
+        resolvedCovers[key]?.let { return it }
 
         repeat(COVER_ATTEMPTS) { attempt ->
             if (attempt > 0) delay(COVER_RETRY_MILLIS)
@@ -112,7 +126,7 @@ class PlayerRepositoryImpl @Inject constructor(
             when (val art = LibraryParser.coverArt(payload)) {
                 is LibraryParser.CoverArt.Available -> {
                     resolvedCovers[key] = art.fileName
-                    return box.coverUrl(art.fileName)
+                    return art.fileName
                 }
 
                 LibraryParser.CoverArt.Missing -> {

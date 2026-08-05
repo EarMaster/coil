@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,6 +75,10 @@ fun FavoritesScreen(
         modifier = modifier,
     ) {
         items(state.favorites, key = { it.id }) { favorite ->
+            // Cover art is fetched for the entries that are actually on screen, never for
+            // the whole table at once — see FavoritesViewModel.ensureCover.
+            LaunchedEffect(favorite.id, favorite.coverFile) { viewModel.ensureCover(favorite) }
+
             FavoriteCell(
                 favorite = favorite,
                 box = state.activeBox,

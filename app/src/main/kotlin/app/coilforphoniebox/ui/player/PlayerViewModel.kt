@@ -269,6 +269,10 @@ class PlayerViewModel @Inject constructor(
      *
      * The label is the folder's own name — content from the box, so it is used exactly as
      * it comes (§12.4).
+     *
+     * The playing song's cover is stored with it: it is already resolved, it is a picture of
+     * what is in that folder, and saving it here is what spares the favourites tab a lookup
+     * of its own later.
      */
     fun toggleFolderFavorite() {
         val current = state.value
@@ -283,7 +287,14 @@ class PlayerViewModel @Inject constructor(
                 return@launch
             }
 
-            favorites.add(Favorite.of(boxId, folderLabelFor(folder), PlayTarget.Folder(folder)))
+            favorites.add(
+                Favorite.of(
+                    boxId = boxId,
+                    label = folderLabelFor(folder),
+                    target = PlayTarget.Folder(folder),
+                    coverFile = player.currentCoverFile(),
+                ),
+            )
             messageChannel.emit(UiMessage(R.string.favourites_added))
         }
     }
@@ -303,7 +314,14 @@ class PlayerViewModel @Inject constructor(
                 return@launch
             }
 
-            favorites.add(Favorite.of(boxId, label, PlayTarget.Track(file)))
+            favorites.add(
+                Favorite.of(
+                    boxId = boxId,
+                    label = label,
+                    target = PlayTarget.Track(file),
+                    coverFile = player.currentCoverFile(),
+                ),
+            )
             messageChannel.emit(UiMessage(R.string.favourites_added))
         }
     }

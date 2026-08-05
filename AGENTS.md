@@ -200,6 +200,28 @@ server in this repo.
   `StateFlow` that starts at null and is filled in by a background resolver for exactly this
   reason. The same caution applies to any future flow that needs the network to produce its first
   value.
+- **Caching covers was never the missing piece; knowing their file name was.** The image loader has
+  had a 96 MB disk cache since the first commit (`CoilApplication.newImageLoader`), so a cover that
+  has been fetched once renders with the box switched off. What favourites lacked was a
+  `coverFile` to build a URL from: only an album favourite ever recorded one, and only if that
+  album's cover had already been resolved by the album grid. Everything else — the player's star,
+  every folder and track row in the library — saved `null` and nothing backfilled it, so the tab
+  was a wall of placeholder icons and the cache was never asked for anything. Two halves fix it,
+  and both are needed: the player passes `player.currentCoverFile()` when it saves, and
+  `ResolveFavoriteCoverUseCase` fills in the rest from `LibraryRepository.coverFileFor`.
+- **A folder's cover is its first track's, and that costs up to three RPCs.** Nothing in the
+  protocol returns cover art for a folder, so `coverFileFor` resolves one track inside it: from the
+  Room cache when that level has been browsed, otherwise via `get_folder_content` first, and one
+  level deeper when the folder holds nothing but subfolders (an artist above its albums). It stops
+  there — a cover is not worth walking a tree for. This is why the lookup is driven by what is on
+  screen (`FavoritesViewModel.ensureCover`), capped by the same two-permit semaphore as the album
+  grid, tried once per favourite per session, and never run as a sweep over the table. The result
+  is persisted, so a favourite costs it once ever.
+- **A cover lookup that failed because the box was off must be allowed to happen again.**
+  `FavoritesViewModel` keeps its "already asked" set in memory and clears it whenever the active box
+  or the connection changes; without that, opening the tab while offline would spend every
+  favourite's one attempt on an unreachable box and leave the covers missing until the app
+  restarted.
 - **There is no `core` RPC package.** `core.version`, `core.started_at` and `core.git_state` are
   *published topics*; asking for `core.version` over RPC answers with an error. Use
   `player.ctrl.playerstatus` as a reachability ping — it returns the poller's cached dict without
@@ -394,6 +416,12 @@ Covered so far: the whole app on three devices (player light and dark, library, 
 settings top and lower half, box management, one box's page, offline, onboarding), the player
 screen (playing, paused, idle, web radio, sleep timer, light and dark), the library screen
 (folders, tracks, albums, search, no results, empty, light and dark) and the chrome components.
+
+The favourites goldens carry **two entries with a `coverFile` and one without**, because both halves
+matter: a cover has to render, and a favourite the box has no artwork for has to stay recognisable
+by its placeholder icon. `StoreFixtures.favorites` deliberately keeps no covers: the fake engine
+answers every URL with the same flat colour, and four identical green squares would be a worse
+store screenshot than four placeholder icons.
 
 Box management is captured with **two** boxes configured (`app/boxes_*`, `app/box_detail_*`), since
 one box is the case where those screens have least to say — and the box page golden is the

@@ -5,6 +5,7 @@ import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryIndexResult
 import app.coilforphoniebox.domain.model.LibraryIndexState
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.PlayTarget
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -33,6 +34,17 @@ interface LibraryRepository {
      * would be one RPC per album on a socket the box also uses for card detection.
      */
     suspend fun ensureAlbumCover(boxId: String, albumArtist: String, album: String)
+
+    /**
+     * Cover file name for [target], from the cache if it is there and from the box if not.
+     * Null when the box has no artwork for it, or when it could not be asked.
+     *
+     * Only a folder needs more than one call: nothing in the protocol returns a folder's
+     * cover, so its first track stands in for it — taken from the cache when that level has
+     * been browsed, and fetched with `get_folder_content` when it has not. Costly enough
+     * that only an explicit, on-screen need should ask (§6).
+     */
+    suspend fun coverFileFor(boxId: String, target: PlayTarget): String?
 
     /** Fires `player.ctrl.update` so the box rescans its own MPD database. */
     suspend fun rescanBoxLibrary(boxId: String): Result<Unit>

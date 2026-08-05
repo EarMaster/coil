@@ -54,6 +54,9 @@ interface FavoriteDao {
     @Query("UPDATE favorites SET shortcutPinned = :pinned WHERE id = :id")
     suspend fun setPinned(id: Long, pinned: Boolean)
 
+    @Query("UPDATE favorites SET coverFile = :coverFile WHERE id = :id")
+    suspend fun setCover(id: Long, coverFile: String)
+
     @Query("SELECT COALESCE(MAX(sortIndex), -1) FROM favorites WHERE boxId = :boxId")
     suspend fun maxSortIndex(boxId: String): Int
 

@@ -165,6 +165,12 @@ object Fixtures {
 
     // --------------------------------------------------------------- favourites
 
+    /**
+     * Two with artwork and one without, which is the mix worth a golden: a cover has to
+     * render *and* a favourite the box has no artwork for has to stay recognisable by its
+     * placeholder. The file names are a stand-in — the fake image loader answers every URL
+     * with the same flat colour, so what they say is only that a cover was resolved.
+     */
     val favorites = listOf(
         Favorite(
             id = 1,
@@ -172,6 +178,7 @@ object Fixtures {
             label = "Bedtime Stories",
             type = FavoriteType.FOLDER,
             folder = "Bedtime Stories",
+            coverFile = "cover-bedtime.jpg",
             sortIndex = 0,
             launchCount = 31,
         ),
@@ -182,6 +189,7 @@ object Fixtures {
             type = FavoriteType.ALBUM,
             albumArtist = "Detective Stories",
             album = "The Missing Key",
+            coverFile = "cover-missing-key.jpg",
             sortIndex = 1,
             launchCount = 12,
         ),

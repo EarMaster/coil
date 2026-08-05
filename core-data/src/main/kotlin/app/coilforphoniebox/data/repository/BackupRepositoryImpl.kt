@@ -64,6 +64,12 @@ class BackupRepositoryImpl @Inject constructor(
         /** Added with format version 2, together with `TRACK` favourites. */
         val trackUrl: String? = null,
         val sortIndex: Int = 0,
+        /**
+         * Saves the box a round of cover lookups after a reinstall. The name is a hash in
+         * the box's own cover cache, so it stays valid for the same box and means nothing
+         * on another one — which is fine, since favourites are matched to a box by address.
+         */
+        val coverFile: String? = null,
     )
 
     @Serializable
@@ -96,6 +102,7 @@ class BackupRepositoryImpl @Inject constructor(
                             album = favorite.album,
                             trackUrl = favorite.trackUrl,
                             sortIndex = favorite.sortIndex,
+                            coverFile = favorite.coverFile,
                         )
                     },
                 )
@@ -156,6 +163,7 @@ class BackupRepositoryImpl @Inject constructor(
                         album = favorite.album,
                         trackUrl = favorite.trackUrl,
                         sortIndex = favorite.sortIndex,
+                        coverFile = favorite.coverFile,
                     ).toEntity(),
                 )
             }
@@ -181,6 +189,10 @@ class BackupRepositoryImpl @Inject constructor(
          * 2 added `trackUrl`. The bump is deliberate even though the field is optional:
          * an older build would import a `TRACK` row without its URL, which is a
          * favourite that cannot play. Refusing the file says so instead.
+         *
+         * `coverFile` arrived later and deliberately did *not* bump it: an older build that
+         * drops it loses a cover it can resolve again from the box, not the ability to play
+         * anything.
          */
         const val FORMAT_VERSION = 2
     }

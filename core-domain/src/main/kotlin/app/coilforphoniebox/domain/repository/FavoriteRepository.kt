@@ -25,5 +25,13 @@ interface FavoriteRepository {
 
     suspend fun recordLaunch(id: Long)
 
+    /**
+     * Records the cover art file name for a favourite that was saved without one.
+     *
+     * A favourite is the one thing here that cannot be rebuilt from the box, so its cover
+     * is stored beside it rather than being looked up again every time the tab opens.
+     */
+    suspend fun setCover(id: Long, coverFile: String)
+
     suspend fun setPinned(id: Long, pinned: Boolean)
 }

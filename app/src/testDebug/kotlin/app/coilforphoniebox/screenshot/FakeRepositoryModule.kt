@@ -51,7 +51,7 @@ object FakeRepositoryModule {
             Fixtures.detectiveStories.path to Fixtures.detectiveStories,
         ),
         albums = Fixtures.albums,
-        searchResults = Fixtures.searchResults,
+        results = Fixtures.searchResults,
     )
 
     @Provides

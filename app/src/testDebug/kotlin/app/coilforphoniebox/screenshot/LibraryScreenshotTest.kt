@@ -32,8 +32,8 @@ class LibraryScreenshotTest : ScreenshotTest() {
         library = FakeLibraryRepository(
             folders = folders,
             albums = albums,
-            albumsCachedAt = albumsCachedAt,
-            searchResults = searchResults,
+            cachedAt = albumsCachedAt,
+            results = searchResults,
         ),
         boxes = FakeBoxRepository(),
         player = FakePlayerRepository(),

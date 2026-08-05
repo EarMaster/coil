@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
@@ -113,8 +114,27 @@ abstract class ScreenshotTest {
     }
 
     protected fun captureRoot(name: String) {
-        compose.onRoot().captureRoboImage("$GOLDEN_DIR/$name.png")
+        captureTo("$GOLDEN_DIR/$name.png")
     }
+
+    /**
+     * Writes the window to an arbitrary path, relative to the `:app` module directory.
+     *
+     * Used by the store assets, which are products rather than baselines and therefore land
+     * outside the golden directory — under `fastlane/` and `docs/pages/`.
+     */
+    protected fun captureTo(path: String) {
+        compose.onRoot().captureRoboImage(path)
+    }
+
+    /**
+     * Whether Roborazzi is actually writing files this run.
+     *
+     * `captureRoboImage` is a no-op during a plain `./gradlew test`, so anything that
+     * post-processes a captured file has to know not to touch the copy already on disk.
+     */
+    protected fun isRecording(): Boolean =
+        System.getProperty("roborazzi.test.record")?.toBoolean() == true
 
     /**
      * Captures a single component with a little padding around it.
@@ -147,9 +167,33 @@ abstract class ScreenshotTest {
         compose.waitForIdle()
     }
 
+    /**
+     * Advances the clock until [text] is on screen, and fails the test if it never is.
+     *
+     * Compose's own `waitUntil` is no use here: it advances the *compose* clock, and what a
+     * debounced flow is waiting on is the looper's. So this steps [advanceTime] instead, which
+     * runs the delayed work the coroutine actually posted.
+     */
+    protected fun awaitText(text: String, timeoutMillis: Long = 5_000) {
+        var waited = 0L
+        while (waited <= timeoutMillis) {
+            if (compose.onAllNodes(hasText(text, substring = true))
+                    .fetchSemanticsNodes().isNotEmpty()
+            ) {
+                return
+            }
+            advanceTime(POLL_MILLIS)
+            waited += POLL_MILLIS
+        }
+        error("Timed out after ${timeoutMillis}ms waiting for \"$text\" to appear")
+    }
+
     private companion object {
         /** Committed next to the tests so a review sees the picture beside the change. */
         const val GOLDEN_DIR = "src/testDebug/screenshots"
+
+        /** How far the clock steps between checks in [awaitText]. */
+        const val POLL_MILLIS = 250L
 
         /** A muted green, close enough to real artwork to show how the layout carries it. */
         const val FAKE_COVER_COLOR = 0xFF3B5A46.toInt()

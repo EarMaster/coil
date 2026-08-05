@@ -26,10 +26,28 @@ All five locales are required for every release. There is no English fallback fo
 missing locale means a blank What's New in that language rather than an English one. `google-play.yml`
 enforces this and fails the deploy rather than shipping a gap.
 
+## Screenshots
+
+`en-US/images/` holds the listing screenshots, generated from the app itself rather than taken
+by hand:
+
+```bash
+./gradlew :app:recordRoborazziDebug --tests '*StoreAssetTest'
+```
+
+That renders `phoneScreenshots`, `sevenInchScreenshots` and `tenInchScreenshots` from
+`StoreAssetTest` (see AGENTS.md, "Store assets"), strips the alpha channel Play rejects, and
+copies the phone set to the website. `check_store_metadata.sh` validates them the same way it
+validates the text — format, alpha, dimensions, aspect ratio and count — so a screenshot that
+Play would refuse fails here first.
+
+Only English is generated: the other four translations are unreviewed drafts, and Play falls
+back to the default language's images for a locale that has none.
+
 ## What does *not* live here
 
-**Screenshots and feature graphic.** Would go in `<locale>/images/` if we adopt a tool that
-uploads them; not tracked yet.
+**The feature graphic.** Would go in `<locale>/images/featureGraphic.png` (1024×500); not
+written yet.
 
 ## What CI does with these files
 

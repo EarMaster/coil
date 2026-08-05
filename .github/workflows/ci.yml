@@ -78,8 +78,12 @@ jobs:
       # Compares every screen against the committed golden. Rendering is host-sensitive, so
       # this runner is the reference: goldens are recorded by screenshots.yml, on Linux, and a
       # run recorded on a developer's own machine is for looking at rather than for committing.
+      #
+      # The filter excludes StoreAssetTest. Those images are products, not baselines — they are
+      # flattened after capture and so never match byte for byte, and a UI change should fail
+      # one job rather than two.
       - name: Verify screenshots
-        run: ./gradlew :app:verifyRoborazziDebug
+        run: ./gradlew :app:verifyRoborazziDebug --tests '*ScreenshotTest'
 
       # The actual/expected/diff triptych for anything that moved — the point of the job is to
       # be able to see what changed, not just that something did.

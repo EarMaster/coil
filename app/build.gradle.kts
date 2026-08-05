@@ -1,3 +1,7 @@
+import java.awt.Color
+import java.awt.image.BufferedImage
+import javax.imageio.ImageIO
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -99,6 +103,68 @@ android {
         }
     }
 }
+
+// ---------------------------------------------------------------- store assets
+//
+// `StoreAssetTest` writes the Play listing screenshots straight into the fastlane layout, but
+// it cannot finish the job: Roborazzi writes RGBA, Play rejects any image with an alpha
+// channel, and `javax.imageio` is not on an Android unit test's classpath. So the last two
+// steps happen here, where the full JDK is available.
+//
+// Paths are resolved inside the configuration block and captured as plain Files. They cannot be
+// script-level `val`s: reading one from `doLast` captures the build script object itself, which
+// the configuration cache refuses to serialise.
+val flattenStoreAssets = tasks.register("flattenStoreAssets") {
+    group = "publishing"
+    description = "Flattens the Play Store screenshots to 24-bit PNG and copies the phone set " +
+        "to the Pages site."
+
+    val storeImages = rootProject.layout.projectDirectory
+        .dir("fastlane/metadata/android/en-US/images").asFile
+    val pagesScreenshots = rootProject.layout.projectDirectory
+        .dir("docs/pages/assets/screenshots").asFile
+
+    doLast {
+        if (!storeImages.isDirectory) {
+            logger.lifecycle("No store images at $storeImages — nothing to flatten.")
+            return@doLast
+        }
+
+        // The app's own light background (md_light_background). It only ever shows through
+        // antialiased edges, and white would fringe them.
+        val background = Color(0xF5FAF6)
+        var flattened = 0
+
+        storeImages.walkTopDown().filter { it.isFile && it.extension == "png" }.forEach { file ->
+            val source = ImageIO.read(file) ?: return@forEach
+            val opaque = BufferedImage(source.width, source.height, BufferedImage.TYPE_INT_RGB)
+            opaque.createGraphics().apply {
+                color = background
+                fillRect(0, 0, source.width, source.height)
+                drawImage(source, 0, 0, null)
+                dispose()
+            }
+            ImageIO.write(opaque, "png", file)
+            flattened++
+        }
+
+        // The website is served from docs/pages only, so it needs its own copy rather than a
+        // link into the fastlane tree.
+        val phones = storeImages.resolve("phoneScreenshots")
+        if (phones.isDirectory) {
+            pagesScreenshots.mkdirs()
+            phones.listFiles { file -> file.extension == "png" }?.forEach { file ->
+                file.copyTo(pagesScreenshots.resolve(file.name), overwrite = true)
+            }
+        }
+
+        logger.lifecycle("Flattened $flattened store screenshot(s); phone set copied to the Pages site.")
+    }
+}
+
+// Recording is the only thing that writes those files, so it is the only thing that needs to
+// finish the job. A record run that captured no store assets simply finds nothing to do.
+tasks.matching { it.name == "recordRoborazziDebug" }.configureEach { finalizedBy(flattenStoreAssets) }
 
 dependencies {
     implementation(project(":core-domain"))

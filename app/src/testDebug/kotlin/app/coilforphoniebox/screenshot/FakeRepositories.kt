@@ -114,7 +114,8 @@ class FakeBoxRepository(
 }
 
 class FakeFavoriteRepository(favorites: List<Favorite> = emptyList()) : FavoriteRepository {
-    private val all = MutableStateFlow(favorites)
+    /** Public so an injected instance can be given different favourites before composing. */
+    val all = MutableStateFlow(favorites)
 
     override fun favorites(boxId: String): Flow<List<Favorite>> =
         all.map { list -> list.filter { it.boxId == boxId }.sortedBy { it.sortIndex } }
@@ -152,21 +153,29 @@ class FakeFavoriteRepository(favorites: List<Favorite> = emptyList()) : Favorite
  * which is what the app shows before a box has been reached, and a state worth a golden.
  */
 class FakeLibraryRepository(
-    private val folders: Map<String, FolderContent> = emptyMap(),
-    private val albums: List<LibraryAlbum> = emptyList(),
-    private val albumsCachedAt: Long? = Fixtures.NOW,
-    private val searchResults: LibrarySearchResults = LibrarySearchResults(),
+    folders: Map<String, FolderContent> = emptyMap(),
+    albums: List<LibraryAlbum> = emptyList(),
+    cachedAt: Long? = Fixtures.NOW,
+    results: LibrarySearchResults = LibrarySearchResults(),
 ) : LibraryRepository {
+    // Held as flows rather than constructor values so a test that gets this injected can swap
+    // the library out before composing — which is how the store assets get their own content
+    // without a second Hilt module.
+    val allFolders = MutableStateFlow(folders)
+    val allAlbums = MutableStateFlow(albums)
+    val cachedAt = MutableStateFlow(cachedAt)
+    val results = MutableStateFlow(results)
+
     override val indexState = MutableStateFlow(LibraryIndexState())
 
     override fun folderContent(boxId: String, path: String): Flow<FolderContent> =
-        MutableStateFlow(folders[path] ?: FolderContent(path))
+        allFolders.map { it[path] ?: FolderContent(path) }
 
     override suspend fun refreshFolder(boxId: String, path: String): Result<Unit> = Result.success(Unit)
 
-    override fun albums(boxId: String): Flow<List<LibraryAlbum>> = MutableStateFlow(albums)
+    override fun albums(boxId: String): Flow<List<LibraryAlbum>> = allAlbums
 
-    override fun albumsCachedAt(boxId: String): Flow<Long?> = MutableStateFlow(albumsCachedAt)
+    override fun albumsCachedAt(boxId: String): Flow<Long?> = cachedAt
 
     override suspend fun refreshAlbums(boxId: String): Result<Unit> = Result.success(Unit)
 
@@ -177,7 +186,7 @@ class FakeLibraryRepository(
     override suspend fun refreshIfStaleAndIdle(boxId: String) = Unit
 
     override fun search(boxId: String, query: String): Flow<LibrarySearchResults> =
-        MutableStateFlow(if (query.isBlank()) LibrarySearchResults() else searchResults.copy(query = query))
+        results.map { if (query.isBlank()) LibrarySearchResults() else it.copy(query = query) }
 
     override suspend fun indexLibrary(boxId: String): LibraryIndexResult =
         LibraryIndexResult.Finished(foldersScanned = 0, stoppedAtCap = false)

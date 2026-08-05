@@ -51,8 +51,10 @@ jobs:
 
       # The images are listing metadata, so they answer to the same validator as the listing
       # text: format, alpha, dimensions, aspect ratio and count.
+      # Invoked through bash, like every other caller: the script is checked in 0644, and a
+      # Windows checkout has no executable bit to preserve anyway.
       - name: Validate store images
-        run: tools/check_store_metadata.sh
+        run: bash tools/check_store_metadata.sh
 
       - name: Commit updated screenshots
         run: |

@@ -1,5 +1,6 @@
 package app.coilforphoniebox.screenshot
 
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -85,6 +86,20 @@ abstract class AppScreenshotTest : ScreenshotTest() {
         showApp()
         navigateTo(R.string.nav_favourites)
         captureRoot("app/favourites_$device")
+    }
+
+    /**
+     * The same favourites as rows, reached the way a user reaches them: the top bar action on
+     * that tab. Clicking it rather than presetting the stored layout keeps the control itself
+     * in the picture — a toggle that stopped switching would fail here.
+     */
+    @Test
+    fun favourites_compact() {
+        showApp()
+        navigateTo(R.string.nav_favourites)
+        compose.onNodeWithContentDescription(string(R.string.action_favourites_show_list)).performClick()
+        compose.waitForIdle()
+        captureRoot("app/favourites_compact_$device")
     }
 
     @Test

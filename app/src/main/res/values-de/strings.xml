@@ -71,6 +71,8 @@
     <string name="action_move_up">Nach oben</string>
     <string name="action_move_down">Nach unten</string>
     <string name="shortcut_pin_unsupported">Dieser Launcher unterstützt keine Verknüpfungen auf dem Startbildschirm.</string>
+    <string name="action_favourites_show_list">Als Liste anzeigen</string>
+    <string name="action_favourites_show_grid">Als Cover anzeigen</string>
 
     <string name="boxes_title">Boxen</string>
     <string name="boxes_switch">Box wechseln</string>

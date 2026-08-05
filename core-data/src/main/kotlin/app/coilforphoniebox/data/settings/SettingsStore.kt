@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.coilforphoniebox.domain.model.AppSettings
+import app.coilforphoniebox.domain.model.FavoritesLayout
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,7 @@ class SettingsStore @Inject constructor(
             themeMode = prefs[THEME_MODE].toThemeMode(),
             dynamicColor = prefs[DYNAMIC_COLOR] ?: false,
             sessionMode = prefs[SESSION_MODE].toSessionMode(),
+            favoritesLayout = prefs[FAVORITES_LAYOUT].toFavoritesLayout(),
             activeBoxId = prefs[ACTIVE_BOX_ID],
             onboardingComplete = prefs[ONBOARDING_COMPLETE] ?: false,
         )
@@ -39,6 +41,8 @@ class SettingsStore @Inject constructor(
     suspend fun setDynamicColor(enabled: Boolean) = put(DYNAMIC_COLOR, enabled)
 
     suspend fun setSessionMode(mode: SessionMode) = put(SESSION_MODE, mode.name)
+
+    suspend fun setFavoritesLayout(layout: FavoritesLayout) = put(FAVORITES_LAYOUT, layout.name)
 
     suspend fun setActiveBoxId(boxId: String?) {
         dataStore.edit { prefs ->
@@ -59,10 +63,14 @@ class SettingsStore @Inject constructor(
     private fun String?.toSessionMode(): SessionMode =
         this?.let { name -> SessionMode.entries.firstOrNull { it.name == name } } ?: SessionMode.APP_ONLY
 
+    private fun String?.toFavoritesLayout(): FavoritesLayout =
+        this?.let { name -> FavoritesLayout.entries.firstOrNull { it.name == name } } ?: FavoritesLayout.GRID
+
     private companion object {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val SESSION_MODE = stringPreferencesKey("session_mode")
+        val FAVORITES_LAYOUT = stringPreferencesKey("favorites_layout")
         val ACTIVE_BOX_ID = stringPreferencesKey("active_box_id")
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
     }

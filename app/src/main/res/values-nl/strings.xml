@@ -71,6 +71,8 @@
     <string name="action_move_up">Omhoog</string>
     <string name="action_move_down">Omlaag</string>
     <string name="shortcut_pin_unsupported">Deze launcher ondersteunt geen snelkoppelingen op het startscherm.</string>
+    <string name="action_favourites_show_list">Als lijst weergeven</string>
+    <string name="action_favourites_show_grid">Als hoezen weergeven</string>
 
     <string name="boxes_title">Boxen</string>
     <string name="boxes_switch">Andere box kiezen</string>

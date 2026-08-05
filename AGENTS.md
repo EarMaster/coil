@@ -412,16 +412,18 @@ Three levels, and the distinction matters:
 - **Roborazzi is pinned at 1.60.0** because 1.61.0 and later carry Kotlin 2.3 metadata that
   Kotlin 2.0.21 cannot read. Upgrading it means upgrading Kotlin and the Compose compiler too.
 
-Covered so far: the whole app on three devices (player light and dark, library, favourites,
-settings top and lower half, box management, one box's page, offline, onboarding), the player
-screen (playing, paused, idle, web radio, sleep timer, light and dark), the library screen
+Covered so far: the whole app on three devices (player light and dark, library, favourites in both
+layouts, settings top and lower half, box management, one box's page, offline, onboarding), the
+player screen (playing, paused, idle, web radio, sleep timer, light and dark), the library screen
 (folders, tracks, albums, search, no results, empty, light and dark) and the chrome components.
 
 The favourites goldens carry **two entries with a `coverFile` and one without**, because both halves
 matter: a cover has to render, and a favourite the box has no artwork for has to stay recognisable
-by its placeholder icon. `StoreFixtures.favorites` deliberately keeps no covers: the fake engine
-answers every URL with the same flat colour, and four identical green squares would be a worse
-store screenshot than four placeholder icons.
+by its placeholder icon. `favourites_compact_*` reaches the list layout by *clicking* the top bar
+action rather than presetting the stored preference, so a toggle that stopped switching fails the
+test instead of quietly capturing the same picture twice. `StoreFixtures.favorites` deliberately
+keeps no covers: the fake engine answers every URL with the same flat colour, and four identical
+green squares would be a worse store screenshot than four placeholder icons.
 
 Box management is captured with **two** boxes configured (`app/boxes_*`, `app/box_detail_*`), since
 one box is the case where those screens have least to say — and the box page golden is the
@@ -741,6 +743,17 @@ still needs doing, in rough order of importance:
   `core-data/.../db/Migrations.kt` — no destructive fallback, favourites are the one thing here that
   cannot be rebuilt from the box), a `track` variant of the `coil://play` deep link, and settings
   backup **format version 2**.
+- **The favourites tab has two layouts, and the switch is in the top bar.** `FavoritesLayout` in
+  `AppSettings` chooses between the cover grid (the default — §7.2's point is a target a child can
+  aim at without reading) and a compact row list for a collection that has outgrown a screenful of
+  tiles. Consequences worth keeping: the preference is owned by `AppViewModel` and passed *into*
+  `FavoritesScreen`, because the control lives in the shell's top bar and one preference should have
+  one owner; the top bar's `actions` slot is per destination, so anything added there must stay
+  conditional on the route the way this is; and both layouts share one `LazyVerticalGrid` —
+  `GridCells.Fixed(1)` is the list — plus one `FavoriteEntry`, so neither shape can quietly lose an
+  action the other has. It also rides in the settings backup, which did **not** bump
+  `FORMAT_VERSION`: an older build that drops the field loses a layout preference, not the ability
+  to play anything. Same for the `coverFile` now exported per favourite.
 - **Long press in the library opens a context menu, it does not toggle a favourite.** The plan (§14,
   phase 2) has long press as the way to favourite something, which is undiscoverable and was the
   only way to do it. Every library row and album cell now carries a ⋮ button, and both it and a long

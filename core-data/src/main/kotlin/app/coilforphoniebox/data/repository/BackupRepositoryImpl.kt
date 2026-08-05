@@ -8,6 +8,7 @@ import app.coilforphoniebox.data.settings.SettingsStore
 import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
+import app.coilforphoniebox.domain.model.FavoritesLayout
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
 import app.coilforphoniebox.domain.repository.BackupRepository
@@ -77,6 +78,7 @@ class BackupRepositoryImpl @Inject constructor(
         val themeMode: String = ThemeMode.SYSTEM.name,
         val dynamicColor: Boolean = false,
         val sessionMode: String = SessionMode.APP_ONLY.name,
+        val favoritesLayout: String = FavoritesLayout.GRID.name,
     )
 
     override suspend fun export(): String {
@@ -111,6 +113,7 @@ class BackupRepositoryImpl @Inject constructor(
                 themeMode = current.themeMode.name,
                 dynamicColor = current.dynamicColor,
                 sessionMode = current.sessionMode.name,
+                favoritesLayout = current.favoritesLayout.name,
             ),
         )
         return codec.encodeToString(file)
@@ -177,6 +180,10 @@ class BackupRepositoryImpl @Inject constructor(
             SessionMode.entries.firstOrNull { it.name == file.settings.sessionMode }
                 ?: SessionMode.APP_ONLY,
         )
+        settings.setFavoritesLayout(
+            FavoritesLayout.entries.firstOrNull { it.name == file.settings.favoritesLayout }
+                ?: FavoritesLayout.GRID,
+        )
     }
 
     private val codec = Json {
@@ -190,9 +197,9 @@ class BackupRepositoryImpl @Inject constructor(
          * an older build would import a `TRACK` row without its URL, which is a
          * favourite that cannot play. Refusing the file says so instead.
          *
-         * `coverFile` arrived later and deliberately did *not* bump it: an older build that
-         * drops it loses a cover it can resolve again from the box, not the ability to play
-         * anything.
+         * `coverFile` and `favoritesLayout` arrived later and deliberately did *not* bump
+         * it: an older build that drops them loses a cover it can resolve again from the
+         * box and a layout preference, not the ability to play anything.
          */
         const val FORMAT_VERSION = 2
     }

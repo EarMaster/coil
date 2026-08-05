@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ViewList
+import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Settings
@@ -40,6 +42,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.coilforphoniebox.R
+import app.coilforphoniebox.domain.model.FavoritesLayout
 import app.coilforphoniebox.ui.boxes.AddBoxScreen
 import app.coilforphoniebox.ui.boxes.AddBoxViewModel
 import app.coilforphoniebox.ui.boxes.BoxDetailScreen
@@ -140,6 +143,26 @@ fun CoilApp(appViewModel: AppViewModel) {
                         }
                     }
                 },
+                // Only the favourites tab has anything to put here. The action shows what a
+                // tap would switch *to*, so the icon and its label describe the same thing.
+                actions = {
+                    if (currentRoute == Destination.FAVOURITES.route) {
+                        val list = state.settings.favoritesLayout == FavoritesLayout.LIST
+                        IconButton(onClick = appViewModel::toggleFavoritesLayout) {
+                            Icon(
+                                imageVector = if (list) {
+                                    Icons.Rounded.GridView
+                                } else {
+                                    Icons.AutoMirrored.Rounded.ViewList
+                                },
+                                contentDescription = stringResource(
+                                    if (list) R.string.action_favourites_show_grid
+                                    else R.string.action_favourites_show_list,
+                                ),
+                            )
+                        }
+                    }
+                },
             )
         },
         bottomBar = {
@@ -188,7 +211,7 @@ fun CoilApp(appViewModel: AppViewModel) {
                 composable(Destination.FAVOURITES.route) {
                     val viewModel = hiltViewModel<FavoritesViewModel>()
                     SnackbarMessages(viewModel.messages, snackbarHostState)
-                    FavoritesScreen(viewModel)
+                    FavoritesScreen(viewModel, layout = state.settings.favoritesLayout)
                 }
 
                 composable(Destination.SETTINGS.route) {

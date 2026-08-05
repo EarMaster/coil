@@ -71,6 +71,8 @@
     <string name="action_move_up">Mover arriba</string>
     <string name="action_move_down">Mover abajo</string>
     <string name="shortcut_pin_unsupported">Este lanzador no admite accesos directos en la pantalla de inicio.</string>
+    <string name="action_favourites_show_list">Ver como lista</string>
+    <string name="action_favourites_show_grid">Ver las portadas</string>
 
     <string name="boxes_title">Cajas</string>
     <string name="boxes_switch">Cambiar de caja</string>

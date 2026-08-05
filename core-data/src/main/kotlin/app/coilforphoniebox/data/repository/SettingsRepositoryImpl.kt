@@ -2,6 +2,7 @@ package app.coilforphoniebox.data.repository
 
 import app.coilforphoniebox.data.settings.SettingsStore
 import app.coilforphoniebox.domain.model.AppSettings
+import app.coilforphoniebox.domain.model.FavoritesLayout
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
 import app.coilforphoniebox.domain.repository.SettingsRepository
@@ -23,6 +24,9 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setDynamicColor(enabled: Boolean) = store.setDynamicColor(enabled)
 
     override suspend fun setSessionMode(mode: SessionMode) = store.setSessionMode(mode)
+
+    override suspend fun setFavoritesLayout(layout: FavoritesLayout) =
+        store.setFavoritesLayout(layout)
 
     override suspend fun setOnboardingComplete(complete: Boolean) =
         store.setOnboardingComplete(complete)

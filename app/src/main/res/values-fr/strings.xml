@@ -75,6 +75,8 @@
     <string name="action_move_up">Déplacer vers le haut</string>
     <string name="action_move_down">Déplacer vers le bas</string>
     <string name="shortcut_pin_unsupported">Ce lanceur ne prend pas en charge les raccourcis sur l\'écran d\'accueil.</string>
+    <string name="action_favourites_show_list">Afficher en liste</string>
+    <string name="action_favourites_show_grid">Afficher les pochettes</string>
 
     <string name="boxes_title">Box</string>
     <string name="boxes_switch">Changer de box</string>

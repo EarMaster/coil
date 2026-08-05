@@ -9,6 +9,12 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Added
+- **Favourites can be shown as a compact list**, switched with the new button in the top bar of that
+  tab. Covers stay the default — they are what makes a favourite something a child can aim at
+  without reading — but a collection that has outgrown a screenful of tiles is easier to scan as
+  rows. The choice is remembered
+
 ### Fixed
 - **Favourites now show cover art.** They almost never did: a favourite recorded a cover only when
   it was saved from an album whose artwork happened to be loaded already, so the star on the player

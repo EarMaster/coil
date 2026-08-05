@@ -5,6 +5,7 @@ import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.ConnectionTestResult
 import app.coilforphoniebox.domain.model.Favorite
+import app.coilforphoniebox.domain.model.FavoritesLayout
 import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryIndexResult
@@ -228,6 +229,10 @@ class FakeSettingsRepository(settings: AppSettings = AppSettings()) : SettingsRe
 
     override suspend fun setSessionMode(mode: SessionMode) {
         state.value = state.value.copy(sessionMode = mode)
+    }
+
+    override suspend fun setFavoritesLayout(layout: FavoritesLayout) {
+        state.value = state.value.copy(favoritesLayout = layout)
     }
 
     override suspend fun setOnboardingComplete(complete: Boolean) {

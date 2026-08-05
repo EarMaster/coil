@@ -433,12 +433,17 @@ action rather than presetting the stored preference, so a toggle that stopped sw
 test instead of quietly capturing the same picture twice. `Fixtures.albums` does the same for the
 album grid, four of six with artwork.
 
-`StoreFixtures.favorites` still carries no covers, which is now a choice about the listing rather
-than a limitation — those entries are folders, and that shot reads as a shelf of saved folders.
-Note also that the store assets under `fastlane/` and `docs/pages/` were **not** regenerated when
-`FakeCoverArt` landed, so they still show the old flat-green covers. Bringing them in step is
-`recordRoborazziDebug --tests '*StoreAssetTest' --rerun-tasks`, and it is a deliberate act rather
-than a consequence, because they are products.
+`StoreFixtures.favorites` carries covers on three of four for a reason worth keeping: without them
+that listing image is four empty tiles above a mini player that *does* show a cover, which reads as
+artwork failing to load rather than as a design — and it contradicts what the app now does, since
+a played folder gets its cover. The fourth keeps its placeholder, because a box genuinely does have
+folders it has no artwork for.
+
+**Two fixtures can land on the same palette slot.** `FakeCoverArt` picks from five colours by URL
+hash, so a grid meant to show that covers differ can end up with two identical tiles next to each
+other — `cover-fairy-tales.jpg` and `cover-bedtime.jpg` collide, which is why the store fixture
+spells it `cover-fairytales.jpg`. Check a new fixture's slot rather than assume:
+`Math.floorMod(("http://<host>/cover-cache/" + fileName).hashCode(), 5)`.
 
 Box management is captured with **two** boxes configured (`app/boxes_*`, `app/box_detail_*`), since
 one box is the case where those screens have least to say — and the box page golden is the

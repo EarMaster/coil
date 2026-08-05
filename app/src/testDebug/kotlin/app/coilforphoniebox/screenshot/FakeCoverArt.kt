@@ -40,6 +40,14 @@ object FakeCoverArt {
     /**
      * Muted and brand-adjacent rather than loud: these reach the Play Store screenshots through
      * the same harness, where a page of primary colours would read as test scaffolding.
+     *
+     * Five slots means two fixtures can land on the same colour, which matters only where they
+     * end up side by side — a grid of covers that is meant to show they differ. When adding a
+     * fixture cover, check its slot rather than assume:
+     *
+     * ```
+     * Math.floorMod(("http://<host>/cover-cache/" + fileName).hashCode(), 5)
+     * ```
      */
     private val BASE_COLORS = intArrayOf(
         0xFF3B5A46.toInt(), // deep green — the colour every cover used to be

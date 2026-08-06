@@ -1,0 +1,3 @@
+Las carpetas y los álbumes sin portada ahora tienen una imagen propia. Coil incluye 32 portadas abstractas y asigna siempre la misma a una misma carpeta, en cada pantalla y tras reinstalar.
+
+Las portadas que haya en tu caja se siguen usando y tienen preferencia.

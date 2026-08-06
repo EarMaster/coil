@@ -1,0 +1,3 @@
+Folders and albums with no cover art now get a picture of their own. Coil ships 32 abstract covers and always gives the same folder the same one, so your shelf looks the same on every screen and after a reinstall.
+
+Artwork your box does have is still used, and still comes first.

@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-06
+
 ### Added
 - **Folders and albums without cover art now get a picture of their own.** A Phoniebox library is
   largely ripped CDs and home-made folders, so a great deal of it has no embedded artwork, and a

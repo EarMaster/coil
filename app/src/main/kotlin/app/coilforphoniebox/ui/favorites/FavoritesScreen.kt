@@ -96,6 +96,7 @@ fun FavoritesScreen(
                 favorite = favorite,
                 box = state.activeBox,
                 compact = compact,
+                coverPending = state.coverPending(favorite),
                 link = viewModel.linkFor(favorite),
                 onPlay = { viewModel.play(favorite) },
                 onRemove = { viewModel.remove(favorite) },
@@ -118,6 +119,8 @@ private fun FavoriteEntry(
     favorite: Favorite,
     box: PhonieBox?,
     compact: Boolean,
+    /** Whether this favourite is still waiting to hear whether the box has artwork for it. */
+    coverPending: Boolean,
     /** `coil://play` link for this favourite; null for a row that cannot be played. */
     link: String?,
     onPlay: () -> Unit,
@@ -154,9 +157,9 @@ private fun FavoriteEntry(
     }
 
     if (compact) {
-        FavoriteRow(favorite, coverUrl, onPlay, menuButton)
+        FavoriteRow(favorite, coverUrl, coverPending, onPlay, menuButton)
     } else {
-        FavoriteCell(favorite, coverUrl, onPlay, menuButton)
+        FavoriteCell(favorite, coverUrl, coverPending, onPlay, menuButton)
     }
 }
 
@@ -165,6 +168,7 @@ private fun FavoriteEntry(
 private fun FavoriteCell(
     favorite: Favorite,
     coverUrl: String?,
+    coverPending: Boolean,
     onPlay: () -> Unit,
     menuButton: @Composable () -> Unit,
 ) {
@@ -179,6 +183,8 @@ private fun FavoriteCell(
                     .clickable(onClick = onPlay),
                 cornerRadius = 14.dp,
                 placeholderIcon = favorite.placeholderIcon,
+                fallbackName = favorite.label,
+                coverPending = coverPending,
             )
 
             Box(Modifier.align(Alignment.TopEnd)) { menuButton() }
@@ -203,6 +209,7 @@ private fun FavoriteCell(
 private fun FavoriteRow(
     favorite: Favorite,
     coverUrl: String?,
+    coverPending: Boolean,
     onPlay: () -> Unit,
     menuButton: @Composable () -> Unit,
 ) {
@@ -220,6 +227,8 @@ private fun FavoriteRow(
             cornerRadius = 8.dp,
             placeholderIconSize = 24.dp,
             placeholderIcon = favorite.placeholderIcon,
+            fallbackName = favorite.label,
+            coverPending = coverPending,
         )
 
         Text(

@@ -19,6 +19,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -46,23 +47,30 @@ class FavoritesViewModel @Inject constructor(
         val favorites: List<Favorite> = emptyList(),
         val activeBox: Box? = null,
         val connection: ConnectionState = ConnectionState.DISCONNECTED,
-    )
+        /** Favourites whose cover lookup has finished — see [coverPending]. */
+        val coversSettled: Set<Long> = emptySet(),
+    ) {
+        /**
+         * Whether [favorite] is still waiting to hear whether it has artwork.
+         *
+         * A favourite with no `coverFile` is not necessarily a favourite without a cover: it
+         * may simply be one nobody has asked about yet, and asking costs up to three RPCs
+         * (see `LibraryRepository.coverFileFor`). Putting stand-in artwork on those would
+         * fill the tab with abstract covers on first visit and then swap them out one by one
+         * as the real ones arrived. With the box unreachable there is no lookup to wait for
+         * at all, so the stand-in is the honest thing to show straight away.
+         */
+        fun coverPending(favorite: Favorite): Boolean =
+            favorite.coverFile == null &&
+                connection.isUsable &&
+                favorite.id !in coversSettled
+    }
 
     private val messageChannel = MutableSharedFlow<UiMessage>(
         extraBufferCapacity = 4,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
     val messages: SharedFlow<UiMessage> = messageChannel
-
-    val state: StateFlow<State> = combine(
-        boxes.activeBox,
-        boxes.activeBox.map { it?.id }.distinctUntilChanged().flatMapLatest { boxId ->
-            if (boxId == null) flowOf(emptyList()) else favorites.favorites(boxId)
-        },
-        player.connectionState,
-    ) { box, list, connection ->
-        State(favorites = list, activeBox = box, connection = connection)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
 
     /**
      * Favourites this session has already asked the box about, so a scroll back up the grid
@@ -74,6 +82,29 @@ class FavoritesViewModel @Inject constructor(
      */
     private val coverAttempts = mutableSetOf<Long>()
 
+    /**
+     * Which of those attempts have come back. Separate from [coverAttempts] because the screen
+     * has to observe it — "asked and told there is nothing" is what licenses stand-in artwork,
+     * and "asked, still waiting" must not.
+     */
+    private val coversSettled = MutableStateFlow<Set<Long>>(emptySet())
+
+    val state: StateFlow<State> = combine(
+        boxes.activeBox,
+        boxes.activeBox.map { it?.id }.distinctUntilChanged().flatMapLatest { boxId ->
+            if (boxId == null) flowOf(emptyList()) else favorites.favorites(boxId)
+        },
+        player.connectionState,
+        coversSettled,
+    ) { box, list, connection, settled ->
+        State(
+            favorites = list,
+            activeBox = box,
+            connection = connection,
+            coversSettled = settled,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
+
     init {
         viewModelScope.launch {
             combine(
@@ -81,7 +112,10 @@ class FavoritesViewModel @Inject constructor(
                 player.connectionState.map { it.isUsable },
             ) { boxId, usable -> boxId to usable }
                 .distinctUntilChanged()
-                .collect { coverAttempts.clear() }
+                .collect {
+                    coverAttempts.clear()
+                    coversSettled.value = emptySet()
+                }
         }
     }
 
@@ -97,7 +131,15 @@ class FavoritesViewModel @Inject constructor(
         if (!state.value.connection.isUsable) return
         if (!coverAttempts.add(favorite.id)) return
 
-        viewModelScope.launch { resolveCover(favorite) }
+        viewModelScope.launch {
+            try {
+                resolveCover(favorite)
+            } finally {
+                // However it went — a cover, no cover, or a box that stopped answering
+                // halfway — this favourite is no longer waiting on an answer.
+                coversSettled.value = coversSettled.value + favorite.id
+            }
+        }
     }
 
     fun play(favorite: Favorite) {

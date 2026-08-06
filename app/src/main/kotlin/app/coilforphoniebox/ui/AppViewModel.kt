@@ -12,6 +12,7 @@ import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.LibraryRepository
 import app.coilforphoniebox.domain.repository.PlayerRepository
 import app.coilforphoniebox.domain.repository.SettingsRepository
+import app.coilforphoniebox.ui.player.coverNameOf
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -46,10 +47,15 @@ class AppViewModel @Inject constructor(
         val connection: ConnectionState = ConnectionState.DISCONNECTED,
         val status: PlayerStatus = PlayerStatus.Idle,
         val coverUrl: String? = null,
+        /** Whether the cover lookup for the playing song is still outstanding. */
+        val coverPending: Boolean = false,
         /** False until the first read from storage, so no screen flashes the wrong way. */
         val loaded: Boolean = false,
     ) {
         val needsOnboarding: Boolean get() = loaded && boxes.isEmpty()
+
+        /** Keyed the same way as the player's, so the two never show different pictures. */
+        val coverName: String? get() = coverNameOf(status)
 
         val showMiniPlayer: Boolean get() = status.hasContent
 
@@ -57,21 +63,35 @@ class AppViewModel @Inject constructor(
             get() = activeBox != null && connection == ConnectionState.DISCONNECTED
     }
 
+    /** The four player-side inputs, bundled to keep the outer [combine] within four sources. */
+    private data class Live(
+        val connection: ConnectionState,
+        val status: PlayerStatus,
+        val coverUrl: String?,
+        val coverPending: Boolean,
+    )
+
     val state: StateFlow<State> = combine(
         settings.settings,
         boxes.boxes,
         boxes.activeBox,
-        combine(player.connectionState, player.status, player.coverUrl) { connection, status, cover ->
-            Triple(connection, status, cover)
+        combine(
+            player.connectionState,
+            player.status,
+            player.coverUrl,
+            player.coverPending,
+        ) { connection, status, cover, coverPending ->
+            Live(connection, status, cover, coverPending)
         },
     ) { appSettings, allBoxes, activeBox, live ->
         State(
             settings = appSettings,
             boxes = allBoxes,
             activeBox = activeBox,
-            connection = live.first,
-            status = live.second,
-            coverUrl = live.third,
+            connection = live.connection,
+            status = live.status,
+            coverUrl = live.coverUrl,
+            coverPending = live.coverPending,
             loaded = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())

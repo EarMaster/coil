@@ -180,6 +180,8 @@ private fun CompactPlayer(
                 .align(Alignment.CenterHorizontally)
                 .size(coverSize),
             placeholderIconSize = 64.dp,
+            fallbackName = state.coverName,
+            coverPending = state.coverPending,
         )
 
         Spacer(Modifier.height(20.dp))
@@ -230,6 +232,8 @@ private fun WidePlayer(
             contentDescription = stringResource(R.string.player_cover_art),
             modifier = Modifier.size(coverSize),
             placeholderIconSize = 96.dp,
+            fallbackName = state.coverName,
+            coverPending = state.coverPending,
         )
 
         Spacer(Modifier.width(32.dp))

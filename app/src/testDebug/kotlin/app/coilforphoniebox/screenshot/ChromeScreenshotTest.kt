@@ -6,6 +6,7 @@ import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.ui.components.BoxIndicator
 import app.coilforphoniebox.ui.components.MiniPlayer
 import app.coilforphoniebox.ui.components.OfflineBanner
+import app.coilforphoniebox.ui.player.coverNameOf
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Test
 import org.robolectric.annotation.Config
@@ -82,6 +83,8 @@ class ChromeScreenshotTest : ScreenshotTest() {
             MiniPlayer(
                 status = Fixtures.playing,
                 coverUrl = "http://phoniebox.local/cover-cache/missing-key.jpg",
+                coverName = coverNameOf(Fixtures.playing),
+                coverPending = false,
                 onClick = {},
                 onToggle = {},
             )
@@ -94,6 +97,10 @@ class ChromeScreenshotTest : ScreenshotTest() {
             MiniPlayer(
                 status = Fixtures.paused,
                 coverUrl = null,
+                // No cover on the box and the lookup concluded: this is the golden that
+                // shows the stand-in artwork rather than the placeholder icon.
+                coverName = coverNameOf(Fixtures.paused),
+                coverPending = false,
                 onClick = {},
                 onToggle = {},
             )

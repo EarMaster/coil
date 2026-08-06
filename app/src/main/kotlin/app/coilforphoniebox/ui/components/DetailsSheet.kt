@@ -47,6 +47,12 @@ fun DetailsSheet(
     subtitle: String?,
     coverUrl: String?,
     placeholderIcon: ImageVector,
+    /**
+     * Raw name this item is known by, for its stand-in cover. Passed separately from [title]
+     * because a title may have been substituted for display — "Unknown album" is a label, not
+     * a name, and every untitled album keying on it would share one picture.
+     */
+    fallbackName: String?,
     rows: List<DetailRow>,
     /** Freshness caption, or null when this item has never been fetched. */
     footnote: String?,
@@ -72,6 +78,9 @@ fun DetailsSheet(
                     cornerRadius = 14.dp,
                     placeholderIconSize = 32.dp,
                     placeholderIcon = placeholderIcon,
+                    // The sheet is built strictly from cached data and never puts a request
+                    // on the RPC socket, so there is nothing here to wait for.
+                    fallbackName = fallbackName,
                 )
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {

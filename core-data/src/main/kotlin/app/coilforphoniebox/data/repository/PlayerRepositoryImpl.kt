@@ -79,6 +79,15 @@ class PlayerRepositoryImpl @Inject constructor(
      */
     override val coverUrl: StateFlow<String?> = _coverUrl.asStateFlow()
 
+    /**
+     * Set for as long as a lookup is outstanding, so a null [coverUrl] can be read as "no
+     * artwork" rather than "not yet". Cleared whether the lookup found something or not —
+     * what the UI is waiting for is the *answer*, not a cover.
+     */
+    private val _coverPending = MutableStateFlow(false)
+
+    override val coverPending: StateFlow<Boolean> = _coverPending.asStateFlow()
+
     override fun currentCoverFile(): String? = _coverFile.value
 
     init {
@@ -101,10 +110,17 @@ class PlayerRepositoryImpl @Inject constructor(
                     _coverUrl.value = null
                     lastKey = key
                 }
+                // An idle player is not a lookup in progress. Saying otherwise would leave
+                // the screen on a placeholder waiting for an answer that is not coming.
+                _coverPending.value = file != null && box != null
                 if (file != null && box != null) {
                     val coverFile = resolveCoverFile(file, box)
                     _coverFile.value = coverFile
                     _coverUrl.value = coverFile?.let { box.coverUrl(it) }
+                    // Answered, with or without a cover — either way the wait is over. A
+                    // lookup abandoned by `collectLatest` never gets here, which is correct:
+                    // the song that replaced it sets this again on its own way through.
+                    _coverPending.value = false
                 }
             }
     }

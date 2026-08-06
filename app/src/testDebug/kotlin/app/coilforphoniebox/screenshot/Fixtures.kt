@@ -146,8 +146,9 @@ object Fixtures {
 
     /**
      * Four with artwork and two without, so the album grid is a picture of both cases — a
-     * resolved cover next to an album the box has no art for. The names are a stand-in; what
-     * they produce is [FakeCoverArt], one distinct cover per URL.
+     * cover resolved from the box next to an album it has no art for, which now draws one of
+     * the app's own stand-ins rather than an icon. The file names are a stand-in too, but not
+     * an inert one: [FakeCoverArt] derives a different picture from each.
      */
     val albums = listOf(
         album("Bärenstark", "Ein Bär räumt auf", "cover-baer.jpg"),
@@ -172,11 +173,11 @@ object Fixtures {
     // --------------------------------------------------------------- favourites
 
     /**
-     * Two with artwork and one without, which is the mix worth a golden: a cover has to
-     * render *and* a favourite the box has no artwork for has to stay recognisable by its
-     * placeholder. The file names are a stand-in, but not an inert one — [FakeCoverArt]
-     * derives a different picture from each, so a cover shown against the wrong title is
-     * something the golden can fail on.
+     * Two with artwork and one without, which is the mix worth a golden: a cover from the box
+     * has to render *and* a favourite it has no artwork for has to get its stand-in. The file
+     * names are a stand-in too, but not an inert one — [FakeCoverArt] derives a different
+     * picture from each, so a cover shown against the wrong title is something the golden can
+     * fail on.
      */
     val favorites = listOf(
         Favorite(

@@ -171,6 +171,8 @@ fun CoilApp(appViewModel: AppViewModel) {
                     MiniPlayer(
                         status = state.status,
                         coverUrl = state.coverUrl,
+                        coverName = state.coverName,
+                        coverPending = state.coverPending,
                         onClick = { navController.navigateSingleTop(Destination.PLAYER.route) },
                         onToggle = appViewModel::togglePlayback,
                     )

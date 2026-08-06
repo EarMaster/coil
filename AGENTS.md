@@ -43,8 +43,12 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 `.github/workflows/` mirrors the setup from a sibling project, adapted for Coil ahead of time:
 
 - `ci.yml` / `codeql.yml` — build/test/lint/screenshot verification and CodeQL analysis on PRs to
-  `main` or `develop`. Both start with a `detect` job that checks for a root `./gradlew`; that gate
-  is now satisfied, so these actually build, test and lint. `ci.yml` also has a `Pages Site` job
+  `main` or `develop`. **On pull requests only** — a direct push to `develop` runs neither, so
+  work pushed straight to that branch has had no build, no lint and no golden verification until
+  it reaches a PR. Both start with a `detect` job that checks for a root `./gradlew`; that gate
+  is now satisfied, so these actually build, test and lint. Its `Screenshots` job reports a
+  golden mismatch as a warning rather than a failure — see "Screenshot tests" for why and for
+  what that costs. `ci.yml` also has a `Pages Site` job
   that builds `docs/pages/` with the same action `pages.yml` uses and checks that `main.css`, both
   pages, the galleries and the hero frame all rendered with no Liquid left unprocessed. It
   deliberately skips the `detect` gate — the site has nothing to do with Gradle — and exists
@@ -421,6 +425,17 @@ Three levels, and the distinction matters:
   `app/build/outputs/roborazzi/` and the `Screenshots` CI job uploads them. That directory is
   flat, so **golden file names must stay unique across subfolders** — two `folders_light.png`
   in different directories would overwrite each other's diff.
+- **A mismatch is a warning, not a failure, and that is a deliberate weakening.** The
+  `Screenshots` job carries `continue-on-error`, so a changed screen leaves the job green and
+  emits a PR annotation plus a step summary instead. The reasoning: these goldens are baselines
+  a maintainer *accepts* rather than a contract the code must satisfy, and one can differ for
+  reasons unrelated to the change under review — a Robolectric or Skia bump, an image decoder
+  that rounds differently on another host. A check that goes red for those becomes a check that
+  gets clicked past. The cost is not hedged: **nothing else in CI looks at pixels**, so a real
+  visual regression now merges green unless somebody reads the warning and the diff artifact.
+  If that stops happening, make the job blocking again rather than keep a check nobody acts on.
+  Note this changed the *reporting* only — `Screenshots` was never one of `main`'s required
+  status checks, so a mismatch could never block a merge in the first place.
 - **The screens take a ViewModel, not a state object**, so the tests build the real ViewModel on
   fake repositories (`FakeRepositories.kt`) rather than a stateless copy of the screen. That
   keeps the ViewModel's own flow wiring inside the picture: if `combine` stalls because

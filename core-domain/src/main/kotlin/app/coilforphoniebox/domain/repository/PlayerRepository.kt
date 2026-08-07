@@ -29,6 +29,18 @@ interface PlayerRepository {
     val coverUrl: Flow<String?>
 
     /**
+     * Whether the cover for the playing song is still being resolved.
+     *
+     * A null [coverUrl] is two different things — "this song has no artwork" and "the answer
+     * is not in yet" — and the box makes the second one slow enough to matter: the first
+     * request for any song answers `CACHE_PENDING` while it extracts the image on a worker
+     * thread, so a cover takes a second or two on the track it is asked about first. The UI
+     * needs to tell them apart before it can put stand-in artwork on screen, or every track
+     * change would show a stand-in and then replace it.
+     */
+    val coverPending: Flow<Boolean>
+
+    /**
      * Cover file name of the playing song, if one has already been resolved.
      *
      * The same name [coverUrl] is built from, handed over unwrapped so that saving a

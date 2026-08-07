@@ -30,6 +30,9 @@ import app.coilforphoniebox.domain.model.PlayerStatus
 fun MiniPlayer(
     status: PlayerStatus,
     coverUrl: String?,
+    /** Same name and same wait as the player's own cover — see `CoverArt`. */
+    coverName: String?,
+    coverPending: Boolean,
     onClick: () -> Unit,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
@@ -61,6 +64,8 @@ fun MiniPlayer(
                     modifier = Modifier.size(40.dp),
                     cornerRadius = 10.dp,
                     placeholderIconSize = 18.dp,
+                    fallbackName = coverName,
+                    coverPending = coverPending,
                 )
                 Spacer(Modifier.size(12.dp))
                 Column(Modifier.weight(1f)) {

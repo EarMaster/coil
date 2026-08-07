@@ -1,0 +1,3 @@
+Ordner und Alben ohne Cover bekommen jetzt ein eigenes Bild. Coil bringt 32 abstrakte Cover mit und vergibt an denselben Ordner immer dasselbe — auf jedem Bildschirm und auch nach einer Neuinstallation.
+
+Cover, die auf der Box liegen, werden weiterhin verwendet und haben Vorrang.

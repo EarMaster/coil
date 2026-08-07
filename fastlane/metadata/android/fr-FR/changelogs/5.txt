@@ -1,0 +1,3 @@
+Les dossiers et albums sans pochette reçoivent désormais une image. Coil intègre 32 pochettes abstraites et attribue toujours la même à un même dossier, sur chaque écran et après une réinstallation.
+
+Les pochettes présentes sur la box restent utilisées, et prioritaires.

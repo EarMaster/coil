@@ -1,0 +1,3 @@
+Mappen en albums zonder hoesje krijgen nu een eigen afbeelding. Coil bevat 32 abstracte hoesjes en geeft dezelfde map altijd hetzelfde hoesje, op elk scherm en ook na een herinstallatie.
+
+Hoesjes die op je box staan, worden nog steeds gebruikt en hebben voorrang.

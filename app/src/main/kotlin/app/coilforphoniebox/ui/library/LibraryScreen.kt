@@ -581,13 +581,16 @@ private fun AlbumRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // No cover request here: search results scroll past quickly, and one RPC per row
-            // is exactly what the album grid is careful not to do (§6).
+            // is exactly what the album grid is careful not to do (§6). Nothing is pending
+            // for the same reason — with no lookup coming, a row shows either the cover the
+            // grid already resolved or its stand-in, and never a placeholder that waits.
             CoverArt(
                 url = coverUrl,
                 contentDescription = null,
                 modifier = Modifier.size(38.dp),
                 cornerRadius = 11.dp,
                 placeholderIconSize = 20.dp,
+                fallbackName = album.album,
             )
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
@@ -749,6 +752,7 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
                 album = album,
                 box = activeBox,
                 favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
+                coverPending = state.coverPending(album),
                 onRequestCover = { viewModel.requestAlbumCover(album) },
                 onPlay = { viewModel.play(PlayTarget.Album(album.albumArtist, album.album)) },
                 onToggleFavourite = {
@@ -781,6 +785,7 @@ private fun AlbumCell(
     album: LibraryAlbum,
     box: PhonieBox?,
     favourite: Boolean,
+    coverPending: Boolean,
     onRequestCover: () -> Unit,
     onPlay: () -> Unit,
     onToggleFavourite: () -> Unit,
@@ -813,6 +818,8 @@ private fun AlbumCell(
                     .fillMaxWidth()
                     .aspectRatio(1f),
                 cornerRadius = 14.dp,
+                fallbackName = album.album,
+                coverPending = coverPending,
             )
             if (favourite) {
                 Icon(
@@ -954,6 +961,7 @@ private fun FolderDetailsSheet(
         subtitle = null,
         coverUrl = null,
         placeholderIcon = Icons.Rounded.Folder,
+        fallbackName = folder.displayName,
         rows = listOf(
             DetailRow(
                 label = stringResource(R.string.details_path),
@@ -1003,6 +1011,7 @@ private fun TrackDetailsSheet(
         subtitle = track.artist?.takeIf { it.isNotBlank() },
         coverUrl = null,
         placeholderIcon = Icons.Rounded.MusicNote,
+        fallbackName = track.displayTitle,
         rows = rows,
         footnote = null,
         favouriteLabel = stringResource(
@@ -1034,6 +1043,7 @@ private fun AlbumDetailsSheet(
         subtitle = album.albumArtist.ifBlank { stringResource(R.string.library_unknown_artist) },
         coverUrl = coverUrl,
         placeholderIcon = Icons.Rounded.Album,
+        fallbackName = album.album,
         rows = listOf(
             DetailRow(
                 label = stringResource(R.string.details_album_artist),

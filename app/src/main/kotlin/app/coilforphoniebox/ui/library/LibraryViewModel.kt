@@ -66,7 +66,20 @@ class LibraryViewModel @Inject constructor(
         val albums: List<LibraryAlbum> = emptyList(),
         val cachedAt: Long? = null,
         val refreshing: Boolean = false,
-    )
+        /** Albums whose cover lookup has finished — see [coverPending]. */
+        val coversSettled: Set<String> = emptySet(),
+    ) {
+        /**
+         * Whether [album] is still waiting to hear whether the box has artwork for it.
+         *
+         * The grid asks one RPC per cell as cells appear, throttled to two at a time, so a
+         * first visit to a large library has most of its tiles genuinely unanswered for a
+         * while. Standing artwork in for those would fill the screen with abstract covers and
+         * then replace them one by one as the real ones landed.
+         */
+        fun coverPending(album: LibraryAlbum): Boolean =
+            album.coverFile == null && coverKeyOf(album) !in coversSettled
+    }
 
     private val messageChannel = MutableSharedFlow<UiMessage>(
         extraBufferCapacity = 4,
@@ -83,6 +96,9 @@ class LibraryViewModel @Inject constructor(
 
     /** Boxes whose album list has been fetched in this session. */
     private val loadedAlbumsFor = mutableSetOf<String>()
+
+    /** Albums the box has already answered about, box id included in the key. */
+    private val albumCoversSettled = MutableStateFlow<Set<String>>(emptySet())
 
     val activeBox: StateFlow<Box?> =
         boxes.activeBox.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -113,8 +129,17 @@ class LibraryViewModel @Inject constructor(
             if (boxId == null) {
                 flowOf(AlbumState(refreshing = refreshing))
             } else {
-                combine(library.albums(boxId), library.albumsCachedAt(boxId)) { albums, cachedAt ->
-                    AlbumState(albums = albums, cachedAt = cachedAt, refreshing = refreshing)
+                combine(
+                    library.albums(boxId),
+                    library.albumsCachedAt(boxId),
+                    albumCoversSettled,
+                ) { albums, cachedAt, settled ->
+                    AlbumState(
+                        albums = albums,
+                        cachedAt = cachedAt,
+                        refreshing = refreshing,
+                        coversSettled = settled,
+                    )
                 }
             }
         }
@@ -238,7 +263,14 @@ class LibraryViewModel @Inject constructor(
     /** Called as grid items appear; the repository limits how many run at once. */
     fun requestAlbumCover(album: LibraryAlbum) {
         viewModelScope.launch {
-            library.ensureAlbumCover(album.boxId, album.albumArtist, album.album)
+            try {
+                library.ensureAlbumCover(album.boxId, album.albumArtist, album.album)
+            } finally {
+                // Answered, so the cell may now stand something in if it came back empty.
+                // The key carries the box id, which is why nothing needs clearing when the
+                // active box changes: another box's albums are simply other keys.
+                albumCoversSettled.value = albumCoversSettled.value + coverKeyOf(album)
+            }
         }
     }
 
@@ -291,3 +323,10 @@ class LibraryViewModel @Inject constructor(
         const val SEARCH_DEBOUNCE_MILLIS = 200L
     }
 }
+
+/**
+ * Identifies one album on one box, so answers about a box's albums cannot settle the cells of
+ * another's. Nothing needs clearing when the active box changes: those are simply other keys.
+ */
+private fun coverKeyOf(album: LibraryAlbum): String =
+    "${album.boxId}|${album.albumArtist}|${album.album}"

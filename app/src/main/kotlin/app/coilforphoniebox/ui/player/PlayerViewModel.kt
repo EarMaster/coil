@@ -53,6 +53,8 @@ class PlayerViewModel @Inject constructor(
         val volume: VolumeStatus = VolumeStatus.Unknown,
         val connection: ConnectionState = ConnectionState.DISCONNECTED,
         val coverUrl: String? = null,
+        /** Whether the cover lookup for the playing song is still outstanding. */
+        val coverPending: Boolean = false,
         val activeBox: Box? = null,
         val boxCount: Int = 0,
         /** The folder favourite matching what is playing, if there is one. */
@@ -74,6 +76,9 @@ class PlayerViewModel @Inject constructor(
 
         /** Folder name as shown in the menu, so it is clear what a folder star saves. */
         val folderLabel: String? get() = status.folder?.let { folderLabelFor(it) }
+
+        /** What stand-in artwork is keyed on while this is playing — see [coverNameOf]. */
+        val coverName: String? get() = coverNameOf(status)
 
         /** Track name as shown in the menu; the tags first, the file name as a fallback. */
         val trackLabel: String? get() = status.file?.let { file ->
@@ -113,6 +118,12 @@ class PlayerViewModel @Inject constructor(
             }
         }
 
+    /** The cover and whether it is still being looked for, bundled for the same reason. */
+    private data class Cover(val url: String? = null, val pending: Boolean = false)
+
+    private val cover: Flow<Cover> =
+        combine(player.coverUrl, player.coverPending) { url, pending -> Cover(url, pending) }
+
     /** The box-side inputs, bundled so the outer [combine] stays within five sources. */
     private data class BoxInfo(
         val box: Box? = null,
@@ -126,7 +137,7 @@ class PlayerViewModel @Inject constructor(
         player.status,
         player.volume,
         player.connectionState,
-        player.coverUrl,
+        cover,
         combine(
             boxes.activeBox,
             boxes.boxes,
@@ -135,12 +146,13 @@ class PlayerViewModel @Inject constructor(
         ) { box, all, favorites, timer ->
             BoxInfo(box, all.size, favorites.first, favorites.second, timer)
         },
-    ) { status, volume, connection, coverUrl, boxInfo ->
+    ) { status, volume, connection, cover, boxInfo ->
         State(
             status = status,
             volume = volume,
             connection = connection,
-            coverUrl = coverUrl,
+            coverUrl = cover.url,
+            coverPending = cover.pending,
             activeBox = boxInfo.box,
             boxCount = boxInfo.boxCount,
             currentFavorite = boxInfo.folderFavorite,
@@ -358,5 +370,29 @@ class PlayerViewModel @Inject constructor(
  * Last segment of a folder path, which is the name the user recognises. A path with no
  * separator in it is already the name.
  */
-private fun folderLabelFor(folder: String): String =
+internal fun folderLabelFor(folder: String): String =
     folder.substringAfterLast('/').ifBlank { folder }
+
+/**
+ * The name stand-in artwork is keyed on while [status] is playing.
+ *
+ * **The folder, never the song.** A Phoniebox plays folders, a favourite saves folders, and a
+ * folder is what a listener thinks of as "the thing that is on" — key this on the track and the
+ * picture would change with every song inside one audio play, which is the opposite of the
+ * point. The album tag is what stands in for content browsed by tag rather than by folder.
+ *
+ * **A stream has no folder, whatever [PlayerStatus.folder] says.** That property is the file
+ * path with its last segment removed, and for `http://stream.example.org/kinderradio.mp3` it
+ * yields the server — so every station hosted in one place would share one picture. Dropping
+ * to the tags gives a station its own cover, keyed on the name the listener sees.
+ *
+ * Shared with [app.coilforphoniebox.ui.AppViewModel] rather than worked out twice: the mini
+ * player and the player show the same content, and two derivations would eventually disagree
+ * and draw two different pictures on one screen.
+ */
+internal fun coverNameOf(status: PlayerStatus): String? =
+    status.folder?.takeUnless { STREAM_SCHEME in it }?.let { folderLabelFor(it) }
+        ?: status.album?.takeIf { it.isNotBlank() }
+        ?: status.artist?.takeIf { it.isNotBlank() }
+
+private const val STREAM_SCHEME = "://"

@@ -18,7 +18,7 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 
 | Path | Contents |
 |---|---|
-| `app/` | Compose UI, navigation, screens, string resources for all five locales, adaptive and notification icons, `PlayShortcutActivity`. All translatable strings live here, in one file per locale. |
+| `app/` | Compose UI, navigation, screens, string resources for all five locales, adaptive and notification icons, the 32 stand-in album covers in `res/drawable-nodpi/`, `PlayShortcutActivity`. All translatable strings live here, in one file per locale. |
 | `core-domain/` | Plain JVM module: models, repository interfaces, `PlayFavoriteUseCase`. No Android dependency. |
 | `core-transport/` | ZeroMQ client: `ZmqRpcClient` (DEALER), `ZmqStatusSubscriber` (SUB), `PhonieboxSession` (watchdog, reconnect), `ConnectionManager` (active box, reference-counted lifetime), `Commands`, the payload parsers, `HostDiscovery` (mDNS), `BoxProbe`. |
 | `core-data/` | Room database and DAOs, DataStore settings, repository implementations, settings export/import. |
@@ -43,8 +43,12 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
 `.github/workflows/` mirrors the setup from a sibling project, adapted for Coil ahead of time:
 
 - `ci.yml` / `codeql.yml` — build/test/lint/screenshot verification and CodeQL analysis on PRs to
-  `main` or `develop`. Both start with a `detect` job that checks for a root `./gradlew`; that gate
-  is now satisfied, so these actually build, test and lint. `ci.yml` also has a `Pages Site` job
+  `main` or `develop`. **On pull requests only** — a direct push to `develop` runs neither, so
+  work pushed straight to that branch has had no build, no lint and no golden verification until
+  it reaches a PR. Both start with a `detect` job that checks for a root `./gradlew`; that gate
+  is now satisfied, so these actually build, test and lint. Its `Screenshots` job reports a
+  golden mismatch as a warning rather than a failure — see "Screenshot tests" for why and for
+  what that costs. `ci.yml` also has a `Pages Site` job
   that builds `docs/pages/` with the same action `pages.yml` uses and checks that `main.css`, both
   pages, the galleries and the hero frame all rendered with no Liquid left unprocessed. It
   deliberately skips the `detect` gate — the site has nothing to do with Gradle — and exists
@@ -308,6 +312,49 @@ menu's button is tinted when any of the three is active, and a running timer als
 "Stops in …" line under the transport row, because a countdown to silence should not be hidden
 behind a tap.
 
+## Stand-in cover art
+
+A Phoniebox library is largely ripped CDs and home-made folders, so a great deal of it has no
+embedded artwork, and the favourites tab and album grid used to be walls of identical grey discs —
+useless to the child the app is pointed at, who navigates by picture rather than by reading.
+Thirty-two abstract covers ship in `app/src/main/res/drawable-nodpi/cover00.webp`…`cover31.webp`
+(512×512 lossy WebP, ~430 KB for the set) and `FallbackCoverArt` assigns one to anything the box
+has no cover for. Real artwork always wins; nothing is replaced.
+
+- **`drawable-nodpi`, not `drawable`.** A bitmap in bare `drawable/` is treated as mdpi and gets
+  upscaled roughly 3.5× in memory on an xxhdpi phone. These are art scaled to whatever slot they
+  land in, not density-specific assets.
+- **The key is the name, not the path.** A folder contributes its own name (last path segment), an
+  album its title, a track its title — whatever the user reads beside the picture chooses the
+  picture. Two folders of the same name in different corners of the library therefore share a
+  cover, which is the intended reading of "the same name always gets the same art".
+- **The assignment is frozen, and `FallbackCoverArtTest` pins it to values.** Change the hash, the
+  folding or the size of the set and every library in the field reshuffles — covers a user has come
+  to recognise become other pictures. No golden would catch that, since the fixtures would simply
+  re-record; hence the one non-screenshot test in the module.
+- **It is FNV-1a rather than `String.hashCode`.** `hashCode` is stable across hosts and versions,
+  which is the property that matters, but it is not *mixed*: modulo 32 keeps its low five bits, and
+  for the runs a library is actually full of (`Folge 01`, `Folge 02`, …) those move in lockstep with
+  the last character. Forty sibling folders come out as 14 distinct covers in a visibly repeating
+  pattern; FNV-1a gives 28. Folding is lower-case plus accent-stripping, a deliberate *copy* of
+  `SearchText`'s rather than a shared call — that one may gain rules to suit searching, and this one
+  must never change once artwork has been assigned by it.
+- **A null cover URL is three states, not two, and conflating them is the trap.** It means "no
+  artwork" *or* "nobody has finished asking yet" — resolving a cover is two RPCs for a song and up
+  to three for a folder, and `PlayerRepository.coverUrl` deliberately starts null so a lookup cannot
+  hold up the rest of the screen. Drawing a stand-in on every null would put abstract art on screen
+  a second before the real cover replaced it, on every track change and across a whole album grid at
+  once. `CoverArt`'s `coverPending` separates them: while it is set the neutral placeholder stands.
+  Three surfaces supply it, each from the layer that does the lookup — `PlayerRepository.coverPending`
+  for the player and mini player, a settled-id set in `FavoritesViewModel`, and another keyed by
+  box-and-album in `LibraryViewModel`. `player/cover_resolving_light.png` is the golden for it.
+- **A stream has no folder**, whatever `PlayerStatus.folder` says — that property is the file path
+  minus its last segment, which for `http://host/station.mp3` is the server, so every station on one
+  host would share a picture. `coverNameOf` drops to the album and artist tags there, which gives a
+  station its own cover keyed on the name the listener sees.
+- **Library search rows and details sheets never wait**, because neither puts a request on the RPC
+  socket: with no lookup coming, they show the resolved cover or the stand-in, never a placeholder.
+
 ## Library search
 
 **There is no search command in the Phoniebox protocol.** The content RPCs are
@@ -378,6 +425,17 @@ Three levels, and the distinction matters:
   `app/build/outputs/roborazzi/` and the `Screenshots` CI job uploads them. That directory is
   flat, so **golden file names must stay unique across subfolders** — two `folders_light.png`
   in different directories would overwrite each other's diff.
+- **A mismatch is a warning, not a failure, and that is a deliberate weakening.** The
+  `Screenshots` job carries `continue-on-error`, so a changed screen leaves the job green and
+  emits a PR annotation plus a step summary instead. The reasoning: these goldens are baselines
+  a maintainer *accepts* rather than a contract the code must satisfy, and one can differ for
+  reasons unrelated to the change under review — a Robolectric or Skia bump, an image decoder
+  that rounds differently on another host. A check that goes red for those becomes a check that
+  gets clicked past. The cost is not hedged: **nothing else in CI looks at pixels**, so a real
+  visual regression now merges green unless somebody reads the warning and the diff artifact.
+  If that stops happening, make the job blocking again rather than keep a check nobody acts on.
+  Note this changed the *reporting* only — `Screenshots` was never one of `main`'s required
+  status checks, so a mismatch could never block a merge in the first place.
 - **The screens take a ViewModel, not a state object**, so the tests build the real ViewModel on
   fake repositories (`FakeRepositories.kt`) rather than a stateless copy of the screen. That
   keeps the ViewModel's own flow wiring inside the picture: if `combine` stalls because
@@ -399,18 +457,23 @@ Three levels, and the distinction matters:
   activity exists, and `RuntimeEnvironment.setQualifiers` inside a test body is too late (the
   same trap as the locale). Note this simulates the *window*, not the device: there are no
   system bars, no rounded corners and no notch in a golden.
-- **Cover art never reaches the network, and it is not a flat colour either.** The image loader
-  is replaced with a fake engine answering instantly from `FakeCoverArt` — the box's HTTP cover
-  cache is not reachable from CI, and an image arriving a frame late would make the golden
-  depend on timing. It used to answer every URL with one flat green rectangle, which meant the
-  goldens could not fail on a cropped, stretched, letterboxed, unclipped or swapped cover: all
-  of those look identical when the picture is one colour. `FakeCoverArt` draws a **3:2
-  landscape** source (so `ContentScale.Crop` has to be doing something — `Fit` would letterbox),
-  with a **circle** inside the middle third (round when scaled right, an ellipse when stretched),
-  an asymmetric **wedge** and a full-width **base stripe** (so a mirrored or vertically offset
-  draw is not a picture that happens to match), and a **colour derived from the URL** (so two
-  covers are two colours). Everything is a pure function of the URL — `String.hashCode` is
-  specified by the JLS — because a golden cannot afford a picture that varies by host or run.
+- **Cover art never reaches the network.** The image loader is replaced with a fake engine
+  answering instantly from `FakeCoverArt` — the box's HTTP cover cache is not reachable from CI,
+  and an image arriving a frame late would make the golden depend on timing. It hands back one
+  of the app's own **shipped stand-in covers**, picked by URL hash, rather than artwork drawn
+  for the tests: there is no reason to maintain a second set now that thirty-two real pictures
+  are on the classpath, and a fake that looks like the product is what should reach the Play
+  Store screenshots, which come through this same harness. The choice is a pure function of the
+  URL — `String.hashCode` is specified by the JLS — because a golden cannot afford a picture
+  that varies by host or run.
+- **What that fake gave up, deliberately.** It used to draw a **3:2 landscape** source with a
+  circle in the middle third, an asymmetric wedge and a base stripe, so a golden could fail on a
+  stretched image, a `Fit` where `Crop` was meant, or a vertically offset draw. The shipped
+  covers are square — the shape of every cover slot in the app — so those particular mistakes no
+  longer show up *in the picture*. They still fail the test, because a golden is a byte
+  comparison against a known-good run; it just takes reading the diff rather than glancing at it.
+  If that trade ever needs reversing, the old synthetic drawing is in the history of
+  `FakeCoverArt.kt`.
 - **Roborazzi captures the window, not the node**, whichever node it is handed — so a component
   golden shortens the window instead, via `@Config(qualifiers = "+h200dp")` on the class, rather
   than being a 40 dp chip above a screenful of background.
@@ -423,27 +486,30 @@ Three levels, and the distinction matters:
 
 Covered so far: the whole app on three devices (player light and dark, library, favourites in both
 layouts, settings top and lower half, box management, one box's page, offline, onboarding), the
-player screen (playing, paused, idle, web radio, sleep timer, light and dark), the library screen
+player screen (playing, paused, idle, web radio, sleep timer, a cover still resolving, light and
+dark), the library screen
 (folders, tracks, albums, search, no results, empty, light and dark) and the chrome components.
 
 The favourites goldens carry **two entries with a `coverFile` and one without**, because both halves
-matter: a cover has to render, and a favourite the box has no artwork for has to stay recognisable
-by its placeholder icon. `favourites_compact_*` reaches the list layout by *clicking* the top bar
+matter: a cover from the box has to render, and a favourite it has no artwork for has to get the
+stand-in the app picks from its own set. `favourites_compact_*` reaches the list layout by *clicking* the top bar
 action rather than presetting the stored preference, so a toggle that stopped switching fails the
 test instead of quietly capturing the same picture twice. `Fixtures.albums` does the same for the
 album grid, four of six with artwork.
 
-`StoreFixtures.favorites` carries covers on three of four for a reason worth keeping: without them
-that listing image is four empty tiles above a mini player that *does* show a cover, which reads as
-artwork failing to load rather than as a design — and it contradicts what the app now does, since
-a played folder gets its cover. The fourth keeps its placeholder, because a box genuinely does have
-folders it has no artwork for.
+`StoreFixtures.favorites` carries covers on three of four, and the fourth now draws a stand-in
+rather than a placeholder icon — no tile in that listing image can come out empty any more. The mix
+still earns its place: it shows the box's own artwork and the app's stand-in side by side, which is
+what a shopper should be able to see. Its file names were once chosen around a five-colour palette;
+all four now land on their own picture (16, 28, 6 and 29), which is recorded in the fixture itself.
 
-**Two fixtures can land on the same palette slot.** `FakeCoverArt` picks from five colours by URL
-hash, so a grid meant to show that covers differ can end up with two identical tiles next to each
-other — `cover-fairy-tales.jpg` and `cover-bedtime.jpg` collide, which is why the store fixture
-spells it `cover-fairytales.jpg`. Check a new fixture's slot rather than assume:
-`Math.floorMod(("http://<host>/cover-cache/" + fileName).hashCode(), 5)`.
+**Two fixtures can land on the same cover.** `FakeCoverArt` picks from the thirty-two shipped
+covers by URL hash, so a grid meant to show that covers differ can still end up with two identical
+tiles next to each other — one pair in thirty-two, where it used to be one in five against a
+palette. Check a new fixture's slot rather than assume:
+`Math.floorMod(("http://<host>/cover-cache/" + fileName).hashCode(), 32)`. A tile can also draw the
+same picture the app would have stood in for it, since both pick from one set; that is a
+readability problem in a diff, never a correctness one.
 
 Box management is captured with **two** boxes configured (`app/boxes_*`, `app/box_detail_*`), since
 one box is the case where those screens have least to say — and the box page golden is the

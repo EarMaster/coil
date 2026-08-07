@@ -26,6 +26,7 @@ class PlayerScreenshotTest : ScreenshotTest() {
         volume: VolumeStatus = VolumeStatus(level = 42, maxLevel = 100),
         connection: ConnectionState = ConnectionState.CONNECTED,
         coverUrl: String? = "http://phoniebox.local/cover-cache/missing-key.jpg",
+        coverPending: Boolean = false,
         sleepTimer: SleepTimerStatus = SleepTimerStatus.Off,
         favorites: List<Favorite> = Fixtures.favorites,
     ) = PlayerViewModel(
@@ -34,6 +35,7 @@ class PlayerScreenshotTest : ScreenshotTest() {
             volume = volume,
             connection = connection,
             coverUrl = coverUrl,
+            coverPending = coverPending,
             sleepTimer = sleepTimer,
         ),
         boxes = FakeBoxRepository(),
@@ -69,6 +71,21 @@ class PlayerScreenshotTest : ScreenshotTest() {
             favorites = emptyList(),
         )
         capture("player/idle_light") { PlayerScreen(vm) }
+    }
+
+    /**
+     * The second before the box answers about the cover, which is a state of its own.
+     *
+     * A cover takes two RPCs and the box extracts the image on a worker thread, so this is a
+     * beat of most track changes — and it is precisely where stand-in artwork must *not*
+     * appear, or every song would flash a picture and then replace it with the real one. The
+     * folder here has a perfectly good name to key on; the point of the golden is that it goes
+     * unused until the lookup comes back.
+     */
+    @Test
+    fun cover_resolving() {
+        val vm = viewModel(coverUrl = null, coverPending = true)
+        capture("player/cover_resolving_light") { PlayerScreen(vm) }
     }
 
     /** A stream reports no duration and no album — the layout has to survive both. */

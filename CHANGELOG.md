@@ -9,6 +9,17 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-06
+
+### Added
+- **Folders and albums without cover art now get a picture of their own.** A Phoniebox library is
+  largely ripped CDs and home-made folders, so a great deal of it has no embedded artwork, and a
+  screen of identical grey discs is no use to someone who navigates by picture rather than by
+  reading. Thirty-two abstract covers ship with the app and each uncovered folder, album or track
+  is assigned one from its name — the same one every time, on every screen, after a reinstall, and
+  on a second phone. Artwork the box does have is still used and still preferred; nothing is
+  replaced
+
 ## [1.0.0] - 2026-08-06
 
 ### Added

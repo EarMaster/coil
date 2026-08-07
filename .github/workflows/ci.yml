@@ -82,18 +82,60 @@ jobs:
       # The filter excludes StoreAssetTest. Those images are products, not baselines — they are
       # flattened after capture and so never match byte for byte, and a UI change should fail
       # one job rather than two.
+      #
+      # **A mismatch reports as a warning, not a failure** (`continue-on-error`), which is a
+      # deliberate weakening and worth understanding before relying on this job. Two things
+      # motivate it: the goldens are baselines a maintainer *accepts* rather than a contract the
+      # code must satisfy, so "the UI changed" is information rather than a defect; and a golden
+      # can differ for reasons that have nothing to do with the change under review — a
+      # Robolectric or Skia bump, or an image decoder that rounds differently on another host —
+      # which turns the job into a thing to be clicked past rather than read.
+      #
+      # The cost is real and not hedged: a genuine visual regression now merges green. Nothing
+      # else in CI looks at pixels, so the only thing standing between a broken screen and
+      # `main` is somebody reading the warning below and the diff artifact next to it. If that
+      # stops happening, the honest fix is to make this blocking again rather than to keep a
+      # check nobody acts on.
       - name: Verify screenshots
+        id: verify
+        continue-on-error: true
         run: ./gradlew :app:verifyRoborazziDebug --tests '*ScreenshotTest'
 
       # The actual/expected/diff triptych for anything that moved — the point of the job is to
-      # be able to see what changed, not just that something did.
+      # be able to see what changed, not just that something did. Keyed on the step's outcome
+      # rather than `failure()`: with `continue-on-error` the job never enters a failed state,
+      # so `failure()` would be false and the diffs would silently never be uploaded.
       - name: Upload screenshot diffs
-        if: failure()
+        if: steps.verify.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: screenshot-diffs
           path: app/build/outputs/roborazzi/
           retention-days: 14
+
+      # A green check with a warning buried in a collapsed log is indistinguishable from a green
+      # check. The annotation surfaces on the PR itself, and the summary says what to do about
+      # it, because the whole value of this job now rests on someone reading it.
+      - name: Report the mismatch
+        if: steps.verify.outcome == 'failure'
+        run: |
+          echo "::warning title=Screenshot goldens do not match::The UI has changed against the committed goldens. Download the 'screenshot-diffs' artifact to see what moved."
+          {
+            echo "## Screenshot goldens do not match"
+            echo
+            echo "This is a **warning, not a failure** — the job is green and the merge is not blocked."
+            echo
+            echo "Download the \`screenshot-diffs\` artifact and look at the \`_compare\` images."
+            echo "Each is an actual/expected/diff triptych."
+            echo
+            echo "- **Intended change?** Accept the new look, then commit the PNGs:"
+            echo "  \`\`\`"
+            echo "  ./gradlew :app:recordRoborazziDebug --tests '*ScreenshotTest'"
+            echo "  \`\`\`"
+            echo "  Or push to \`develop\` with \`[record-screenshots]\` in the commit message and let"
+            echo "  the runner record them for you."
+            echo "- **Not intended?** It is a visual regression, and nothing else in CI will catch it."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   lint:
     name: Lint

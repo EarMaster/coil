@@ -46,6 +46,12 @@ class FakePlayerRepository(
     volume: VolumeStatus = VolumeStatus(level = 42, maxLevel = 100),
     connection: ConnectionState = ConnectionState.CONNECTED,
     coverUrl: String? = null,
+    /**
+     * A golden is a settled moment, so nothing is waiting on the box by default. Set this to
+     * capture the placeholder a screen shows *while* a cover is being looked up, which is a
+     * different picture from the stand-in artwork it settles on when there is none.
+     */
+    coverPending: Boolean = false,
     sleepTimer: SleepTimerStatus = SleepTimerStatus.Off,
     boxVersion: String? = "future3/main",
     private val coverFile: String? = null,
@@ -55,6 +61,7 @@ class FakePlayerRepository(
     override val connectionState = MutableStateFlow(connection)
     override val boxVersion = MutableStateFlow(boxVersion)
     override val coverUrl = MutableStateFlow(coverUrl)
+    override val coverPending = MutableStateFlow(coverPending)
     override val sleepTimer = MutableStateFlow(sleepTimer)
 
     override fun currentCoverFile(): String? = coverFile

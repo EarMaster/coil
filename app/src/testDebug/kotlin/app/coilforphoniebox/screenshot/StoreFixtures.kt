@@ -88,11 +88,12 @@ object StoreFixtures {
     /**
      * Three with artwork and one without, which is what a used favourites tab looks like: a
      * folder that has been played carries the cover Coil resolved for it, and one whose tracks
-     * have no embedded art keeps its placeholder.
+     * have no embedded art shows the stand-in the app picks from its own set.
      *
-     * The covers are not decoration on a listing image — without them this shot is four empty
-     * tiles above a mini player that *does* show a cover, which reads as artwork failing to
-     * load rather than as a design.
+     * The mix still earns its place now that no tile can come out empty. What it shows is the
+     * two kinds of picture side by side, which is the honest thing to put on a listing: a
+     * shopper should be able to see that Coil uses the box's own artwork where there is any,
+     * and that a folder without it is still something a child can aim at.
      */
     val favorites = listOf(
         Favorite(
@@ -122,9 +123,11 @@ object StoreFixtures {
             label = "Fairy Tales",
             type = FavoriteType.FOLDER,
             folder = "Fairy Tales",
-            // Not "cover-fairy-tales.jpg": that lands in the same palette slot as the
-            // bedtime cover, and two adjacent tiles of one colour is what this shot is
-            // meant to disprove. See FakeCoverArt on picking a fixture's file name.
+            // Originally spelled this way because "cover-fairy-tales.jpg" collided with the
+            // bedtime cover in what was then a five-colour palette. The set is now the app's
+            // own thirty-two, where all four tiles here land on their own picture — 16, 28,
+            // 6 and (for the stand-in below) 29. Kept as it is because it still holds, not
+            // because the original reason survives. See FakeCoverArt for how to check a slot.
             coverFile = "cover-fairytales.jpg",
             sortIndex = 2,
             launchCount = 9,

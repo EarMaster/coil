@@ -11,6 +11,7 @@ import androidx.media3.common.util.UnstableApi
 import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.PlaybackState
 import app.coilforphoniebox.domain.model.PlayerStatus
+import app.coilforphoniebox.domain.model.QueueEntry
 import app.coilforphoniebox.domain.model.RepeatMode
 import app.coilforphoniebox.domain.model.VolumeStatus
 import app.coilforphoniebox.domain.repository.BoxRepository
@@ -22,6 +23,33 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+
+/**
+ * Where [status] sits in [queue], or null when the two cannot be reconciled.
+ *
+ * The queue and the status arrive independently — the status four times a second, the queue once
+ * per queue change — so there is a real window in which the box has moved on to a different
+ * album and the cached queue still describes the old one. Two things go wrong if that window is
+ * not guarded, and they are of different severity:
+ *
+ * - `SimpleBasePlayer` **throws** if `currentMediaItemIndex` falls outside the playlist, so a
+ *   queue shorter than the reported position would crash the media session rather than look odd.
+ * - A position that is merely *pointing at the wrong track* puts another album's title on the
+ *   lock screen, which is quieter and arguably worse for being believable.
+ *
+ * So both are checked: the index has to exist, and the entry there has to be the file the box
+ * says it is playing. A null sends the caller back to the single-item timeline, which is what
+ * shipped before there was a queue at all and is always safe.
+ *
+ * A top-level function because it is the load-bearing part of this file and worth testing on its
+ * own — `getState()` needs a `Looper` and this does not.
+ */
+internal fun timelineIndexFor(queue: List<QueueEntry>, status: PlayerStatus): Int? {
+    val position = status.playlistPosition ?: return null
+    if (position !in queue.indices) return null
+    if (queue[position].url != status.file) return null
+    return position
+}
 
 /**
  * A media3 player whose playback happens somewhere else entirely.
@@ -47,6 +75,7 @@ class PhonieboxPlayer(
         val coverUrl: String? = null,
         val activeBox: Box? = null,
         val boxCount: Int = 0,
+        val queue: List<QueueEntry> = emptyList(),
     )
 
     @Volatile
@@ -54,19 +83,25 @@ class PhonieboxPlayer(
 
     init {
         scope.launch {
+            // Nested rather than one call: `combine` is only typed up to five flows, and the
+            // queue arrives on its own schedule anyway — once per queue change, not per status.
             combine(
-                player.status,
-                player.volume,
-                player.coverUrl,
-                boxes.activeBox,
-                boxes.boxes.map { it.size }.distinctUntilChanged(),
-            ) { status, volume, coverUrl, box, boxCount ->
-                Snapshot(status, volume, coverUrl, box, boxCount)
-            }.collect { next ->
-                snapshot = next
-                // Must happen on the player's own thread, which this scope runs on.
-                invalidateState()
-            }
+                combine(
+                    player.status,
+                    player.volume,
+                    player.coverUrl,
+                    boxes.activeBox,
+                    boxes.boxes.map { it.size }.distinctUntilChanged(),
+                ) { status, volume, coverUrl, box, boxCount ->
+                    Snapshot(status, volume, coverUrl, box, boxCount)
+                },
+                player.queue,
+            ) { base, queue -> base.copy(queue = queue) }
+                .collect { next ->
+                    snapshot = next
+                    // Must happen on the player's own thread, which this scope runs on.
+                    invalidateState()
+                }
         }
     }
 
@@ -98,10 +133,25 @@ class PhonieboxPlayer(
             .setDeviceVolume(current.volume.level.coerceAtLeast(0))
             .setIsDeviceMuted(current.volume.muted)
 
-        if (status.hasContent) {
+        // The real queue when it can be trusted, the single playing song otherwise. The index
+        // has to be inside the playlist or `SimpleBasePlayer` throws, which is why the decision
+        // lives in one checked function rather than being spelled out here.
+        val index = timelineIndexFor(current.queue, status)
+        if (index != null) {
+            builder.setPlaylist(
+                current.queue.mapIndexed { position, entry ->
+                    // The playing item keeps being built from `playerstatus`: that is the
+                    // authoritative metadata, and the only item there is cover art for.
+                    if (position == index) mediaItemFor(current) else mediaItemFor(entry)
+                },
+            )
+            builder.setCurrentMediaItemIndex(index)
+        } else if (status.hasContent) {
             builder.setPlaylist(listOf(mediaItemFor(current)))
             builder.setCurrentMediaItemIndex(0)
+        }
 
+        if (status.hasContent) {
             val positionMs = ((status.elapsedSeconds ?: 0.0) * 1000).toLong().coerceAtLeast(0L)
             builder.setContentPositionMs(
                 // Published four times a second, which is smooth enough on its own —
@@ -115,6 +165,42 @@ class PhonieboxPlayer(
         }
 
         return builder.build()
+    }
+
+    /**
+     * One queued track that is not the playing one.
+     *
+     * No artwork: only the current song's cover is ever resolved, because asking the box for a
+     * cover per queued track would be exactly the RPC storm §6 forbids. A queue list with no
+     * thumbnails is a fair trade for a queue list at all.
+     */
+    private fun mediaItemFor(entry: QueueEntry): MediaItemData {
+        val durationUs = entry.durationSeconds
+            ?.takeIf { it > 0 }
+            ?.let { (it * 1_000_000).toLong() }
+            ?: androidx.media3.common.C.TIME_UNSET
+
+        val metadata = MediaMetadata.Builder()
+            .setTitle(entry.title)
+            .setArtist(entry.artist)
+            .setAlbumTitle(entry.album)
+            .setIsBrowsable(false)
+            .setIsPlayable(true)
+            .build()
+
+        // MPD's queue id is unique within the queue; without one, the position keeps two
+        // copies of the same file in one queue from colliding — media3 requires unique UIDs.
+        return MediaItemData.Builder(entry.songId ?: "${entry.position}:${entry.url}")
+            .setMediaItem(
+                MediaItem.Builder()
+                    .setMediaId(entry.url)
+                    .setMediaMetadata(metadata)
+                    .build(),
+            )
+            .setDurationUs(durationUs)
+            .setIsSeekable(durationUs != androidx.media3.common.C.TIME_UNSET)
+            .setIsDynamic(false)
+            .build()
     }
 
     private fun mediaItemFor(current: Snapshot): MediaItemData {
@@ -170,6 +256,12 @@ class PhonieboxPlayer(
             Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM ->
                 player.previous()
 
+            // A seek naming an item is a jump to that queue position — a tap in Android Auto's
+            // queue, or "play track five". Any `positionMs` that came with it is dropped: the
+            // box has no way to arrive at a position *and* an offset in one command, and
+            // getting to the right track matters more than starting it at second 30.
+            Player.COMMAND_SEEK_TO_MEDIA_ITEM -> player.playAt(mediaItemIndex)
+
             else -> player.seekTo(positionMs / 1000.0)
         }
     }
@@ -222,6 +314,9 @@ class PhonieboxPlayer(
                 Player.COMMAND_SEEK_TO_PREVIOUS,
                 Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
                 Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM,
+                // Offered even though the box has no command for it: `playAt` walks the queue
+                // where it must, so a tap in a queue list always does something honest.
+                Player.COMMAND_SEEK_TO_MEDIA_ITEM,
                 Player.COMMAND_GET_TIMELINE,
                 Player.COMMAND_GET_METADATA,
                 Player.COMMAND_SET_SHUFFLE_MODE,

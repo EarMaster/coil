@@ -312,6 +312,58 @@ menu's button is tinted when any of the three is active, and a running timer als
 "Stops in …" line under the transport row, because a countdown to silence should not be hidden
 behind a tap.
 
+## The queue, and why skipping into it is stepped
+
+The player shows one song; `playerstatus` carries only `pos` and `playlistlength`. The queue behind
+it comes from **`player.ctrl.playlistinfo`**, which is a real RPC on both `future3` branches even
+though the box's own web UI never calls it and `src/webapp/src/commands/index.js` therefore omits
+it. It is never published, so it has to be asked for.
+
+- **Asked once per queue change, never on a timer.** `PlayerRepositoryImpl.resolveQueueWhenItChanges`
+  refetches only when the cached queue can no longer be the one playing — `playlistlength` moved, or
+  `playerstatus.file` is not in it. A plain track change fits the cached queue and costs nothing, so
+  an album of twenty tracks is one RPC rather than twenty. There is a one-second debounce first,
+  because a queue change is usually a card tap and the box is still finishing the card handling on
+  that same sequential socket (§6).
+- **`QueueEntry.title` falls back to the file name.** Most of a Phoniebox library is untagged rips,
+  so a missing title tag is the common case, not an edge one.
+- **There is no command to play a queue position.** See `docs/protocol-notes.md`, "There is no way
+  to play a queue position", for the full list of routes ruled out. The one that looks like an
+  answer and is not is `play_single`: it clears the queue first, so using it to reach chapter seven
+  would leave the box silent when chapter seven ended. `PlayerRepository.playAt` is therefore a
+  ladder — try `play(pos=…)`, then walk with `next`/`prev`:
+  - **The probe is free.** An unpatched box rejects the kwarg in the plugin's signature *before the
+    body runs*, and the RPC server turns that into an error reply, so nothing about playback changes
+    for having asked. The answer is remembered per box **in memory only** — a box gets updated, and
+    a persisted "no" would outlive its reason. Only an `RpcErrorException` counts as "no"; a timeout
+    means the box is off and says nothing about its software.
+  - **The walk is closed-loop, not a blind burst.** It fires the gap, then reads
+    `playlistPosition` back and closes what is left one step at a time. That is what makes a command
+    marked `retryable = false` safe here: a step that went missing shows up as a position that did
+    not move, and nothing is ever resent blind.
+  - **Pause first, if it was playing.** From `pause` the box's `next` takes `mpd_client.next()`
+    rather than its stopped-state branch, and MPD may hold the pause across it — which would make
+    the whole walk silent. Unverified on hardware; if it does not hold, the walk is audible but
+    still correct. The original state is restored under `NonCancellable`, so cancelling half way
+    cannot leave the box paused.
+  - **Never past the last index**, which would run the box's own `end_of_playlist_next_action`.
+  - **Refused while shuffle is on.** MPD's `next` with `random` enabled goes to a *random* song, not
+    `pos + 1`, so no number of steps arrives anywhere in particular. Coil says so rather than
+    turning the user's shuffle off behind their back. The restriction lifts by itself on a box with
+    `play(pos=…)`, which ignores `random`.
+- **The media session gets the real timeline**, and `timelineIndexFor` is the guard that makes it
+  safe. The queue and the status arrive independently, so there is a window where the box has moved
+  to another album and the cached queue still describes the old one. `SimpleBasePlayer` **throws** if
+  `currentMediaItemIndex` falls outside the playlist, and an index that merely points at the wrong
+  track puts another album's title on the lock screen — so both are checked, and either miss falls
+  back to the single-item timeline. It is a top-level function with its own test because `getState()`
+  needs a `Looper` and this does not.
+- **No cover art per queued row**, in the sheet or the timeline: a cover is an RPC each on the shared
+  socket. Only the playing item has one, and it is the one item built from `playerstatus`.
+
+Upstream would close this with two lines — `def play(self, pos=None)` in `player/coordinator.py` and
+the MPD backend. Coil needs no change when it lands: the ladder's first rung starts succeeding.
+
 ## Stand-in cover art
 
 A Phoniebox library is largely ripped CDs and home-made folders, so a great deal of it has no

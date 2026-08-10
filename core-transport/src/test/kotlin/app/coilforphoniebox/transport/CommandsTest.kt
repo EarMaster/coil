@@ -53,6 +53,7 @@ class CommandsTest {
             Commands.albumCoverArt("X", "A"),
             Commands.updateLibrary,
             Commands.play(PlayTarget.Folder("x")),
+            Commands.playlistInfo,
         )
         commands.forEach { command ->
             assertNull("${command.name} must not set as_thread", command.toJson("id")["as_thread"])
@@ -104,6 +105,37 @@ class CommandsTest {
     @Test
     fun `seek uses new_time`() {
         assertEquals("12.5", Commands.seek(12.5).kwargs["new_time"]?.jsonPrimitive?.content)
+    }
+
+    /**
+     * The queue is a synchronous MPD call on the socket the box shares with its card reader,
+     * and a recursively added artist folder can be thousands of entries.
+     */
+    @Test
+    fun `the queue is read with playlistinfo, on the library timeout`() {
+        assertEquals("player.ctrl.playlistinfo", Commands.playlistInfo.name)
+        assertNull(Commands.playlistInfo.toJson("id")["kwargs"])
+        assertEquals(
+            PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
+            Commands.playlistInfo.timeoutMillis,
+        )
+        assertTrue(Commands.playlistInfo.retryable)
+    }
+
+    /**
+     * `playAt` is `play` with a `pos` kwarg, which upstream `future3` does not accept yet —
+     * `def play(self)` on both branches. The name and the argument have to match the patch
+     * exactly, because a box that rejects it is how the fallback is triggered.
+     */
+    @Test
+    fun `playAt is play with a pos kwarg`() {
+        val json = Commands.playAt(7).toJson("id")
+
+        assertEquals("player", json["package"]?.jsonPrimitive?.content)
+        assertEquals("ctrl", json["plugin"]?.jsonPrimitive?.content)
+        assertEquals("play", json["method"]?.jsonPrimitive?.content)
+        assertEquals("7", json["kwargs"]?.jsonObject?.get("pos")?.jsonPrimitive?.content)
+        assertTrue("an absolute position survives a retry", Commands.playAt(7).retryable)
     }
 
     @Test
@@ -182,6 +214,8 @@ class CommandsTest {
             Commands.singleCoverArt("x"),
             Commands.albumCoverArt("x", "y"),
             Commands.play(PlayTarget.Folder("x")),
+            Commands.playlistInfo,
+            Commands.playAt(0),
         ).map { it.name }
 
         assertTrue(everyName.none { it.contains("shutdown") })

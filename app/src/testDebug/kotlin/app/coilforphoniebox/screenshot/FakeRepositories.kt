@@ -10,9 +10,11 @@ import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryIndexResult
 import app.coilforphoniebox.domain.model.LibraryIndexState
+import app.coilforphoniebox.domain.model.JumpOutcome
 import app.coilforphoniebox.domain.model.LibrarySearchResults
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
+import app.coilforphoniebox.domain.model.QueueEntry
 import app.coilforphoniebox.domain.model.RepeatMode
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.SleepTimerStatus
@@ -55,6 +57,12 @@ class FakePlayerRepository(
     sleepTimer: SleepTimerStatus = SleepTimerStatus.Off,
     boxVersion: String? = "future3/main",
     private val coverFile: String? = null,
+    /**
+     * What the box has queued. Empty by default, which is also what the player screen shows for
+     * it: with no queue there is no playlist button, so a golden that does not name one captures
+     * the same picture it always did.
+     */
+    queue: List<QueueEntry> = emptyList(),
 ) : PlayerRepository {
     override val status = MutableStateFlow(status)
     override val volume = MutableStateFlow(volume)
@@ -63,6 +71,8 @@ class FakePlayerRepository(
     override val coverUrl = MutableStateFlow(coverUrl)
     override val coverPending = MutableStateFlow(coverPending)
     override val sleepTimer = MutableStateFlow(sleepTimer)
+    override val queue = MutableStateFlow(queue)
+    override val queueLoading = MutableStateFlow(false)
 
     override fun currentCoverFile(): String? = coverFile
 
@@ -80,6 +90,18 @@ class FakePlayerRepository(
     override suspend fun startSleepTimer(minutes: Int): Result<Unit> = Result.success(Unit)
     override suspend fun cancelSleepTimer(): Result<Unit> = Result.success(Unit)
     override suspend fun refreshSleepTimer(): Result<Unit> = Result.success(Unit)
+    override suspend fun refreshQueue(): Result<Unit> = Result.success(Unit)
+
+    /**
+     * Arrives immediately, without moving [status].
+     *
+     * A golden is one settled moment, so there is nothing here to simulate — and the walk this
+     * stands in for is the repository's own business, tested where the stepping lives rather
+     * than through a screenshot.
+     */
+    override suspend fun playAt(position: Int): Result<JumpOutcome> =
+        Result.success(JumpOutcome.Arrived)
+
     override suspend fun play(target: PlayTarget): Result<Unit> = Result.success(Unit)
     override suspend fun playOn(boxId: String, target: PlayTarget): Result<Unit> = Result.success(Unit)
 }

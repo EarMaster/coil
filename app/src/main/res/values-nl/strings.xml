@@ -31,6 +31,19 @@
     <string name="action_favourite_remove">Uit favorieten verwijderen</string>
     <string name="volume_percent">Volume %1$d%%</string>
 
+    <string name="action_show_queue">Playlist weergeven</string>
+    <string name="queue_title">Playlist</string>
+    <plurals name="queue_track_count">
+        <item quantity="one">%1$d nummer</item>
+        <item quantity="other">%1$d nummers</item>
+    </plurals>
+    <string name="queue_now_playing">Speelt nu</string>
+    <string name="queue_unavailable_title">Playlist niet beschikbaar</string>
+    <string name="queue_unavailable_body">Coil moet de box vragen wat er in de wachtrij staat, dus de box moet bereikbaar zijn.</string>
+    <string name="action_retry">Opnieuw proberen</string>
+    <string name="queue_needs_shuffle_off">Zet willekeurige weergave uit om naar een nummer te springen. Deze box kan de playlist alleen nummer voor nummer doorlopen.</string>
+    <string name="queue_jump_incomplete">Dat nummer is niet bereikt. De weergave is elders in de playlist gestopt.</string>
+
     <string name="connection_connected">Verbonden met %1$s</string>
     <string name="connection_connecting">Verbinden met %1$s…</string>
     <string name="connection_degraded">Opnieuw verbinden met %1$s…</string>

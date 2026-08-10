@@ -9,6 +9,19 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Added
+- **The player now shows what the box has queued, and you can skip straight to a track in it.** A new
+  playlist button beside the transport controls opens the whole list with the playing track marked;
+  tapping a row goes there and leaves the rest of the album queued behind it, so an audio play carries
+  on into the next chapter instead of stopping. Reaching chapter seven no longer means tapping ⏭ six
+  times. The same list now reaches the lock screen, Android Auto and Assistant, which used to see a
+  single song with nothing around it
+- The Phoniebox has no command for jumping to a playlist position, so Coil walks the list one track
+  at a time where it has to — the row it is heading for shows its progress and can be called off. This
+  is skipped entirely on a box whose software can jump directly, and a future Phoniebox release could
+  make it instant. Two limits worth knowing: it needs shuffle off, and Coil says so rather than
+  changing that setting for you
+
 ## [1.0.1] - 2026-08-06
 
 ### Added

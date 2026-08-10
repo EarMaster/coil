@@ -32,6 +32,20 @@
     <string name="action_favourite_remove">Retirer des favoris</string>
     <string name="volume_percent">Volume %1$d%%</string>
 
+    <string name="action_show_queue">Afficher la playlist</string>
+    <string name="queue_title">Playlist</string>
+    <plurals name="queue_track_count">
+        <item quantity="one">%1$d piste</item>
+        <item quantity="many">%1$d de pistes</item>
+        <item quantity="other">%1$d pistes</item>
+    </plurals>
+    <string name="queue_now_playing">En cours de lecture</string>
+    <string name="queue_unavailable_title">Playlist indisponible</string>
+    <string name="queue_unavailable_body">Coil doit demander à la box ce qu’elle a en file d’attente : elle doit donc être joignable.</string>
+    <string name="action_retry">Réessayer</string>
+    <string name="queue_needs_shuffle_off">Désactive la lecture aléatoire pour passer à une piste. Cette box ne peut parcourir la playlist que piste par piste.</string>
+    <string name="queue_jump_incomplete">Cette piste n’a pas été atteinte. La lecture s’est arrêtée ailleurs dans la playlist.</string>
+
     <string name="connection_connected">Connecté à %1$s</string>
     <string name="connection_connecting">Connexion à %1$s…</string>
     <string name="connection_degraded">Reconnexion à %1$s…</string>

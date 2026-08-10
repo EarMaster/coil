@@ -65,6 +65,27 @@
     <!-- Screen reader label for the volume slider. %1$d is a percentage. -->
     <string name="volume_percent">Volume %1$d%%</string>
 
+    <!-- The queue the box is playing from. "Playlist" rather than "queue": it is what the
+         box's own web UI calls it, and it is a list of an album's tracks far more often than
+         a queue anyone assembled. -->
+    <string name="action_show_queue">Show playlist</string>
+    <string name="queue_title">Playlist</string>
+    <!-- %1$d is a number of tracks. -->
+    <plurals name="queue_track_count">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
+    <!-- Spoken for the row the box is currently playing. -->
+    <string name="queue_now_playing">Now playing</string>
+    <string name="queue_unavailable_title">Playlist unavailable</string>
+    <string name="queue_unavailable_body">Coil has to ask the box what it has queued, so this needs the box to be reachable.</string>
+    <string name="action_retry">Try again</string>
+    <!-- Skipping to a track: the box has no command for jumping to a playlist position, so
+         Coil steps through the list instead. With shuffle on, stepping goes to a random track
+         rather than the next one, so it cannot arrive anywhere in particular. -->
+    <string name="queue_needs_shuffle_off">Turn shuffle off to skip to a track. This box can only step through the playlist one track at a time.</string>
+    <string name="queue_jump_incomplete">Could not get to that track. Playback stopped elsewhere in the playlist.</string>
+
     <!-- Connection states. %1$s is the name of a box. -->
     <string name="connection_connected">Connected to %1$s</string>
     <string name="connection_connecting">Connecting to %1$s…</string>

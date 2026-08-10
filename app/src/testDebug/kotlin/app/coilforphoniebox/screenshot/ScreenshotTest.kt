@@ -20,7 +20,9 @@ import coil.ImageLoader
 import coil.decode.DataSource
 import coil.request.SuccessResult
 import coil.test.FakeImageLoaderEngine
+import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dagger.hilt.android.testing.HiltAndroidRule
 import org.junit.Before
 import org.junit.Rule
@@ -132,6 +134,19 @@ abstract class ScreenshotTest {
 
     protected fun captureRoot(name: String) {
         captureTo("$GOLDEN_DIR/$name.png")
+    }
+
+    /**
+     * Captures every window at once, for UI that opens one of its own.
+     *
+     * A `ModalBottomSheet` composes into a separate window rather than into the activity's, so
+     * [captureRoot] fails outright there — `onRoot()` matches two roots and cannot choose. This
+     * composites the lot, which is also the only way to get the sheet *and* the screen behind
+     * it into one picture, scrim included.
+     */
+    @OptIn(ExperimentalRoborazziApi::class)
+    protected fun captureScreen(name: String) {
+        captureScreenRoboImage("$GOLDEN_DIR/$name.png")
     }
 
     /**

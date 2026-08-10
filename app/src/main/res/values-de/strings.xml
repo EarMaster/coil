@@ -31,6 +31,19 @@
     <string name="action_favourite_remove">Aus den Favoriten entfernen</string>
     <string name="volume_percent">Lautstärke %1$d%%</string>
 
+    <string name="action_show_queue">Playlist anzeigen</string>
+    <string name="queue_title">Playlist</string>
+    <plurals name="queue_track_count">
+        <item quantity="one">%1$d Titel</item>
+        <item quantity="other">%1$d Titel</item>
+    </plurals>
+    <string name="queue_now_playing">Läuft gerade</string>
+    <string name="queue_unavailable_title">Playlist nicht verfügbar</string>
+    <string name="queue_unavailable_body">Coil muss die Box nach ihrer Playlist fragen — dafür muss die Box erreichbar sein.</string>
+    <string name="action_retry">Erneut versuchen</string>
+    <string name="queue_needs_shuffle_off">Schalte die Zufallswiedergabe aus, um zu einem Titel zu springen. Diese Box kann die Playlist nur Titel für Titel durchgehen.</string>
+    <string name="queue_jump_incomplete">Dieser Titel wurde nicht erreicht. Die Wiedergabe ist an einer anderen Stelle der Playlist stehen geblieben.</string>
+
     <string name="connection_connected">Mit %1$s verbunden</string>
     <string name="connection_connecting">Verbinde mit %1$s…</string>
     <string name="connection_degraded">Verbinde erneut mit %1$s…</string>

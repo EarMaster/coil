@@ -8,8 +8,10 @@ import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
+import app.coilforphoniebox.domain.model.JumpOutcome
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
+import app.coilforphoniebox.domain.model.QueueEntry
 import app.coilforphoniebox.domain.model.RepeatMode
 import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
@@ -20,6 +22,7 @@ import app.coilforphoniebox.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -160,6 +163,87 @@ class PlayerViewModel @Inject constructor(
             sleepTimer = boxInfo.sleepTimer,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
+
+    /**
+     * What the queue sheet shows.
+     *
+     * A [StateFlow] of its own rather than fields on [State], and deliberately so: reading the
+     * queue takes a round trip, and anything folded into that `combine` holds up the title,
+     * progress and controls until it has emitted — the trap the cover lookup is kept out of for
+     * the same reason. Nothing here can delay the player.
+     */
+    data class QueueState(
+        val entries: List<QueueEntry> = emptyList(),
+        /** An answer is on its way, so an empty [entries] is not yet a failure. */
+        val loading: Boolean = false,
+        /**
+         * Position the box is being sent to, while it is being sent there.
+         *
+         * On a box that cannot jump outright this is a walk of one `next` per track, which takes
+         * a visible moment — so the row being aimed at says so and can be called off. Null when
+         * nothing is in flight.
+         */
+        val jumpTarget: Int? = null,
+    ) {
+        /** Nothing to show and nothing coming: the box was asked and did not answer. */
+        val failed: Boolean get() = entries.isEmpty() && !loading
+    }
+
+    private val _jumpTarget = MutableStateFlow<Int?>(null)
+    private var jumpJob: Job? = null
+
+    val queue: StateFlow<QueueState> = combine(
+        player.queue,
+        player.queueLoading,
+        _jumpTarget,
+    ) { entries, loading, jumpTarget -> QueueState(entries, loading, jumpTarget) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), QueueState())
+
+    /**
+     * Sends the box to queue position [position].
+     *
+     * The box has no command for this, so the repository may have to walk the queue there one
+     * track at a time — which is why this tracks a target the UI can show and cancel, and why
+     * three different outcomes are worth telling the user apart.
+     */
+    fun jumpTo(position: Int) {
+        jumpJob?.cancel()
+        _jumpTarget.value = position
+        jumpJob = viewModelScope.launch {
+            try {
+                player.playAt(position)
+                    .onFailure { messageChannel.emit(UiMessage(commandError())) }
+                    .onSuccess { outcome ->
+                        when (outcome) {
+                            // Arriving is what was asked for; saying so would be noise.
+                            JumpOutcome.Arrived -> Unit
+                            JumpOutcome.BlockedByShuffle ->
+                                messageChannel.emit(UiMessage(R.string.queue_needs_shuffle_off))
+                            // The box is playing *something*, just not this. Reporting success
+                            // would leave the highlighted row lying about where it is.
+                            is JumpOutcome.Incomplete ->
+                                messageChannel.emit(UiMessage(R.string.queue_jump_incomplete))
+                        }
+                    }
+            } finally {
+                // Guarded, because a newer jump may already have claimed the field.
+                if (_jumpTarget.value == position) _jumpTarget.value = null
+            }
+        }
+    }
+
+    /** Abandons a walk in progress. The box keeps playing wherever it got to. */
+    fun cancelJump() {
+        jumpJob?.cancel()
+        _jumpTarget.value = null
+    }
+
+    /** For a sheet showing a list that failed to arrive; the ordinary case needs no help. */
+    fun refreshQueue() {
+        viewModelScope.launch {
+            player.refreshQueue().onFailure { messageChannel.emit(UiMessage(commandError())) }
+        }
+    }
 
     /**
      * Seconds left on the timer, recomputed once a second while one is running.

@@ -28,6 +28,20 @@
     <string name="action_favourite_remove">Quitar de favoritos</string>
     <string name="volume_percent">Volumen %1$d%%</string>
 
+    <string name="action_show_queue">Mostrar la lista de reproducción</string>
+    <string name="queue_title">Lista de reproducción</string>
+    <plurals name="queue_track_count">
+        <item quantity="one">%1$d pista</item>
+        <item quantity="many">%1$d de pistas</item>
+        <item quantity="other">%1$d pistas</item>
+    </plurals>
+    <string name="queue_now_playing">Suena ahora</string>
+    <string name="queue_unavailable_title">Lista de reproducción no disponible</string>
+    <string name="queue_unavailable_body">Coil tiene que preguntar a la caja qué tiene en cola, así que la caja debe estar accesible.</string>
+    <string name="action_retry">Volver a intentarlo</string>
+    <string name="queue_needs_shuffle_off">Desactiva la reproducción aleatoria para saltar a una pista. Esta caja solo puede recorrer la lista pista a pista.</string>
+    <string name="queue_jump_incomplete">No se ha llegado a esa pista. La reproducción se ha detenido en otro punto de la lista.</string>
+
     <string name="connection_connected">Conectado a %1$s</string>
     <string name="connection_connecting">Conectando con %1$s…</string>
     <string name="connection_degraded">Reconectando con %1$s…</string>

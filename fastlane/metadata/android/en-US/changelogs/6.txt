@@ -1,0 +1,3 @@
+The player now shows the playlist your box is playing from. The new playlist button lists every track with the playing one marked, and tapping a row goes straight there — chapter seven no longer means tapping skip six times.
+
+A running sleep timer now keeps its countdown when you reopen Coil.

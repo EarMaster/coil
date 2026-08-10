@@ -1,0 +1,3 @@
+De speler toont nu de playlist waaruit de box speelt. De nieuwe knop laat alle nummers zien en markeert het huidige; tik op een regel en je springt er meteen naartoe — hoofdstuk zeven kost niet langer zes keer Volgende.
+
+Een lopende slaaptimer telt bij het opnieuw openen van Coil gewoon verder.

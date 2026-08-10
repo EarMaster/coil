@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-11
+
 ### Added
 - **The player now shows what the box has queued, and you can skip straight to a track in it.** A new
   playlist button beside the transport controls opens the whole list with the playing track marked;

@@ -58,6 +58,21 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
      */
     val sleepTimer: StateFlow<SleepTimerStatus> = _sleepTimer.asStateFlow()
 
+    /**
+     * When this session's SUB socket was opened, on the elapsed-realtime clock.
+     *
+     * The last-value cache is what makes a new session cheap for every other topic, and a trap
+     * for this one. What it replays on the timer topic is the message that *set* the timer,
+     * carrying the seconds that were left back then and nothing to date it by — so taken at
+     * face value it restarts the countdown from the top every time the app comes back to the
+     * foreground and the connection is rebuilt. A timer publish arriving this soon after
+     * subscribing is therefore read as "there is a timer, go ask what is left of it".
+     *
+     * Declared above [subscriber] on purpose: [openSubscriber] writes it.
+     */
+    @Volatile
+    private var subscribedAtElapsed: Long = 0L
+
     @Volatile
     private var rpc: ZmqRpcClient = ZmqRpcClient(box.host, box.rpcPort)
 
@@ -78,8 +93,9 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
         }
 
     /**
-     * Asks for the timer's state. Called when the timer UI opens, never on a schedule:
-     * the published topic covers every later change.
+     * Asks for the timer's state: once per connection, when the timer UI opens, and when the
+     * topic says something whose age cannot be established (see [subscribedAtElapsed]). Never
+     * on a schedule — the published topic covers every later change.
      */
     suspend fun refreshSleepTimer(): Result<Unit> =
         call(Commands.sleepTimerState).map { result ->
@@ -97,12 +113,15 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
             Unit
         }
 
-    private fun openSubscriber() = ZmqStatusSubscriber(
-        host = box.host,
-        port = box.pubPort,
-        topics = ZmqStatusSubscriber.DEFAULT_TOPICS,
-        onMessage = ::onPublished,
-    )
+    private fun openSubscriber(): ZmqStatusSubscriber {
+        subscribedAtElapsed = SystemClock.elapsedRealtime()
+        return ZmqStatusSubscriber(
+            host = box.host,
+            port = box.pubPort,
+            topics = ZmqStatusSubscriber.DEFAULT_TOPICS,
+            onMessage = ::onPublished,
+        )
+    }
 
     /** Called on the subscriber's own thread; every write here is to a StateFlow. */
     private fun onPublished(topic: String, payload: String) {
@@ -117,9 +136,18 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
                 }
             }
 
-            topic == ZmqStatusSubscriber.TOPIC_SLEEP_TIMER ->
-                StatusParser.sleepTimer(payload, SystemClock.elapsedRealtime())
-                    ?.let { _sleepTimer.value = it }
+            topic == ZmqStatusSubscriber.TOPIC_SLEEP_TIMER -> {
+                val sinceSubscribed = SystemClock.elapsedRealtime() - subscribedAtElapsed
+                if (sinceSubscribed < TIMER_REPLAY_WINDOW_MILLIS) {
+                    // A replayed cache entry and a change made this second look identical
+                    // (see [subscribedAtElapsed]), so neither is believed: `get_state` answers
+                    // both cases with a remaining count that is true now.
+                    scope.launch { refreshSleepTimer() }
+                } else {
+                    StatusParser.sleepTimer(payload, SystemClock.elapsedRealtime())
+                        ?.let { _sleepTimer.value = it }
+                }
+            }
 
             topic.startsWith(ZmqStatusSubscriber.TOPIC_VOLUME) ->
                 StatusParser.volume(payload, _volume.value)?.let { _volume.value = it }
@@ -145,6 +173,11 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
      *
      * The ping is `playerstatus`, so its reply doubles as the initial state — the
      * last-value cache would deliver that anyway, this just makes it immediate.
+     *
+     * The timer is the one piece of state the cache cannot supply, because what it holds is
+     * dated (see [subscribedAtElapsed]), so it is asked for outright on every connection. A
+     * running countdown then survives the app being sent to the background and brought back,
+     * which closes the session and opens a new one.
      */
     private suspend fun handshake() {
         call(Commands.ping)
@@ -165,6 +198,8 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
                 _volume.value = _volume.value.copy(maxLevel = max)
             }
         }
+
+        refreshSleepTimer()
     }
 
     /**
@@ -234,6 +269,13 @@ class PhonieboxSession(val box: Box) : AutoCloseable {
 
         /** 20 s of nothing at all, against an expected four messages a second. */
         const val SILENCE_LIMIT_MILLIS = 20_000L
+
+        /**
+         * How long a timer publish is treated as possibly a replayed cache entry. The cache is
+         * handed over as the subscription is accepted, so this only has to outlast the socket
+         * setup — and asking is harmless when it turns out to have been a real change.
+         */
+        const val TIMER_REPLAY_WINDOW_MILLIS = 2_000L
         const val INITIAL_BACKOFF_MILLIS = 1_000L
         const val MAX_BACKOFF_MILLIS = 30_000L
     }

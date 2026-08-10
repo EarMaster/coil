@@ -22,6 +22,12 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
   make it instant. Two limits worth knowing: it needs shuffle off, and Coil says so rather than
   changing that setting for you
 
+### Fixed
+- **A running sleep timer no longer starts its countdown over when you come back to the app.** The
+  timer on the box was always right, but the "Stops in …" line under the transport controls read the
+  full 30 minutes again every time Coil returned to the foreground. Coil now asks the box what is
+  actually left of the timer whenever it connects, so what you see counts down once
+
 ## [1.0.1] - 2026-08-06
 
 ### Added

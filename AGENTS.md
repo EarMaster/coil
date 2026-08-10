@@ -305,6 +305,17 @@ Protocol details, distilled from `jukebox/multitimer.py` and `components/timers/
   therefore has nothing in the last-value cache, which is why the timer sheet asks `get_state` once
   when it opens, and why the countdown is interpolated locally from `remainingSecondsAt`, the same
   way the progress bar interpolates elapsed time.
+- **The last-value cache is a trap on this one topic, and only this one.** For every other topic the
+  cached message is current — `playerstatus` was published 250 ms ago. Here it is the message that
+  *set* the timer, carrying the `remaining_seconds` of that moment and no timestamp to date it by, so
+  a new subscriber that believes it restarts the countdown from the top. Sending the app to the
+  background closes the session (§8.3) and coming back opens a new one, which is how a 30-minute
+  timer used to read 30:00 again on every return. Two things in `PhonieboxSession` stop that:
+  `handshake` asks `get_state` on every connection, and a timer publish arriving within
+  `TIMER_REPLAY_WINDOW_MILLIS` of the SUB socket opening triggers a `get_state` instead of being
+  taken at face value — a replay and a change made that same second are indistinguishable, and asking
+  is right for both. Within a live session the replay after ZMQ's own silent TCP reconnect is already
+  dropped by `ZmqStatusSubscriber`'s raw-string compare; only a *new* subscriber sees it.
 
 The player screen's shuffle and repeat icons moved into one "playback options" menu alongside the
 timer: three mode toggles flanking the transport controls is more than that screen can carry. The

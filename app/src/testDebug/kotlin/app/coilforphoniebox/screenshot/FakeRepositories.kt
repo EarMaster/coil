@@ -87,6 +87,8 @@ class FakePlayerRepository(
     override suspend fun setVolume(level: Int): Result<Unit> = Result.success(Unit)
     override suspend fun changeVolume(step: Int): Result<Unit> = Result.success(Unit)
     override suspend fun toggleMute(): Result<Unit> = Result.success(Unit)
+
+    override suspend fun setMuted(muted: Boolean): Result<Unit> = Result.success(Unit)
     override suspend fun startSleepTimer(minutes: Int): Result<Unit> = Result.success(Unit)
     override suspend fun cancelSleepTimer(): Result<Unit> = Result.success(Unit)
     override suspend fun refreshSleepTimer(): Result<Unit> = Result.success(Unit)

@@ -1,0 +1,3 @@
+Die Wiedergabesteuerung von Coil erscheint jetzt in der Benachrichtigungsleiste und auf dem Sperrbildschirm. Bisher war sie dort überhaupt nicht zu sehen.
+
+Und sie funktioniert richtig: mit Fortschrittsleiste und Zeitanzeige, mit Play und Pause, die schon beim ersten Tippen reagieren, und einer Zurück-Taste, die einen laufenden Titel neu startet.

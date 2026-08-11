@@ -375,6 +375,50 @@ it. It is never published, so it has to be asked for.
 Upstream would close this with two lines — `def play(self, pos=None)` in `player/coordinator.py` and
 the MPD backend. Coil needs no change when it lands: the ladder's first rung starts succeeding.
 
+## The media session, and the four things media3 will not tell you
+
+`PhonieboxPlayer` is a `SimpleBasePlayer` whose playback happens on the box, and `feature-media`'s
+whole job is translating between the two. Four of media3's contracts are silent when broken — nothing
+logs, nothing throws, a control simply does nothing — and all four were broken at some point:
+
+- **A session the service was never handed shows no notification.**
+  `MediaNotificationManager.updateNotification` asks `isSessionAdded` before anything else, and media3
+  registers a session itself only when a controller binds with `MediaSessionService.SERVICE_INTERFACE`
+  (or the legacy browser action) or a media button intent arrives — `onBind` returns null for any
+  other action *without* consulting `onGetSession`. Coil's own binding is neither, so
+  `PhonieboxMediaService.onCreate` must call **`addSession`** itself. Without it no notification is
+  ever posted in either session mode, and the same early return calls
+  `maybeStopForegroundService(removeNotifications = true)`, which cancels media3's notification id.
+  That is why `MediaSessionBinder` now binds *with* the media3 action, too.
+- **Notification ids have one owner each.** 1001 is media3's, and it cancels that id whenever it has
+  nothing to show; 1002 is the quiet "ready" notification automatic mode waits behind. They used to
+  share one id, which meant two writers with no ordering between them and a foreground service that
+  could end up with no notification at all. The quiet one follows `PlayerStatus.hasContent` — the
+  exact complement of media3's `shouldShowNotification` — so one of the two is up and never both.
+- **A command's future must not be complete when it is returned.** `SimpleBasePlayer` shows its
+  optimistic placeholder state only while a returned future is pending: `updateStateForPendingOperation`
+  short-circuits on `isDone()` and calls `getState()` straight back, which still describes the box as
+  it was before the command was sent. `PhonieboxPlayer.send` therefore stays pending until the box has
+  been told and, where the outcome is published, until it says so — bounded, because `invalidateState`
+  is ignored while anything is pending.
+- **`mediaItemIndex` is a timeline index, not a queue position**, and `C.INDEX_UNSET` means "media3
+  resolved this to nothing". Both are read in one place, `seekIntentFor`, whose KDoc carries the
+  reasoning; the short version is that a fallback timeline's only index means "the playing song", so
+  passing it to `playAt` restarts the album, and that "unset" only carries meaning when the timeline
+  really is the queue and shuffle is off.
+
+Two smaller ones, same character: `COMMAND_GET_CURRENT_MEDIA_ITEM` has to be in the available
+commands or the legacy session publishes no position and no duration (`PlayerWrapper` gates them on
+it) and the system's media control shows no seek bar; and a timeline item's UID must come from the
+queue row it occupies rather than from `playerstatus`, or a track change reads as a whole new playlist
+and a queue holding one file twice can throw `"Duplicate MediaItemData UID in playlist"` out of
+`getState()`.
+
+`feature-media` has no Robolectric and should keep it that way: the load-bearing decisions live in
+top-level functions — `timelineIndexFor`, `seekIntentFor`, `uidFor` — precisely because `getState()`
+needs a `Looper` and they do not. Everything else here is service lifecycle and platform notification
+behaviour, which only a device can tell you about.
+
 ## Stand-in cover art
 
 A Phoniebox library is largely ripped CDs and home-made folders, so a great deal of it has no

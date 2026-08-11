@@ -15,6 +15,12 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
   then never handed to the part of media3 that posts the notification, so nothing was ever shown in
   either of the two control modes. In automatic mode the same fault could leave the quiet "ready"
   notification cancelled behind it
+- The controls also work properly now that they are there. The lock screen shows a **seek bar with
+  elapsed and remaining time**; play and pause **respond to the first tap** instead of appearing to
+  do nothing until the box got round to answering; ⏮ restarts the track part-way in and goes back a
+  track near the beginning, the way every other player does; a mute button sent from a car stereo
+  mutes rather than toggling, so it no longer unmutes an already-muted box; and tapping a track in a
+  car's playlist goes to that track instead of occasionally restarting the album
 
 ## [1.1.0] - 2026-08-11
 

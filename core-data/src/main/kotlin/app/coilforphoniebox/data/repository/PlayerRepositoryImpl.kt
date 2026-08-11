@@ -433,7 +433,10 @@ class PlayerRepositoryImpl @Inject constructor(
         transport.call(Commands.changeVolume(step)).unit()
 
     override suspend fun toggleMute(): Result<Unit> =
-        transport.call(Commands.mute(!transport.currentVolume().muted)).unit()
+        setMuted(!transport.currentVolume().muted)
+
+    override suspend fun setMuted(muted: Boolean): Result<Unit> =
+        transport.call(Commands.mute(muted)).unit()
 
     override suspend fun startSleepTimer(minutes: Int): Result<Unit> {
         // `GenericTimerClass.start` logs "Ignoring start command" and returns when its timer

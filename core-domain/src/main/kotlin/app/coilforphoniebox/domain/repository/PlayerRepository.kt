@@ -116,6 +116,15 @@ interface PlayerRepository {
     suspend fun toggleMute(): Result<Unit>
 
     /**
+     * Mutes or unmutes outright, for a caller that knows which of the two it wants.
+     *
+     * The media session is one: a controller asking to mute sends "muted = true", not "the
+     * other one" — and answering that with [toggleMute] unmutes a box that was already muted.
+     * The box's own command takes an absolute state, so nothing is lost by saying so.
+     */
+    suspend fun setMuted(muted: Boolean): Result<Unit>
+
+    /**
      * Sets the timer that stops playback after [minutes], replacing a running one.
      *
      * The box ignores `start` while its timer is already alive, so changing the duration

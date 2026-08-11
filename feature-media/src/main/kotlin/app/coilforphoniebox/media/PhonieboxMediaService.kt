@@ -26,8 +26,10 @@ import app.coilforphoniebox.transport.ConnectionManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -37,8 +39,9 @@ import javax.inject.Inject
  * Holds the media session, and with it the connection to the box.
  *
  * In the default "only while Coil is open" mode the app binds to this service, so it
- * lives exactly as long as the UI and posts a notification only once the box actually
- * plays — media3 handles that transition. In automatic mode the service is started
+ * lives exactly as long as the UI and posts a notification only once the box has something
+ * loaded — media3 handles that transition, provided the session was handed to it with
+ * [addSession], without which it posts nothing at all. In automatic mode the service is started
  * outright and keeps a low-priority notification up while it waits, because a foreground
  * service has to be visible (§8.3). When controls are switched off entirely the service is
  * not meant to exist at all: nothing binds or starts it, and it stops itself if it is
@@ -66,6 +69,9 @@ class PhonieboxMediaService : MediaSessionService() {
     private var automatic = false
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
+    /** The pending "nothing needs this any more" stop, so a rebind can call it off. */
+    private var stopJob: Job? = null
+
     /**
      * How many clients are bound. In the default mode the service should exist while the
      * UI does and while something plays, and not a moment longer — a connection nobody is
@@ -83,8 +89,8 @@ class PhonieboxMediaService : MediaSessionService() {
         val player = PhonieboxPlayer(scope, playerRepository, boxRepository)
         phonieboxPlayer = player
 
-        // Shares its notification id with the quiet status notification below, so the
-        // media notification simply replaces it once playback starts.
+        // An id of its own, and media3 owns it: it cancels that id whenever it has nothing to
+        // show, which is why the quiet status notification cannot live there too.
         setMediaNotificationProvider(
             DefaultMediaNotificationProvider.Builder(this)
                 .setChannelId(CHANNEL_PLAYBACK)
@@ -93,9 +99,32 @@ class PhonieboxMediaService : MediaSessionService() {
                 .apply { setSmallIcon(texts.smallIcon) },
         )
 
-        session = MediaSession.Builder(this, player)
+        val built = MediaSession.Builder(this, player)
             .apply { launchIntent()?.let { setSessionActivity(it) } }
             .build()
+        session = built
+
+        // media3 shows nothing for a session it has not been handed: the first thing
+        // `MediaNotificationManager.updateNotification` asks is `isSessionAdded`, and media3
+        // only registers a session itself when a controller binds with its own service action
+        // or a media button intent arrives. Coil's binding is neither, so without this line the
+        // notification is never posted at all — and the same early return cancels the id below.
+        addSession(built)
+
+        // media3 catches Android's refusal to promote the service and reports it here; with no
+        // listener set it is swallowed, and the symptom is controls that silently never appear.
+        setListener(
+            object : MediaSessionService.Listener {
+                override fun onForegroundServiceStartNotAllowedException() {
+                    Log.w(TAG, "Android refused to start the media session in the foreground")
+                    // Automatic mode has to show something, and this notification is allowed
+                    // where a foreground promotion is not.
+                    if (automatic) {
+                        notificationManager().notify(STATUS_NOTIFICATION_ID, statusNotification())
+                    }
+                }
+            },
+        )
 
         observeIdleState()
         observeSessionModeSetting()
@@ -109,11 +138,20 @@ class PhonieboxMediaService : MediaSessionService() {
         if (intent?.action == ACTION_START_AUTOMATIC) {
             automatic = true
             // Started with startForegroundService, so something visible has to go up now.
-            startForeground(NOTIFICATION_ID, statusNotification())
+            promoteWithStatusNotification()
             watchNetwork()
         }
 
         return result
+    }
+
+    /**
+     * Automatic mode is a foreground service by contract (§8.3) — it was started outright and
+     * has to stay visible whether or not the box happens to be playing this second. media3
+     * detaches the service as soon as playback stops, so the requirement is forced back on here.
+     */
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
+        super.onUpdateNotification(session, startInForegroundRequired || automatic)
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -133,32 +171,69 @@ class PhonieboxMediaService : MediaSessionService() {
     }
 
     /**
-     * While automatic mode waits for the box to start playing there is nothing for media3
-     * to show, but the service still has to be visible. Once playback begins, media3's own
-     * notification takes over the same id, and this quiet one goes with it.
+     * Keeps the quiet status notification in step with media3's own, and ends the service in
+     * the default mode when there is nothing left to do.
      *
-     * The same signal ends the service in the default mode: nothing playing, nobody bound,
-     * nothing to do.
+     * The status notification follows whether the box has anything *loaded*, not whether it is
+     * playing. `hasContent` is the exact complement of the condition media3 posts under —
+     * `MediaNotificationManager.shouldShowNotification` wants a non-empty timeline and a state
+     * other than idle — so one of the two is on screen and never both, and which one no longer
+     * depends on the order two collectors happen to run in. A *paused* box keeps its media
+     * controls, which is when they are wanted most.
      */
     private fun observeIdleState() {
         scope.launch {
             playerRepository.status
-                .map { it.state }
+                .map { it.hasContent to it.state }
                 .distinctUntilChanged()
-                .collect { state ->
-                    if (automatic && state != PlaybackState.PLAY) {
-                        notificationManager().notify(NOTIFICATION_ID, statusNotification())
-                    }
+                .collect { (hasContent, state) ->
+                    if (automatic) updateStatusNotification(hasContent)
                     if (state != PlaybackState.PLAY) stopIfNoLongerNeeded()
                 }
         }
     }
 
+    private fun updateStatusNotification(hasContent: Boolean) {
+        if (hasContent) {
+            // media3 has the shade from here, on its own id. Two notifications for one box
+            // would be one too many.
+            notificationManager().cancel(STATUS_NOTIFICATION_ID)
+        } else {
+            // `startForeground` rather than `notify`: media3 has just detached the service and
+            // taken its notification down, and automatic mode has to stay foreground.
+            promoteWithStatusNotification()
+        }
+    }
+
+    private fun promoteWithStatusNotification() {
+        runCatching { startForeground(STATUS_NOTIFICATION_ID, statusNotification()) }
+            .onFailure { Log.w(TAG, "Could not keep the automatic session in the foreground", it) }
+    }
+
+    /**
+     * Ends the service when nothing needs it, after a moment's grace.
+     *
+     * The grace is the point. `currentStatus()` is what the box last *published*, which lags a
+     * command by up to a quarter of a second and by however long the box's own sequential
+     * socket takes (§6) — so a user who taps play and pockets the phone unbinds the UI while
+     * the box still reports "not playing", and stopping on that reading would tear the session
+     * down exactly as the notification was about to appear.
+     */
     private fun stopIfNoLongerNeeded() {
-        if (automatic || boundClients > 0) return
-        if (connectionManager.currentStatus().state == PlaybackState.PLAY) return
-        Log.i(TAG, "Nothing playing and nothing bound; stopping")
-        stopSelf()
+        if (automatic || boundClients > 0) {
+            stopJob?.cancel()
+            stopJob = null
+            return
+        }
+
+        stopJob?.cancel()
+        stopJob = scope.launch {
+            delay(STOP_GRACE_MILLIS)
+            if (automatic || boundClients > 0) return@launch
+            if (connectionManager.currentStatus().state == PlaybackState.PLAY) return@launch
+            Log.i(TAG, "Nothing playing and nothing bound; stopping")
+            stopSelf()
+        }
     }
 
     /**
@@ -240,6 +315,11 @@ class PhonieboxMediaService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        stopJob?.cancel()
+        stopJob = null
+
+        clearListener()
+
         networkCallback?.let { callback ->
             runCatching {
                 getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
@@ -296,8 +376,20 @@ class PhonieboxMediaService : MediaSessionService() {
         const val CHANNEL_PLAYBACK = "playback"
         const val CHANNEL_STATUS = "connection"
 
-        /** Shared with media3's own notification, so one replaces the other. */
+        /** media3's own, and media3's alone — it cancels this id whenever it has nothing to show. */
         const val NOTIFICATION_ID = 1001
+
+        /**
+         * The quiet "ready" notification automatic mode waits behind.
+         *
+         * An id of its own rather than media3's: sharing one meant two writers with no ordering
+         * between them, and media3 cancelling the id was enough to leave a foreground service
+         * with no notification at all.
+         */
+        const val STATUS_NOTIFICATION_ID = 1002
+
+        /** Long enough for a command in flight to come back as a published status (§8.1). */
+        private const val STOP_GRACE_MILLIS = 2_000L
 
         const val ACTION_START_AUTOMATIC = "app.coilforphoniebox.media.START_AUTOMATIC"
 

@@ -9,6 +9,13 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Fixed
+- **The playback controls now actually appear.** Coil is supposed to put the playing track in your
+  notification shade and on your lock screen, and it never did — the session was built correctly and
+  then never handed to the part of media3 that posts the notification, so nothing was ever shown in
+  either of the two control modes. In automatic mode the same fault could leave the quiet "ready"
+  notification cancelled behind it
+
 ## [1.1.0] - 2026-08-11
 
 ### Added

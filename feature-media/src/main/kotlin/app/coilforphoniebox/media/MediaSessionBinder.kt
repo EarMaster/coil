@@ -6,6 +6,7 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaSessionService
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -83,11 +84,18 @@ class MediaSessionBinder @Inject constructor(
         if (wanted && allowed) bindNow() else unbindNow()
     }
 
+    /**
+     * The action matters. `MediaSessionService.onBind` answers only its own service action and
+     * the legacy browser one, and returns null for anything else — so an actionless bind keeps
+     * the service alive without ever establishing a connection, which left the bound-client
+     * count here scoring a binding the platform had not made.
+     */
     private fun bindNow() {
         if (bound) return
         bound = runCatching {
             context.bindService(
-                PhonieboxMediaService.serviceIntent(context),
+                PhonieboxMediaService.serviceIntent(context)
+                    .setAction(MediaSessionService.SERVICE_INTERFACE),
                 connection,
                 Context.BIND_AUTO_CREATE,
             )

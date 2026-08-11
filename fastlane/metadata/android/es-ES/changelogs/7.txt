@@ -1,0 +1,3 @@
+Los controles de reproducción de Coil ya aparecen en el panel de notificaciones y en la pantalla de bloqueo: hasta ahora no se mostraban en absoluto.
+
+Y funcionan de verdad: barra de progreso con el tiempo, reproducir y pausar que responden al primer toque, y un botón de anterior que reinicia la pista que ya ha empezado.

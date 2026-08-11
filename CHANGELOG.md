@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-08-12
+
 ### Fixed
 - **The playback controls now actually appear.** Coil is supposed to put the playing track in your
   notification shade and on your lock screen, and it never did — the session was built correctly and

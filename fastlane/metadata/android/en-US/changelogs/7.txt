@@ -1,0 +1,3 @@
+Coil's playback controls now appear in your notification shade and on the lock screen. They never showed up at all before this.
+
+They work properly too: a progress bar with the time, play and pause that react to the first tap, and a previous button that starts the current track again part-way in.

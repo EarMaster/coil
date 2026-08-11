@@ -1,0 +1,3 @@
+De afspeelknoppen van Coil verschijnen nu in het meldingenpaneel en op het vergrendelscherm. Tot nu toe waren ze daar helemaal niet te zien.
+
+En ze werken ook echt: een voortgangsbalk met de tijd, afspelen en pauzeren die meteen reageren, en een vorige-knop die een al begonnen nummer opnieuw start.

@@ -1,0 +1,3 @@
+Les commandes de lecture de Coil apparaissent enfin dans le volet des notifications et sur l'écran de verrouillage : elles ne s'y affichaient pas du tout jusqu'ici.
+
+Et elles fonctionnent vraiment : barre de progression avec la durée, lecture et pause qui répondent au premier appui, et un bouton précédent qui reprend le titre en cours depuis le début.

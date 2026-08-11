@@ -52,6 +52,31 @@ internal fun timelineIndexFor(queue: List<QueueEntry>, status: PlayerStatus): In
 }
 
 /**
+ * A timeline item's identity, and it has to be the queue row's rather than the status's.
+ *
+ * media3 compares UIDs position by position to decide what changed
+ * (`SimpleBasePlayer.getTimelineChangeReason`), and refuses a playlist that repeats one
+ * (`"Duplicate MediaItemData UID in playlist"`, thrown straight out of `getState()`). The playing
+ * item's *metadata* comes from `playerstatus`, so it used to take its uid from there too — from a
+ * field the box need not send, in which case every track change rewrote two UIDs and each one read
+ * as a wholesale playlist change. Worse, a queue holding the same file twice can leave
+ * `playerstatus.songid` pointing at the other copy, and that collision is the crash.
+ *
+ * MPD's queue id is unique within the queue; without one the position separates two copies of the
+ * same file.
+ */
+internal fun uidFor(entry: QueueEntry): String = entry.songId ?: "${entry.position}:${entry.url}"
+
+/**
+ * Identity for the single-item timeline, where there is no queue row to borrow one from. Nothing
+ * compares it against a neighbour, so anything stable for as long as the song lasts will do.
+ */
+internal fun fallbackUid(status: PlayerStatus): String =
+    status.songId ?: status.file ?: CURRENT_ITEM_UID
+
+internal const val CURRENT_ITEM_UID = "coil-current"
+
+/**
  * A media3 player whose playback happens somewhere else entirely.
  *
  * `SimpleBasePlayer` exists precisely for this case (the Cast scenario): [getState] is
@@ -141,13 +166,18 @@ class PhonieboxPlayer(
             builder.setPlaylist(
                 current.queue.mapIndexed { position, entry ->
                     // The playing item keeps being built from `playerstatus`: that is the
-                    // authoritative metadata, and the only item there is cover art for.
-                    if (position == index) mediaItemFor(current) else mediaItemFor(entry)
+                    // authoritative metadata, and the only item there is cover art for. Its
+                    // *identity* stays the queue row's, though — see [uidFor].
+                    if (position == index) {
+                        mediaItemFor(current, uid = uidFor(entry))
+                    } else {
+                        mediaItemFor(entry)
+                    }
                 },
             )
             builder.setCurrentMediaItemIndex(index)
         } else if (status.hasContent) {
-            builder.setPlaylist(listOf(mediaItemFor(current)))
+            builder.setPlaylist(listOf(mediaItemFor(current, uid = fallbackUid(status))))
             builder.setCurrentMediaItemIndex(0)
         }
 
@@ -188,9 +218,7 @@ class PhonieboxPlayer(
             .setIsPlayable(true)
             .build()
 
-        // MPD's queue id is unique within the queue; without one, the position keeps two
-        // copies of the same file in one queue from colliding — media3 requires unique UIDs.
-        return MediaItemData.Builder(entry.songId ?: "${entry.position}:${entry.url}")
+        return MediaItemData.Builder(uidFor(entry))
             .setMediaItem(
                 MediaItem.Builder()
                     .setMediaId(entry.url)
@@ -203,7 +231,7 @@ class PhonieboxPlayer(
             .build()
     }
 
-    private fun mediaItemFor(current: Snapshot): MediaItemData {
+    private fun mediaItemFor(current: Snapshot, uid: Any): MediaItemData {
         val status = current.status
         val durationUs = status.durationSeconds
             ?.takeIf { it > 0 }
@@ -222,7 +250,7 @@ class PhonieboxPlayer(
             .setIsPlayable(true)
             .build()
 
-        return MediaItemData.Builder(status.songId ?: status.file ?: CURRENT_ITEM_UID)
+        return MediaItemData.Builder(uid)
             .setMediaItem(
                 MediaItem.Builder()
                     .setMediaId(status.file ?: CURRENT_ITEM_UID)
@@ -301,7 +329,6 @@ class PhonieboxPlayer(
     }
 
     private companion object {
-        const val CURRENT_ITEM_UID = "coil-current"
         const val VOLUME_STEP = 5
 
         val AVAILABLE_COMMANDS: Player.Commands = Player.Commands.Builder()
@@ -318,6 +345,11 @@ class PhonieboxPlayer(
                 // where it must, so a tap in a queue list always does something honest.
                 Player.COMMAND_SEEK_TO_MEDIA_ITEM,
                 Player.COMMAND_GET_TIMELINE,
+                // Without this the legacy session publishes PLAYBACK_POSITION_UNKNOWN and no
+                // duration — `PlayerWrapper.createPlaybackStateCompat` reads it to decide
+                // whether positions may be shared at all — so the system's own media control
+                // shows no seek bar, and every remote controller sees a null current item.
+                Player.COMMAND_GET_CURRENT_MEDIA_ITEM,
                 Player.COMMAND_GET_METADATA,
                 Player.COMMAND_SET_SHUFFLE_MODE,
                 Player.COMMAND_SET_REPEAT_MODE,

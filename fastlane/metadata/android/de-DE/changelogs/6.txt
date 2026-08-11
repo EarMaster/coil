@@ -1,0 +1,3 @@
+Der Player zeigt jetzt die Playlist, aus der die Box spielt. Die neue Schaltfläche listet alle Titel auf und markiert den laufenden; ein Tippen auf eine Zeile springt direkt dorthin — Kapitel sieben bedeutet nicht mehr sechsmal Weiter.
+
+Ein laufender Einschlaftimer zählt beim erneuten Öffnen von Coil richtig weiter.

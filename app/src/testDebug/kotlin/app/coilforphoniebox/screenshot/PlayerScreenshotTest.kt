@@ -2,7 +2,10 @@ package app.coilforphoniebox.screenshot
 
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.Favorite
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
 import app.coilforphoniebox.domain.model.PlayerStatus
+import app.coilforphoniebox.domain.model.QueueEntry
 import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
 import app.coilforphoniebox.ui.player.PlayerScreen
@@ -29,6 +32,7 @@ class PlayerScreenshotTest : ScreenshotTest() {
         coverPending: Boolean = false,
         sleepTimer: SleepTimerStatus = SleepTimerStatus.Off,
         favorites: List<Favorite> = Fixtures.favorites,
+        queue: List<QueueEntry> = Fixtures.queue,
     ) = PlayerViewModel(
         player = FakePlayerRepository(
             status = status,
@@ -37,6 +41,7 @@ class PlayerScreenshotTest : ScreenshotTest() {
             coverUrl = coverUrl,
             coverPending = coverPending,
             sleepTimer = sleepTimer,
+            queue = queue,
         ),
         boxes = FakeBoxRepository(),
         favorites = FakeFavoriteRepository(favorites),
@@ -107,6 +112,45 @@ class PlayerScreenshotTest : ScreenshotTest() {
     }
 
     /**
+     * The playlist sheet, reached by *clicking* the button that opens it.
+     *
+     * Not by composing `QueueSheet` directly, on purpose and following `favourites_compact_*`:
+     * the button lives in the transport row and only appears when the box reports more than one
+     * queued track, so a change that stripped it out — or that stopped it opening anything —
+     * has to fail this test rather than quietly keep the old picture.
+     *
+     * What the golden is worth looking at: the fourth row is highlighted and marked as playing,
+     * the list is scrolled to it rather than sitting at track one, one row has no duration and
+     * one has no subtitle.
+     */
+    @Test
+    fun queue_sheet() {
+        val vm = viewModel()
+        show { PlayerScreen(vm) }
+        compose.onNodeWithContentDescription("Show playlist").performClick()
+        // A modal sheet slides in, and Robolectric's clock does not move on its own — without
+        // this the golden is the player with the sheet still off the bottom of the screen.
+        advanceTime(SHEET_SETTLE_MILLIS)
+        captureScreen("player/queue_light")
+    }
+
+    /**
+     * The same sheet with nothing in it and nothing on its way.
+     *
+     * The queue is never published — it has to be asked for — so an empty list here means the
+     * request failed, not that the playlist is empty. `playlistLength` still says twelve, which
+     * is what keeps the button on screen and makes the state reachable at all.
+     */
+    @Test
+    fun queue_unavailable() {
+        val vm = viewModel(queue = emptyList())
+        show { PlayerScreen(vm) }
+        compose.onNodeWithContentDescription("Show playlist").performClick()
+        advanceTime(SHEET_SETTLE_MILLIS)
+        captureScreen("player/queue_unavailable_light")
+    }
+
+    /**
      * A phone on its side: 731×411 dp, under the two-pane breakpoint but far too short for a
      * full-width cover.
      *
@@ -139,5 +183,10 @@ class PlayerScreenshotTest : ScreenshotTest() {
             favorites = emptyList(),
         )
         capture("player/idle_de") { PlayerScreen(vm) }
+    }
+
+    private companion object {
+        /** Comfortably longer than the sheet's slide-in, so the golden is the settled state. */
+        const val SHEET_SETTLE_MILLIS = 1_000L
     }
 }

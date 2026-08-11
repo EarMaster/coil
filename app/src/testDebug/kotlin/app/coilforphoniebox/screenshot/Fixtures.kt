@@ -10,6 +10,7 @@ import app.coilforphoniebox.domain.model.LibrarySearchResults
 import app.coilforphoniebox.domain.model.LibraryTrack
 import app.coilforphoniebox.domain.model.PlaybackState
 import app.coilforphoniebox.domain.model.PlayerStatus
+import app.coilforphoniebox.domain.model.QueueEntry
 import app.coilforphoniebox.domain.model.RepeatMode
 import app.coilforphoniebox.domain.model.SleepTimerStatus
 import java.util.concurrent.TimeUnit
@@ -63,7 +64,9 @@ object Fixtures {
         elapsedSeconds = 95.0,
         durationSeconds = 372.0,
         songId = "17",
-        playlistPosition = 3,
+        // Third of twelve, zero-based — so in [queue] the highlighted row is "Chapter 3" and
+        // the numbering either side of it reads the way a reader would expect.
+        playlistPosition = 2,
         playlistLength = 12,
     )
 
@@ -80,6 +83,37 @@ object Fixtures {
         elapsedSeconds = 3_612.0,
         playlistLength = 1,
     )
+
+    /**
+     * The queue [playing] is playing from — twelve tracks, matching its `playlistLength`, and
+     * carrying its title and URL at its `playlistPosition` so the sheet's highlighted row is the
+     * same track the player above it names.
+     *
+     * Deliberately mixed, because a row here has three things to get wrong: one track has no
+     * duration the way a stream does (row 10), one has no artist or album so the subtitle line
+     * has to disappear rather than render blank (row 6), and one title is long enough that
+     * ellipsising is in the picture (row 8).
+     */
+    val queue = List(12) { index ->
+        val number = index + 1
+        QueueEntry(
+            position = index,
+            url = if (index == playing.playlistPosition) {
+                playing.file!!
+            } else {
+                "Detective Stories/The Missing Key/${"%02d".format(number)} Chapter.mp3"
+            },
+            title = when (index) {
+                playing.playlistPosition -> playing.title!!
+                7 -> "Chapter 8 — A Long Title That Has To Be Cut Off Somewhere Around Here"
+                else -> "Chapter $number"
+            },
+            artist = "Detective Stories".takeUnless { index == 5 },
+            album = "The Missing Key".takeUnless { index == 5 },
+            durationSeconds = if (index == 9) null else 240.0 + index * 17,
+            songId = (14 + index).toString(),
+        )
+    }
 
     val timerRunning = SleepTimerStatus(
         running = true,

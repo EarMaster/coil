@@ -1,0 +1,3 @@
+El reproductor ya muestra la lista de reproducción que suena en la caja. El nuevo botón enumera todas las pistas y marca la que suena; al tocar una fila se salta directamente a ella, así que el capítulo siete ya no exige pulsar Siguiente seis veces.
+
+El temporizador sigue su cuenta atrás al volver a abrir Coil.

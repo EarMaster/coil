@@ -1,12 +1,15 @@
 package app.coilforphoniebox.domain.repository
 
 import app.coilforphoniebox.domain.model.ConnectionState
+import app.coilforphoniebox.domain.model.JumpOutcome
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
+import app.coilforphoniebox.domain.model.QueueEntry
 import app.coilforphoniebox.domain.model.RepeatMode
 import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Live state of the active box. Nothing here is persisted: `playerstatus` and
@@ -56,12 +59,55 @@ interface PlayerRepository {
      */
     val sleepTimer: Flow<SleepTimerStatus>
 
+    /**
+     * The box's current queue, in play order, or an empty list when it is not known.
+     *
+     * A flow rather than a one-shot because the media session consumes it too — but a flow
+     * that is **resolved per queue change, never polled**: `playlistinfo` is asked when
+     * `playlistLength` moves or the playing file is not in the cached list, which happens on a
+     * `play_folder`/`play_album`/card tap and *not* on a track change. An album of twenty
+     * tracks therefore costs one RPC, not twenty (§6).
+     *
+     * It starts empty and stays empty until the first answer arrives, so it can never hold up
+     * a screen that combines it with the rest of the player state — the trap [coverUrl] exists
+     * to avoid. Every consumer has to cope with an empty or momentarily stale list.
+     */
+    val queue: StateFlow<List<QueueEntry>>
+
+    /**
+     * Whether an answer is on its way, so an empty [queue] can be read as "could not be read"
+     * rather than "not yet" — the same distinction [coverPending] draws for artwork, and for the
+     * same reason: without it a failed fetch is a spinner that never stops.
+     */
+    val queueLoading: StateFlow<Boolean>
+
+    /**
+     * Asks for the queue again now, for a user who is looking at a list that failed to load.
+     *
+     * The background resolver handles every ordinary case; this exists so a retry does not have
+     * to wait for the next track change.
+     */
+    suspend fun refreshQueue(): Result<Unit>
+
     suspend fun play(): Result<Unit>
     suspend fun pause(): Result<Unit>
     suspend fun toggle(): Result<Unit>
     suspend fun next(): Result<Unit>
     suspend fun previous(): Result<Unit>
     suspend fun seekTo(positionSeconds: Double): Result<Unit>
+
+    /**
+     * Start playing queue position [position], leaving the rest of the queue in place.
+     *
+     * **The box does not have a command for this**, so the implementation is a ladder: it
+     * tries `play(pos=…)` — which upstream `future3` rejects harmlessly — and otherwise walks
+     * the queue with `next`/`prev`. A walk takes a moment and is visible, so callers should
+     * show that it is happening; see [JumpOutcome] for what can come back.
+     *
+     * Suspends until the box has arrived (or the attempt gave up), unlike the fire-and-forget
+     * commands above, because "did it get there" is the only useful answer.
+     */
+    suspend fun playAt(position: Int): Result<JumpOutcome>
     suspend fun setShuffle(enabled: Boolean): Result<Unit>
     suspend fun setRepeat(mode: RepeatMode): Result<Unit>
 

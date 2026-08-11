@@ -124,7 +124,13 @@ Full reference: `src/webapp/src/commands/index.js` in the Phoniebox repository.
 
 ### Content — `player.ctrl.*`
 
-`get_folder_content`, `list_albums`, `list_songs_by_artist_and_album(albumartist, album)`, `get_single_coverart`, `get_album_coverart`, `play_folder(folder)`, `play_album(albumartist, album)`, `play_single(song_url)`, `update`, `update_wait`
+`get_folder_content`, `list_albums`, `list_songs_by_artist_and_album(albumartist, album)`, `get_single_coverart`, `get_album_coverart`, `play_folder(folder)`, `play_album(albumartist, album)`, `play_single(song_url)`, `playlistinfo`, `update`, `update_wait`
+
+`playlistinfo` returns the **current MPD queue**, one object per track with `file`, `pos`, `id`,
+`title`, `artist`, `album`, `track` and `duration`. It is a real `@plugs.tag` method on both
+`future3/main` and `future3/develop`, but the web UI never calls it, so it is absent from
+`src/webapp/src/commands/index.js` — do not take that file as the full surface. The queue is never
+published on a topic, so this is the only way to learn it.
 
 Do **not** use `list_all_dirs` — the repository explicitly warns about memory consumption on large libraries. Use `get_folder_content` lazily, one level at a time.
 
@@ -135,6 +141,33 @@ library root.
 
 `shuffle(option)` and `repeat(option)` take named strings, not MPD flags — `enable`/`disable` for
 shuffle, `disable`/`enable_repeat`/`enable_repeat_single` for repeat.
+
+### There is no way to play a queue position
+
+MPD has `play <pos>`, and `playermpd` **uses it internally** — `_next_in_stopped_state` calls
+`self.mpd_client.play(pos)`. It is simply never exposed over RPC. Every route was checked on
+`future3/main` and `future3/develop`; all of them are closed:
+
+| Route | Why not |
+|---|---|
+| `play` | `def play(self)` — no arguments, on both branches |
+| `resume` | The only RPC that *does* jump (`mpd_client.seek(songpos, elapsed)`), but `songpos` is read from `current_folder_status["CURRENTSONGPOS"]`, internal state written by the box's own status poll, and **no RPC writes it** |
+| `map_filename_to_playlist_pos`, `remove`, `move` | all three `raise NotImplementedError` |
+| `queue_load(folder)` | body is `pass` — a stub |
+| `seek(new_time)` | `mpd_client.seekcur(...)`, so time within the current song only |
+| `play_single(song_url)` | `clear()` + `addid()` + `play()`: **destroys the queue**, leaving one track, so next/prev stop working and the box falls silent at its end. Never use it to reach a track inside something already playing |
+| `misc.py` | no generic passthrough; nothing can invoke an arbitrary method or argument |
+| `rpc_command_alias.py` | aliases only rename existing methods; no positional variant |
+| MPD on 6600 | `mpd.default.conf` has `bind_to_address "localhost"` — unreachable from the LAN |
+| an `.m3u` in `shared/playlists/` | no filesystem access to the box, and no `load` RPC to read one |
+
+So Coil walks the queue with `next`/`prev` instead — see AGENTS.md, "The queue, and why skipping
+into it is stepped". Sending `play` with a `pos` kwarg anyway is a **safe capability probe**: the
+plugin's signature rejects it before its body runs, and `jukebox/rpc/server.py` wraps `plugs.call`
+in a try/except, so the reply is
+`{"error": {"message": "TypeError: play() got an unexpected keyword argument 'pos'"}}` and playback
+is untouched. Note this is also why an *unknown method name* and an *unknown argument* look alike
+from the outside: both come back as an error reply, not a crash.
 
 `update` triggers the MPD database scan. `update_wait` blocks until completion and should be avoided because of the shared socket.
 

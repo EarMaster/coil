@@ -1,0 +1,3 @@
+Le lecteur affiche désormais la playlist en cours sur la box. Le nouveau bouton liste tous les titres et signale celui en cours ; toucher une ligne y accède directement — le chapitre sept ne demande plus six appuis sur Suivant.
+
+Une minuterie d'arrêt en cours reprend son décompte à la réouverture de Coil.

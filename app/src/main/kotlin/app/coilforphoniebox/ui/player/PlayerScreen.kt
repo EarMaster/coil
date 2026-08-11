@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
@@ -92,7 +93,26 @@ fun PlayerScreen(
     val scrub by viewModel.scrubPosition.collectAsStateWithLifecycle()
     val volumeTarget by viewModel.volumeTarget.collectAsStateWithLifecycle()
     val timerRemaining by viewModel.sleepTimerRemaining.collectAsStateWithLifecycle()
+    val queue by viewModel.queue.collectAsStateWithLifecycle()
     var timerSheetOpen by remember { mutableStateOf(false) }
+    var queueSheetOpen by remember { mutableStateOf(false) }
+
+    if (queueSheetOpen) {
+        QueueSheet(
+            queue = queue,
+            currentPosition = state.status.playlistPosition,
+            onJumpTo = viewModel::jumpTo,
+            onCancelJump = viewModel::cancelJump,
+            onRetry = viewModel::refreshQueue,
+            onDismiss = {
+                queueSheetOpen = false
+                // Closing the sheet abandons a walk in progress: it is the only place its
+                // progress is visible, and a jump nobody can see arriving or cancel is worse
+                // than one that stops where it is.
+                viewModel.cancelJump()
+            },
+        )
+    }
 
     if (timerSheetOpen) {
         SleepTimerSheet(
@@ -116,6 +136,10 @@ fun PlayerScreen(
         timerSheetOpen = true
     }
 
+    // No RPC here, unlike the timer: the queue is already resolved and kept in step in the
+    // background, once per queue change rather than once per opening (§6).
+    val openQueue = { queueSheetOpen = true }
+
     BoxWithConstraints(modifier.fillMaxSize()) {
         // Two panes on a large screen, and also on any window that is merely wider than it is
         // tall: a phone on its side has width to spare and no height at all, which is the same
@@ -135,6 +159,7 @@ fun PlayerScreen(
                 timerRemaining = timerRemaining,
                 viewModel = viewModel,
                 onOpenTimer = openTimer,
+                onOpenQueue = openQueue,
             )
         } else {
             CompactPlayer(
@@ -151,6 +176,7 @@ fun PlayerScreen(
                 timerRemaining = timerRemaining,
                 viewModel = viewModel,
                 onOpenTimer = openTimer,
+                onOpenQueue = openQueue,
             )
         }
     }
@@ -166,6 +192,7 @@ private fun CompactPlayer(
     timerRemaining: Int?,
     viewModel: PlayerViewModel,
     onOpenTimer: () -> Unit,
+    onOpenQueue: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -197,6 +224,7 @@ private fun CompactPlayer(
             timerRemaining = timerRemaining,
             viewModel = viewModel,
             onOpenTimer = onOpenTimer,
+            onOpenQueue = onOpenQueue,
         )
 
         Spacer(Modifier.height(24.dp))
@@ -220,6 +248,7 @@ private fun WidePlayer(
     timerRemaining: Int?,
     viewModel: PlayerViewModel,
     onOpenTimer: () -> Unit,
+    onOpenQueue: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -258,6 +287,7 @@ private fun WidePlayer(
                 timerRemaining = timerRemaining,
                 viewModel = viewModel,
                 onOpenTimer = onOpenTimer,
+                onOpenQueue = onOpenQueue,
             )
         }
     }
@@ -327,6 +357,7 @@ private fun ColumnScope.PlayerControls(
     timerRemaining: Int?,
     viewModel: PlayerViewModel,
     onOpenTimer: () -> Unit,
+    onOpenQueue: () -> Unit,
 ) {
     ProgressRow(
         elapsedSeconds = scrub?.toDouble() ?: state.status.elapsedSeconds,
@@ -343,12 +374,14 @@ private fun ColumnScope.PlayerControls(
         repeat = state.status.repeat,
         timerRunning = state.sleepTimer.running,
         anyOptionActive = state.anyOptionActive,
+        queueLength = state.status.playlistLength,
         onToggle = viewModel::toggle,
         onNext = viewModel::next,
         onPrevious = viewModel::previous,
         onShuffle = viewModel::toggleShuffle,
         onRepeat = viewModel::cycleRepeat,
         onOpenTimer = onOpenTimer,
+        onOpenQueue = onOpenQueue,
     )
 
     // Only while a timer is running: a countdown to something stopping is worth a line of its
@@ -508,12 +541,14 @@ private fun TransportRow(
     repeat: RepeatMode,
     timerRunning: Boolean,
     anyOptionActive: Boolean,
+    queueLength: Int,
     onToggle: () -> Unit,
     onNext: () -> Unit,
     onPrevious: () -> Unit,
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
     onOpenTimer: () -> Unit,
+    onOpenQueue: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -563,8 +598,20 @@ private fun TransportRow(
             )
         }
 
-        // Balances the options button on the other side; an IconButton's own footprint.
-        Spacer(Modifier.size(48.dp))
+        // Balances the options button on the other side, whichever of the two it holds — both
+        // are an IconButton's own 48 dp, so the play button stays centred either way. There is
+        // nothing to open for a web radio stream or a single track, and `playlistLength` is how
+        // the box says so.
+        if (queueLength > 1) {
+            IconButton(onClick = onOpenQueue) {
+                Icon(
+                    imageVector = Icons.Rounded.QueueMusic,
+                    contentDescription = stringResource(R.string.action_show_queue),
+                )
+            }
+        } else {
+            Spacer(Modifier.size(48.dp))
+        }
     }
 }
 

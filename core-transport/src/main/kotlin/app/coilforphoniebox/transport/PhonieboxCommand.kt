@@ -96,6 +96,27 @@ object Commands {
     val next = player("next")
     val previous = player("prev")
 
+    /**
+     * Start playing the queue entry at [position].
+     *
+     * **Not part of upstream `future3` yet.** `playermpd.play` is `def play(self)` on both
+     * `future3/main` and `future3/develop`, so an unpatched box answers this with
+     * `TypeError: play() got an unexpected keyword argument 'pos'` — `jukebox/rpc/server.py`
+     * wraps `plugs.call` in a try/except and formats any exception as an error reply. The
+     * important part is that the exception happens *before* the body runs, so a rejected
+     * call changes nothing on the box and can be used as a free capability probe.
+     *
+     * MPD itself has always supported it, and the box uses it internally
+     * (`_next_in_stopped_state` calls `self.mpd_client.play(pos)`); only the RPC signature is
+     * missing. Until it lands upstream, callers fall back to stepping with [next]/[previous]
+     * — see `PlayerRepository.playAt`.
+     */
+    fun playAt(position: Int) = player(
+        "play",
+        kwargs = mapOf("pos" to JsonPrimitive(position)),
+        retryable = true,
+    )
+
     fun seek(positionSeconds: Double) = player(
         "seek",
         kwargs = mapOf("new_time" to JsonPrimitive(positionSeconds)),
@@ -153,6 +174,24 @@ object Commands {
 
     val listAlbums = player(
         "list_albums",
+        timeoutMillis = PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
+        retryable = true,
+    )
+
+    /**
+     * The box's current MPD queue, one entry per track.
+     *
+     * The queue is **never published** — `playermpd` only ever sends `playerstatus` — so this
+     * is the sole way to learn what is queued behind the playing song. The web UI does not
+     * call it, which is why `docs/protocol-notes.md` used not to list it, but it is a real
+     * `@plugs.tag` method on both `future3/main` and `future3/develop`.
+     *
+     * It is a synchronous MPD call on the socket the box shares with its card reader, and a
+     * recursively added artist folder can be thousands of entries — hence the library
+     * timeout, and hence it is asked once per *queue change* and never on a timer (§6).
+     */
+    val playlistInfo = player(
+        "playlistinfo",
         timeoutMillis = PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
         retryable = true,
     )

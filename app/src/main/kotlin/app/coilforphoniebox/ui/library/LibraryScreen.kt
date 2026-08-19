@@ -231,11 +231,11 @@ private fun SearchResults(viewModel: LibraryViewModel) {
                     box = activeBox,
                     allowExternalCovers = allowExternalCovers,
                     favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
-                    onPlay = { viewModel.play(PlayTarget.Album(album.albumArtist, album.album)) },
+                    onPlay = { viewModel.play(album.toPlayTarget()) },
                     onToggleFavourite = {
                         viewModel.toggleFavorite(
                             label = album.album,
-                            target = PlayTarget.Album(album.albumArtist, album.album),
+                            target = album.toPlayTarget(),
                             coverFile = album.coverFile,
                         )
                     },
@@ -763,11 +763,11 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
                 favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
                 coverPending = state.coverPending(album),
                 onRequestCover = { viewModel.requestAlbumCover(album) },
-                onPlay = { viewModel.play(PlayTarget.Album(album.albumArtist, album.album)) },
+                onPlay = { viewModel.play(album.toPlayTarget()) },
                 onToggleFavourite = {
                     viewModel.toggleFavorite(
                         label = album.album,
-                        target = PlayTarget.Album(album.albumArtist, album.album),
+                        target = album.toPlayTarget(),
                         coverFile = album.coverFile,
                     )
                 },
@@ -942,12 +942,12 @@ private fun LibraryDetailsSheet(
             favourite = "album:${target.album.albumArtist}/${target.album.album}" in favouriteKeys,
             onPlay = {
                 onDismiss()
-                viewModel.play(PlayTarget.Album(target.album.albumArtist, target.album.album))
+                viewModel.play(target.album.toPlayTarget())
             },
             onToggleFavourite = {
                 viewModel.toggleFavorite(
                     label = target.album.album,
-                    target = PlayTarget.Album(target.album.albumArtist, target.album.album),
+                    target = target.album.toPlayTarget(),
                     coverFile = target.album.coverFile,
                 )
             },

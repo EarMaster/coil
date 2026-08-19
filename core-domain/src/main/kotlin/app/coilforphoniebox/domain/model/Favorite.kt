@@ -17,6 +17,15 @@ data class Favorite(
     val album: String? = null,
     /** MPD URL of a single file, for a TRACK favourite. */
     val trackUrl: String? = null,
+    /**
+     * Which backend owns an ALBUM favourite, and that backend's own handle for it.
+     *
+     * Saved so the favourite still starts the right thing on a box with more than one
+     * backend. A row from before this existed reads as [LibraryProvider.MPD] with no URI,
+     * which is exactly what it was.
+     */
+    val provider: String = LibraryProvider.MPD,
+    val contentUri: String? = null,
     val coverFile: String? = null,
     val sortIndex: Int = 0,
     val launchCount: Int = 0,
@@ -30,7 +39,11 @@ data class Favorite(
     fun toPlayTarget(): PlayTarget? = when (type) {
         FavoriteType.FOLDER -> folder?.let { PlayTarget.Folder(it) }
         FavoriteType.ALBUM ->
-            if (albumArtist != null && album != null) PlayTarget.Album(albumArtist, album) else null
+            if (albumArtist != null && album != null) {
+                PlayTarget.Album(albumArtist, album, provider, contentUri)
+            } else {
+                null
+            }
 
         FavoriteType.TRACK -> trackUrl?.let { PlayTarget.Track(it) }
     }
@@ -53,6 +66,8 @@ data class Favorite(
                     type = FavoriteType.ALBUM,
                     albumArtist = target.albumArtist,
                     album = target.album,
+                    provider = target.provider,
+                    contentUri = target.contentUri,
                     coverFile = coverFile,
                 )
 

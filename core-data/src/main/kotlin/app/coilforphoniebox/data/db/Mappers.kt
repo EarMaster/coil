@@ -5,6 +5,7 @@ import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryFolder
+import app.coilforphoniebox.domain.model.LibraryProvider
 import app.coilforphoniebox.domain.model.LibraryTrack
 
 internal fun BoxEntity.toDomain() = Box(
@@ -85,6 +86,10 @@ internal fun LibraryAlbumEntity.toDomain() = LibraryAlbum(
     album = album,
     coverFile = coverFile,
     cachedAt = cachedAt,
+    provider = provider,
+    // `""` is how "no handle of its own" is stored, since a key column cannot be null.
+    contentUri = contentUri.takeIf { it.isNotEmpty() },
+    contentType = contentType,
 )
 
 internal fun LibraryAlbum.toEntity() = LibraryAlbumEntity(
@@ -94,6 +99,9 @@ internal fun LibraryAlbum.toEntity() = LibraryAlbumEntity(
     coverFile = coverFile,
     searchText = SearchText.haystack(album, albumArtist),
     cachedAt = cachedAt,
+    contentUri = contentUri.orEmpty(),
+    provider = provider,
+    contentType = contentType,
 )
 
 internal fun FavoriteEntity.toDomain() = Favorite(
@@ -107,6 +115,9 @@ internal fun FavoriteEntity.toDomain() = Favorite(
     albumArtist = albumArtist,
     album = album,
     trackUrl = trackUrl,
+    // A row saved before backends existed has no provider, and MPD is what it was.
+    provider = provider ?: LibraryProvider.MPD,
+    contentUri = contentUri,
     coverFile = coverFile,
     sortIndex = sortIndex,
     launchCount = launchCount,
@@ -122,6 +133,8 @@ internal fun Favorite.toEntity() = FavoriteEntity(
     albumArtist = albumArtist,
     album = album,
     trackUrl = trackUrl,
+    provider = provider,
+    contentUri = contentUri,
     coverFile = coverFile,
     sortIndex = sortIndex,
     launchCount = launchCount,

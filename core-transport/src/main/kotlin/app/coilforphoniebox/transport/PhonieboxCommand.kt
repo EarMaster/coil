@@ -1,5 +1,6 @@
 package app.coilforphoniebox.transport
 
+import app.coilforphoniebox.domain.model.LibraryProvider
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.RepeatMode
 import kotlinx.serialization.json.JsonElement
@@ -202,14 +203,19 @@ object Commands {
         retryable = true,
     )
 
-    fun albumCoverArt(albumArtist: String, album: String) = player(
+    fun albumCoverArt(
+        albumArtist: String,
+        album: String,
+        provider: String? = null,
+        contentUri: String? = null,
+    ) = player(
         "get_album_coverart",
-        kwargs = mapOf(
-            "albumartist" to JsonPrimitive(albumArtist),
-            "album" to JsonPrimitive(album),
-        ),
+        kwargs = albumKwargs(albumArtist, album, provider, contentUri),
         retryable = true,
     )
+
+    fun albumCoverArt(album: PlayTarget.Album) =
+        albumCoverArt(album.albumArtist, album.album, album.provider, album.contentUri)
 
     /**
      * Starts the box's MPD database scan. `update_wait` blocks until the scan is
@@ -226,9 +232,11 @@ object Commands {
 
         is PlayTarget.Album -> player(
             "play_album",
-            kwargs = mapOf(
-                "albumartist" to JsonPrimitive(target.albumArtist),
-                "album" to JsonPrimitive(target.album),
+            kwargs = albumKwargs(
+                target.albumArtist,
+                target.album,
+                target.provider,
+                target.contentUri,
             ),
             retryable = true,
         )
@@ -238,6 +246,38 @@ object Commands {
             kwargs = mapOf("song_url" to JsonPrimitive(target.url)),
             retryable = true,
         )
+    }
+
+    /**
+     * `albumartist` and `album`, plus the two routing arguments **only when they say
+     * something**.
+     *
+     * This omission is what keeps Coil working against a box that predates the
+     * provider-neutral player. There, `play_album` and `get_album_coverart` are strictly
+     * two-argument, so an unconditional `content_uri=` would come back as
+     * `TypeError: play_album() got an unexpected keyword argument` — the same rejection
+     * [playAt] relies on as a probe, except here it would be a plain regression. Such a box
+     * also never *returns* a content URI, so there is never one to send and the payload
+     * stays byte-for-byte what it always was.
+     *
+     * `provider` is dropped when it is MPD for the same reason: MPD is the default backend
+     * everywhere, so naming it adds a kwarg without changing where the call lands.
+     *
+     * Omitting rather than sending null is deliberate — the coordinator's own
+     * `args = (…, content_uri) if content_uri else (…)` treats absent and null alike, and an
+     * explicit null would still be an unexpected keyword to an older box.
+     */
+    private fun albumKwargs(
+        albumArtist: String,
+        album: String,
+        provider: String?,
+        contentUri: String?,
+    ): Map<String, JsonElement> = buildMap {
+        put("albumartist", JsonPrimitive(albumArtist))
+        put("album", JsonPrimitive(album))
+        contentUri?.takeIf { it.isNotBlank() }?.let { put("content_uri", JsonPrimitive(it)) }
+        provider?.takeIf { it.isNotBlank() && it != LibraryProvider.MPD }
+            ?.let { put("provider", JsonPrimitive(it)) }
     }
 
     // ---------------------------------------------------------------- volume

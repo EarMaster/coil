@@ -10,6 +10,13 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 ## [Unreleased]
 
 ### Added
+- **Coil now copes with a box that plays from more than one source.** A coming Phoniebox release
+  lets a box have a streaming service alongside its own music, and then the album list holds both.
+  An album's name and artist are no longer enough to say which one you meant — two sources can
+  offer the same record — so Coil now remembers where each album came from and tells the box, for
+  favourites and home screen shortcuts as well as the library. Without this, starting an album from
+  the streaming service would have emptied the queue and played nothing at all. Nothing changes on
+  a box with only its own music, and your existing favourites and covers carry over untouched
 - **A setting for cover art that does not live on your box.** Phoniebox is gaining the ability to play
   from a streaming service, and such a service keeps its cover art on its own servers rather than on
   the box. Coil can now show those covers, but only if you ask it to: the switch sits under Appearance

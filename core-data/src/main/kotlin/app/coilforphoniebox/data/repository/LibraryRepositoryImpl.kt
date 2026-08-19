@@ -88,27 +88,34 @@ class LibraryRepositoryImpl @Inject constructor(
             dao.replaceAlbums(boxId, albums.map { it.toEntity() })
         }
 
-    override suspend fun ensureAlbumCover(boxId: String, albumArtist: String, album: String) {
-        val existing = dao.findAlbum(boxId, albumArtist, album)
+    override suspend fun ensureAlbumCover(album: LibraryAlbum) {
+        val uri = album.contentUri.orEmpty()
+        val existing = dao.findAlbum(album.boxId, album.albumArtist, album.album, uri)
         if (existing == null || existing.coverFile != null) return
 
         coverPermits.withPermit {
             // Another caller may have resolved it while this one waited for a permit.
-            if (dao.findAlbum(boxId, albumArtist, album)?.coverFile != null) return
-            val coverFile = resolveCover(Commands.albumCoverArt(albumArtist, album)) ?: return
-            dao.setAlbumCover(boxId, albumArtist, album, coverFile)
+            if (dao.findAlbum(album.boxId, album.albumArtist, album.album, uri)?.coverFile != null) {
+                return
+            }
+            val coverFile = resolveCover(Commands.albumCoverArt(album.toPlayTarget())) ?: return
+            dao.setAlbumCover(album.boxId, album.albumArtist, album.album, uri, coverFile)
         }
     }
 
     override suspend fun coverFileFor(boxId: String, target: PlayTarget): String? = when (target) {
-        is PlayTarget.Album ->
-            dao.findAlbum(boxId, target.albumArtist, target.album)?.coverFile
+        is PlayTarget.Album -> {
+            val uri = target.contentUri.orEmpty()
+            dao.findAlbum(boxId, target.albumArtist, target.album, uri)?.coverFile
                 ?: coverPermits.withPermit {
-                    resolveCover(Commands.albumCoverArt(target.albumArtist, target.album))
+                    resolveCover(Commands.albumCoverArt(target))
                         // The album grid asks the same question, so answer it here too. A
                         // missing row makes this a no-op rather than an error.
-                        ?.also { dao.setAlbumCover(boxId, target.albumArtist, target.album, it) }
+                        ?.also {
+                            dao.setAlbumCover(boxId, target.albumArtist, target.album, uri, it)
+                        }
                 }
+        }
 
         is PlayTarget.Track -> coverPermits.withPermit { resolveCover(Commands.singleCoverArt(target.url)) }
 

@@ -32,8 +32,12 @@ interface LibraryRepository {
      *
      * Deliberately per album and on demand: asking for every cover during a refresh
      * would be one RPC per album on a socket the box also uses for card detection.
+     *
+     * Takes the whole album rather than its parts, because the lookup has to be routed and
+     * stored against the full identity — artist and album alone address a different row on a
+     * box with more than one backend.
      */
-    suspend fun ensureAlbumCover(boxId: String, albumArtist: String, album: String)
+    suspend fun ensureAlbumCover(album: LibraryAlbum)
 
     /**
      * Cover file name for [target], from the cache if it is there and from the box if not.

@@ -218,7 +218,7 @@ class FakeLibraryRepository(
 
     override suspend fun refreshAlbums(boxId: String): Result<Unit> = Result.success(Unit)
 
-    override suspend fun ensureAlbumCover(boxId: String, albumArtist: String, album: String) = Unit
+    override suspend fun ensureAlbumCover(album: LibraryAlbum) = Unit
 
     /**
      * Null, deliberately: a golden has to be the same picture every run, and a cover that

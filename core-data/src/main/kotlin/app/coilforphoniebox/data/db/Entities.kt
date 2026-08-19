@@ -89,9 +89,18 @@ data class LibraryTrackEntity(
     @ColumnInfo(defaultValue = "") val searchText: String,
 )
 
+/**
+ * One row of the albums list.
+ *
+ * [contentUri] is part of the key because artist-and-album stopped being unique the moment a
+ * box could have two backends: the same record can be both on the box's disk and in a
+ * streaming account, and the two are played by different calls. It is `""` rather than null
+ * for everything MPD owns — a primary key column cannot be null, and the domain model maps
+ * the empty string back to null at the boundary.
+ */
 @Entity(
     tableName = "library_albums",
-    primaryKeys = ["boxId", "albumArtist", "album"],
+    primaryKeys = ["boxId", "albumArtist", "album", "contentUri"],
     foreignKeys = [
         ForeignKey(
             entity = BoxEntity::class,
@@ -110,6 +119,10 @@ data class LibraryAlbumEntity(
     /** Folded album and album artist; see [SearchText]. */
     @ColumnInfo(defaultValue = "") val searchText: String,
     val cachedAt: Long,
+    /** `""` for MPD, which has no handle of its own — see the note on the entity. */
+    @ColumnInfo(defaultValue = "") val contentUri: String = "",
+    @ColumnInfo(defaultValue = "mpd") val provider: String = "mpd",
+    @ColumnInfo(defaultValue = "album") val contentType: String = "album",
 )
 
 @Entity(
@@ -135,6 +148,15 @@ data class FavoriteEntity(
     val album: String?,
     /** MPD URL of a single file, set only for a `TRACK` row (schema version 2). */
     val trackUrl: String?,
+    /**
+     * Which backend owns an `ALBUM` row, and that backend's handle for it (schema version 4).
+     *
+     * Nullable rather than defaulted, because null is the true answer for every favourite
+     * saved before a box could have more than one backend, and for every folder and track
+     * row. A null reads as MPD, which is what those rows are.
+     */
+    val provider: String?,
+    val contentUri: String?,
     val coverFile: String?,
     val sortIndex: Int,
     val launchCount: Int,

@@ -277,7 +277,7 @@ class LibraryViewModel @Inject constructor(
     fun requestAlbumCover(album: LibraryAlbum) {
         viewModelScope.launch {
             try {
-                library.ensureAlbumCover(album.boxId, album.albumArtist, album.album)
+                library.ensureAlbumCover(album)
             } finally {
                 // Answered, so the cell may now stand something in if it came back empty.
                 // The key carries the box id, which is why nothing needs clearing when the

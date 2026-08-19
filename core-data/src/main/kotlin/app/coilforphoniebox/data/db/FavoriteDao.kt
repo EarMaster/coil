@@ -25,11 +25,23 @@ interface FavoriteDao {
     )
     suspend fun findFolder(boxId: String, folder: String): FavoriteEntity?
 
+    /**
+     * `IS` rather than `=` for the content URI: it is null on every album favourite saved
+     * before the column existed, and `= NULL` is never true in SQL — so `=` would fail to
+     * match precisely the rows that predate it, and starring such an album again would add a
+     * duplicate instead of unstarring it.
+     */
     @Query(
         "SELECT * FROM favorites WHERE boxId = :boxId AND type = 'ALBUM' " +
-            "AND albumArtist = :albumArtist AND album = :album LIMIT 1",
+            "AND albumArtist = :albumArtist AND album = :album " +
+            "AND contentUri IS :contentUri LIMIT 1",
     )
-    suspend fun findAlbum(boxId: String, albumArtist: String, album: String): FavoriteEntity?
+    suspend fun findAlbum(
+        boxId: String,
+        albumArtist: String,
+        album: String,
+        contentUri: String?,
+    ): FavoriteEntity?
 
     @Query(
         "SELECT * FROM favorites WHERE boxId = :boxId AND type = 'TRACK' AND trackUrl = :trackUrl LIMIT 1",

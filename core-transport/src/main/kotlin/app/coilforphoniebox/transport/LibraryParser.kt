@@ -2,6 +2,8 @@ package app.coilforphoniebox.transport
 
 import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
+import app.coilforphoniebox.domain.model.LibraryContentType
+import app.coilforphoniebox.domain.model.LibraryProvider
 import app.coilforphoniebox.domain.model.LibraryFolder
 import app.coilforphoniebox.domain.model.LibraryTrack
 import app.coilforphoniebox.domain.model.isExternalCoverRef
@@ -75,6 +77,15 @@ object LibraryParser {
     /**
      * `list_albums` is MPD's `list album group albumartist`, so each entry carries one
      * album artist and either a single album or an array of them.
+     *
+     * A provider-neutral box adds `provider`, `content_uri` and `content_type` to every
+     * entry — MPD's own included — and, once the box has more than one backend, returns all
+     * of their catalogues concatenated. Those three fields are then the only thing telling
+     * two entries apart, so they are read here and kept: **dropping them is what makes
+     * `play_album` fall through to MPD, find nothing, and clear the queue.**
+     *
+     * A box without the provider-neutral player sends none of them, which reads as MPD, no
+     * content URI, and an album — exactly what such a box only ever has.
      */
     fun albums(boxId: String, result: JsonElement?, cachedAt: Long): List<LibraryAlbum> {
         val entries = (result as? JsonArray).orEmpty()
@@ -86,10 +97,26 @@ object LibraryParser {
                     val artist = element.string("albumartist")
                         ?: element.string("artist")
                         ?: ""
+                    val provider = element.string("provider")
+                        ?.takeIf { it.isNotBlank() }
+                        ?: LibraryProvider.MPD
+                    val contentUri = element.string("content_uri")?.takeIf { it.isNotBlank() }
+                    val contentType = element.string("content_type")
+                        ?.takeIf { it.isNotBlank() }
+                        ?: LibraryContentType.ALBUM
+
                     element["album"].asStringList()
                         .filter { it.isNotBlank() }
                         .forEach { album ->
-                            albums += LibraryAlbum(boxId, artist, album, cachedAt = cachedAt)
+                            albums += LibraryAlbum(
+                                boxId = boxId,
+                                albumArtist = artist,
+                                album = album,
+                                cachedAt = cachedAt,
+                                provider = provider,
+                                contentUri = contentUri,
+                                contentType = contentType,
+                            )
                         }
                 }
 
@@ -102,7 +129,10 @@ object LibraryParser {
             }
         }
 
-        return albums.distinctBy { it.albumArtist to it.album }
+        // Keyed on the content URI as well, so a record owned on CD *and* saved on a
+        // streaming service stays two rows. Collapsing them would hide whichever the box
+        // listed second, and the box lists its default backend first.
+        return albums.distinctBy { Triple(it.albumArtist, it.album, it.contentUri) }
     }
 
     /** Outcome of a cover art request. */

@@ -89,6 +89,84 @@ class LibraryParserTest {
         assertEquals("", albums.first().albumArtist)
     }
 
+    /**
+     * A box predating the provider-neutral player sends none of the three new fields, and
+     * what it means by that is the only thing it has ever had: the local library.
+     */
+    @Test
+    fun `an entry with no provider fields reads as a local album`() {
+        val albums = LibraryParser.albums(
+            "box-1",
+            parse("""[{"albumartist":"Bibi","album":"Hexerei"}]"""),
+            0L,
+        )
+
+        assertEquals("mpd", albums.single().provider)
+        assertNull(albums.single().contentUri)
+        assertEquals("album", albums.single().contentType)
+    }
+
+    /**
+     * Once a box has two backends it returns both catalogues in one list, and these three
+     * fields are all that separate them. Losing them is what sends a streaming album to MPD,
+     * which finds nothing and clears the queue on the way.
+     */
+    @Test
+    fun `provider, handle and kind are kept`() {
+        val raw = """
+            [
+              {"albumartist":"Bibi","album":"Hexerei","provider":"mpd",
+               "content_uri":null,"content_type":"album"},
+              {"albumartist":"Nico","album":"Chill Mix","provider":"spotify",
+               "content_uri":"spotify:playlist:42","content_type":"playlist"}
+            ]
+        """.trimIndent()
+
+        val albums = LibraryParser.albums("box-1", parse(raw), 0L)
+
+        val local = albums.single { it.provider == "mpd" }
+        assertNull("MPD addresses its own albums by artist and album", local.contentUri)
+
+        val remote = albums.single { it.provider == "spotify" }
+        assertEquals("spotify:playlist:42", remote.contentUri)
+        assertEquals("playlist", remote.contentType)
+        assertEquals("Chill Mix", remote.album)
+    }
+
+    /**
+     * Owning a record on disc *and* saving it in a streaming account is ordinary, and the two
+     * are played by different calls — so they have to stay two rows. Keying the de-duplication
+     * on artist and album alone would hide whichever the box listed second.
+     */
+    @Test
+    fun `the same album from two backends stays two entries`() {
+        val raw = """
+            [
+              {"albumartist":"Bibi","album":"Hexerei","provider":"mpd"},
+              {"albumartist":"Bibi","album":"Hexerei","provider":"spotify",
+               "content_uri":"spotify:album:9"}
+            ]
+        """.trimIndent()
+
+        val albums = LibraryParser.albums("box-1", parse(raw), 0L)
+
+        assertEquals(2, albums.size)
+        assertEquals(setOf(null, "spotify:album:9"), albums.map { it.contentUri }.toSet())
+    }
+
+    /** A genuine duplicate — same backend, same handle — is still collapsed. */
+    @Test
+    fun `a repeated entry is still de-duplicated`() {
+        val raw = """
+            [
+              {"albumartist":"Bibi","album":"Hexerei"},
+              {"albumartist":"Bibi","album":"Hexerei"}
+            ]
+        """.trimIndent()
+
+        assertEquals(1, LibraryParser.albums("box-1", parse(raw), 0L).size)
+    }
+
     @Test
     fun `cover art returns a bare file name`() {
         assertEquals(

@@ -59,6 +59,22 @@ object LibraryContentType {
 }
 
 /**
+ * A backend the box browses with, as the box describes itself.
+ *
+ * The only authoritative account of which backends exist and what to call them. Working it
+ * out from the entries that came back instead would be wrong in the case that matters: the
+ * box swallows a backend whose catalogue failed, so a streaming account that is merely
+ * unreachable would look like a box that never had one.
+ *
+ * [label] is the box's own English word for it — "Local", "Spotify" — and is a last resort.
+ * Coil translates the backends it knows and falls back to this for one it does not.
+ */
+data class LibrarySource(
+    val id: String,
+    val label: String,
+)
+
+/**
  * One entry in the albums list — which, on a box with more than one backend, is not always
  * an album: see [contentType].
  *

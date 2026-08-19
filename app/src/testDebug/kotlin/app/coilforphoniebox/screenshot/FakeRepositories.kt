@@ -12,6 +12,7 @@ import app.coilforphoniebox.domain.model.LibraryIndexResult
 import app.coilforphoniebox.domain.model.LibraryIndexState
 import app.coilforphoniebox.domain.model.JumpOutcome
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
 import app.coilforphoniebox.domain.model.QueueEntry
@@ -215,6 +216,14 @@ class FakeLibraryRepository(
     override fun albums(boxId: String): Flow<List<LibraryAlbum>> = allAlbums
 
     override fun albumsCachedAt(boxId: String): Flow<Long?> = cachedAt
+
+    /**
+     * Swappable like the rest: a golden of a box with two music sources needs the names to
+     * label them with, and a single-source box reports none.
+     */
+    val sources = MutableStateFlow(emptyList<LibrarySource>())
+
+    override fun librarySources(boxId: String): Flow<List<LibrarySource>> = sources
 
     override suspend fun refreshAlbums(boxId: String): Result<Unit> = Result.success(Unit)
 

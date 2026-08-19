@@ -5,6 +5,7 @@ import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryIndexResult
 import app.coilforphoniebox.domain.model.LibraryIndexState
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.PlayTarget
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,15 @@ interface LibraryRepository {
 
     /** Most recent successful album refresh, for the freshness hint. */
     fun albumsCachedAt(boxId: String): Flow<Long?>
+
+    /**
+     * The backends this box browses with, as it described them; empty until a refresh has
+     * asked, and empty for a box that has no such notion.
+     *
+     * Only good for *naming* a backend. Whether a box has more than one is answered from the
+     * cached albums instead, which survive a cold start where this does not.
+     */
+    fun librarySources(boxId: String): Flow<List<LibrarySource>>
 
     suspend fun refreshAlbums(boxId: String): Result<Unit>
 

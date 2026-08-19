@@ -3,6 +3,7 @@ package app.coilforphoniebox.transport
 import app.coilforphoniebox.domain.model.LibraryProvider
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.RepeatMode
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -175,6 +176,43 @@ object Commands {
 
     val listAlbums = player(
         "list_albums",
+        timeoutMillis = PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
+        retryable = true,
+    )
+
+    /**
+     * The backends this box browses with, each `{id, label, views}`.
+     *
+     * Doubles as the capability probe for the whole provider-neutral surface: a box that
+     * answers this has [listLibraryItems] and the `provider`/`content_uri` fields too, and one
+     * that rejects it has none of them. That makes it one question rather than a fallback per
+     * call — see `LibraryRepositoryImpl.ensureLibrarySources`, and [playAt] for the same
+     * rejected-call-as-probe trick.
+     *
+     * Cheap despite the library timeout: the box builds the answer from the backends already
+     * registered in memory rather than reading any catalogue.
+     */
+    val listLibrarySources = player(
+        "list_library_sources",
+        timeoutMillis = PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
+        retryable = true,
+    )
+
+    /**
+     * Everything browsable of the given kinds, across every backend.
+     *
+     * The provider-aware replacement for [listAlbums], which on such a box is the same call
+     * wearing a name that stopped being true once the answer could contain playlists.
+     * [contentTypes] keeps the box from assembling more than the albums tab is going to draw,
+     * which matters on the socket it shares with its card reader (§6).
+     *
+     * Only sent to a box known to have it — see [listLibrarySources].
+     */
+    fun listLibraryItems(contentTypes: List<String>) = player(
+        "list_library_items",
+        kwargs = mapOf(
+            "content_types" to JsonArray(contentTypes.map { JsonPrimitive(it) }),
+        ),
         timeoutMillis = PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
         retryable = true,
     )

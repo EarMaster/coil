@@ -168,6 +168,37 @@ class LibraryParserTest {
     }
 
     @Test
+    fun `library sources are read as id and label`() {
+        val raw = """
+            [
+              {"id":"mpd","label":"Local","views":[{"id":"albums","kind":"items"}]},
+              {"id":"spotify","label":"Spotify","views":[]}
+            ]
+        """.trimIndent()
+
+        val sources = LibraryParser.librarySources(parse(raw))
+
+        assertEquals(listOf("mpd", "spotify"), sources.map { it.id })
+        assertEquals(listOf("Local", "Spotify"), sources.map { it.label })
+    }
+
+    /**
+     * The id is what a play call is routed by, so an entry without one is dropped rather than
+     * given a made-up id that would send content to the wrong backend. A missing *label* is
+     * only a naming problem, so the id stands in.
+     */
+    @Test
+    fun `a source without an id is dropped, one without a label keeps its id`() {
+        val raw = """[{"label":"Nameless"},{"id":"other"}]"""
+
+        val sources = LibraryParser.librarySources(parse(raw))
+
+        assertEquals(1, sources.size)
+        assertEquals("other", sources.single().id)
+        assertEquals("other", sources.single().label)
+    }
+
+    @Test
     fun `cover art returns a bare file name`() {
         assertEquals(
             LibraryParser.CoverArt.Available("abc123.jpg"),

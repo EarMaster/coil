@@ -4,6 +4,7 @@ import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryContentType
 import app.coilforphoniebox.domain.model.LibraryProvider
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.LibraryFolder
 import app.coilforphoniebox.domain.model.LibraryTrack
 import app.coilforphoniebox.domain.model.isExternalCoverRef
@@ -134,6 +135,24 @@ object LibraryParser {
         // listed second, and the box lists its default backend first.
         return albums.distinctBy { Triple(it.albumArtist, it.album, it.contentUri) }
     }
+
+    /**
+     * `list_library_sources` returns one `{id, label, views}` per registered backend.
+     *
+     * `views` is not read: it describes how each backend can be browsed, and Coil's own two
+     * tabs already match what the box does — `get_folder_content` is routed to the default
+     * backend whatever else is registered, so the folders tab is local-only by construction.
+     * Parsing a field nothing consumes would only be a second thing to keep true.
+     *
+     * An entry with no `id` is dropped rather than defaulted: the id is what a play call is
+     * routed by, and inventing one would send content to the wrong backend.
+     */
+    fun librarySources(result: JsonElement?): List<LibrarySource> =
+        (result as? JsonArray).orEmpty().mapNotNull { element ->
+            val entry = element as? JsonObject ?: return@mapNotNull null
+            val id = entry.string("id")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            LibrarySource(id = id, label = entry.string("label")?.takeIf { it.isNotBlank() } ?: id)
+        }
 
     /** Outcome of a cover art request. */
     sealed interface CoverArt {

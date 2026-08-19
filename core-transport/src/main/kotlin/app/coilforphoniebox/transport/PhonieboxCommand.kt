@@ -62,10 +62,14 @@ data class PhonieboxCommand(
  * reachable from this app, which limits the damage if the box's unauthenticated RPC
  * port is ever accidentally exposed (§16).
  *
- * Argument names are taken from the plugin signatures in
- * `src/jukebox/components/player/playermpd/__init__.py` and
- * `src/jukebox/components/volume/__init__.py` on `future3/main`, not from the web
- * UI's command table, which omits several of them.
+ * Argument names are taken from the plugin signatures rather than from the web UI's command
+ * table, which omits several of them: `src/jukebox/components/playermpd/__init__.py` and
+ * `src/jukebox/components/volume/__init__.py` on `future3/main`, and
+ * `src/jukebox/components/player/coordinator.py` on `future3/develop`, where the
+ * provider-neutral player replaced `playermpd` (which survives there only as a compatibility
+ * shim). The method names and their meanings are the same on both; what `develop` adds is the
+ * optional `provider` and `content_uri` routing arguments — see [albumKwargs] for why those are
+ * sent only when they say something.
  *
  * **`as_thread` is never sent.** The implementation plan suggests it for slow calls, but
  * `jukebox/plugs.py` starts a daemon thread and returns the `Thread` object rather than

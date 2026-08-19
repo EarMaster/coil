@@ -38,6 +38,7 @@ class LibraryScreenshotTest : ScreenshotTest() {
         boxes = FakeBoxRepository(),
         player = FakePlayerRepository(),
         favorites = FakeFavoriteRepository(Fixtures.favorites),
+        settings = FakeSettingsRepository(),
     )
 
     private fun string(id: Int): String = RuntimeEnvironment.getApplication().getString(id)

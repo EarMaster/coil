@@ -10,6 +10,7 @@ import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.FavoriteRepository
 import app.coilforphoniebox.domain.repository.PlayerRepository
+import app.coilforphoniebox.domain.repository.SettingsRepository
 import app.coilforphoniebox.domain.usecase.PlayFavoriteUseCase
 import app.coilforphoniebox.domain.usecase.ResolveFavoriteCoverUseCase
 import app.coilforphoniebox.shortcuts.PlayDeepLink
@@ -41,6 +42,7 @@ class FavoritesViewModel @Inject constructor(
     private val playFavorite: PlayFavoriteUseCase,
     private val resolveCover: ResolveFavoriteCoverUseCase,
     private val shortcuts: ShortcutPublisher,
+    settings: SettingsRepository,
 ) : ViewModel() {
 
     data class State(
@@ -49,6 +51,8 @@ class FavoritesViewModel @Inject constructor(
         val connection: ConnectionState = ConnectionState.DISCONNECTED,
         /** Favourites whose cover lookup has finished — see [coverPending]. */
         val coversSettled: Set<Long> = emptySet(),
+        /** Whether a cover held somewhere other than the box may be loaded (§16). */
+        val allowExternalCovers: Boolean = false,
     ) {
         /**
          * Whether [favorite] is still waiting to hear whether it has artwork.
@@ -96,12 +100,14 @@ class FavoritesViewModel @Inject constructor(
         },
         player.connectionState,
         coversSettled,
-    ) { box, list, connection, settled ->
+        settings.settings.map { it.loadExternalCoverArt }.distinctUntilChanged(),
+    ) { box, list, connection, settled, allowExternalCovers ->
         State(
             favorites = list,
             activeBox = box,
             connection = connection,
             coversSettled = settled,
+            allowExternalCovers = allowExternalCovers,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
 

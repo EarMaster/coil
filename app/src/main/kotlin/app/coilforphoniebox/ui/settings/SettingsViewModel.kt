@@ -73,6 +73,9 @@ class SettingsViewModel @Inject constructor(
     fun setDynamicColor(enabled: Boolean) =
         viewModelScope.launch { settings.setDynamicColor(enabled) }
 
+    fun setLoadExternalCoverArt(enabled: Boolean) =
+        viewModelScope.launch { settings.setLoadExternalCoverArt(enabled) }
+
     fun setSessionMode(mode: SessionMode) {
         viewModelScope.launch {
             settings.setSessionMode(mode)

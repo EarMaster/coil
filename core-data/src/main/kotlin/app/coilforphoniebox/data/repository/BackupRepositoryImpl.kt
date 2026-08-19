@@ -79,6 +79,11 @@ class BackupRepositoryImpl @Inject constructor(
         val dynamicColor: Boolean = false,
         val sessionMode: String = SessionMode.APP_ONLY.name,
         val favoritesLayout: String = FavoritesLayout.GRID.name,
+        /**
+         * Defaults to false so a backup written before this setting existed imports as
+         * "off" — the safe reading, since the file cannot say the user ever opted in.
+         */
+        val loadExternalCoverArt: Boolean = false,
     )
 
     override suspend fun export(): String {
@@ -114,6 +119,7 @@ class BackupRepositoryImpl @Inject constructor(
                 dynamicColor = current.dynamicColor,
                 sessionMode = current.sessionMode.name,
                 favoritesLayout = current.favoritesLayout.name,
+                loadExternalCoverArt = current.loadExternalCoverArt,
             ),
         )
         return codec.encodeToString(file)
@@ -184,6 +190,7 @@ class BackupRepositoryImpl @Inject constructor(
             FavoritesLayout.entries.firstOrNull { it.name == file.settings.favoritesLayout }
                 ?: FavoritesLayout.GRID,
         )
+        settings.setLoadExternalCoverArt(file.settings.loadExternalCoverArt)
     }
 
     private val codec = Json {

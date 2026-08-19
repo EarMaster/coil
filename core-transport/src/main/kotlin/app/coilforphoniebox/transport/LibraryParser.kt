@@ -4,6 +4,7 @@ import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryFolder
 import app.coilforphoniebox.domain.model.LibraryTrack
+import app.coilforphoniebox.domain.model.isExternalCoverRef
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -106,8 +107,15 @@ object LibraryParser {
 
     /** Outcome of a cover art request. */
     sealed interface CoverArt {
-        /** A file name in the box's cover cache. */
-        data class Available(val fileName: String) : CoverArt
+        /**
+         * Where the artwork is: a file name in the box's cover cache, or an absolute URL
+         * when the backend that owns the content serves its own artwork.
+         *
+         * Not "a file name" any more, which is why it is no longer called one —
+         * [Box.coverUrl] is what decides which of the two this is and whether it may be
+         * loaded at all.
+         */
+        data class Available(val coverRef: String) : CoverArt
 
         /**
          * The box has queued the extraction on its own worker thread and has nothing to
@@ -127,6 +135,12 @@ object LibraryParser {
      *
      * Two sentinel values matter, both from `coverart_cache_manager.py`: `CACHE_PENDING`
      * while extraction is queued, and an empty string for "no artwork".
+     *
+     * **A provider-neutral box can answer with an absolute URL instead**, when the backend
+     * that owns the content serves its own artwork — a Spotify track answers with
+     * `https://i.scdn.co/image/…`. Those are kept whole: taking the last path segment, which
+     * is right for the box's own `some/dir/hash.jpg`, would reduce such a URL to its hash and
+     * leave [Box.coverUrl] no way to tell it was ever external.
      */
     fun coverArt(result: JsonElement?): CoverArt {
         val value = (result as? JsonPrimitive)?.content?.trim()
@@ -135,6 +149,7 @@ object LibraryParser {
         return when {
             value == CACHE_PENDING -> CoverArt.Pending
             value.isBlank() || value == "null" || value == "None" -> CoverArt.Missing
+            value.isExternalCoverRef() -> CoverArt.Available(value)
             else -> CoverArt.Available(value.substringAfterLast('/'))
         }
     }

@@ -9,6 +9,14 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Added
+- **A setting for cover art that does not live on your box.** Phoniebox is gaining the ability to play
+  from a streaming service, and such a service keeps its cover art on its own servers rather than on
+  the box. Coil can now show those covers, but only if you ask it to: the switch sits under Appearance
+  and is **off by default**, because turning it on is the one thing in the app that makes your phone
+  talk to anything other than your box on the local network. Left off, those albums show a stand-in
+  cover and nothing leaves your network
+
 ## [1.1.1] - 2026-08-12
 
 ### Fixed

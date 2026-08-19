@@ -13,6 +13,7 @@ import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.FavoriteRepository
 import app.coilforphoniebox.domain.repository.LibraryRepository
 import app.coilforphoniebox.domain.repository.PlayerRepository
+import app.coilforphoniebox.domain.repository.SettingsRepository
 import app.coilforphoniebox.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,6 +50,7 @@ class LibraryViewModel @Inject constructor(
     private val boxes: BoxRepository,
     private val player: PlayerRepository,
     private val favorites: FavoriteRepository,
+    settings: SettingsRepository,
 ) : ViewModel() {
 
     data class FolderState(
@@ -102,6 +104,17 @@ class LibraryViewModel @Inject constructor(
 
     val activeBox: StateFlow<Box?> =
         boxes.activeBox.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /**
+     * Whether a cover the box points at somewhere other than itself may be loaded (§16).
+     *
+     * Travels beside [activeBox] because the two are always needed together: it takes both
+     * to turn a cover reference into a URL, and neither alone is enough.
+     */
+    val allowExternalCovers: StateFlow<Boolean> = settings.settings
+        .map { it.loadExternalCoverArt }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private val activeBoxId = boxes.activeBox.map { it?.id }.distinctUntilChanged()
 

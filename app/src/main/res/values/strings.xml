@@ -220,6 +220,8 @@
     <string name="settings_dynamic_colour_summary">Replaces Coil\'s green with colours taken from your wallpaper.</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_summary">Opens the system language settings for Coil.</string>
+    <string name="settings_external_cover_art">Load cover art for external services (e.g. Spotify)</string>
+    <string name="settings_external_cover_art_summary">Lets your phone load those covers from the service itself. Otherwise Coil only talks to your box, and those albums show a stand-in cover.</string>
 
     <!-- Settings: per box -->
     <!-- Row leading to the box management screen; its summary lists the box names. -->

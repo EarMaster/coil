@@ -115,6 +115,15 @@ fun SettingsScreen(
             onClick = { context.openAppLocaleSettings() },
         )
 
+        // Off by default and stated plainly, because turning it on is the only thing in the
+        // app that makes the phone talk to anything but the box (§16).
+        SwitchRow(
+            title = stringResource(R.string.settings_external_cover_art),
+            subtitle = stringResource(R.string.settings_external_cover_art_summary),
+            checked = state.settings.loadExternalCoverArt,
+            onCheckedChange = viewModel::setLoadExternalCoverArt,
+        )
+
         SectionDivider()
         SectionHeader(stringResource(R.string.settings_section_notification))
 

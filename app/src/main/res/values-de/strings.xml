@@ -135,6 +135,8 @@
     <string name="settings_dynamic_colour_summary">Ersetzt das Grün von Coil durch Farben aus deinem Hintergrundbild.</string>
     <string name="settings_language">Sprache</string>
     <string name="settings_language_summary">Öffnet die Spracheinstellungen des Systems für Coil.</string>
+    <string name="settings_external_cover_art">Cover von externen Diensten laden (z. B. Spotify)</string>
+    <string name="settings_external_cover_art_summary">Dein Telefon lädt diese Cover dann direkt beim Dienst. Sonst spricht Coil nur mit deiner Box, und diese Alben bekommen ein Ersatzcover.</string>
 
     <string name="settings_manage_boxes">Boxen verwalten</string>
     <string name="settings_box_address">Adresse</string>

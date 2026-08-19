@@ -135,6 +135,8 @@
     <string name="settings_dynamic_colour_summary">Vervangt het groen van Coil door kleuren uit je achtergrond.</string>
     <string name="settings_language">Taal</string>
     <string name="settings_language_summary">Opent de taalinstellingen van het systeem voor Coil.</string>
+    <string name="settings_external_cover_art">Hoezen van externe diensten laden (bijv. Spotify)</string>
+    <string name="settings_external_cover_art_summary">Je telefoon laadt die hoezen dan rechtstreeks bij de dienst. Anders praat Coil alleen met je box en krijgen die albums een vervangende hoes.</string>
 
     <string name="settings_manage_boxes">Boxen beheren</string>
     <string name="settings_box_address">Adres</string>

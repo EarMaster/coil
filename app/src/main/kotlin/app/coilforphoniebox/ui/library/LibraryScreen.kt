@@ -175,12 +175,14 @@ private fun SearchResults(viewModel: LibraryViewModel) {
     val results by viewModel.searchResults.collectAsStateWithLifecycle()
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
+    val allowExternalCovers by viewModel.allowExternalCovers.collectAsStateWithLifecycle()
     var details by remember { mutableStateOf<DetailsTarget?>(null) }
 
     details?.let { target ->
         LibraryDetailsSheet(
             target = target,
             box = activeBox,
+            allowExternalCovers = allowExternalCovers,
             favouriteKeys = favouriteKeys,
             viewModel = viewModel,
             onDismiss = { details = null },
@@ -227,6 +229,7 @@ private fun SearchResults(viewModel: LibraryViewModel) {
                 AlbumRow(
                     album = album,
                     box = activeBox,
+                    allowExternalCovers = allowExternalCovers,
                     favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
                     onPlay = { viewModel.play(PlayTarget.Album(album.albumArtist, album.album)) },
                     onToggleFavourite = {
@@ -273,6 +276,7 @@ private fun FolderTab(viewModel: LibraryViewModel) {
     val state by viewModel.folderState.collectAsStateWithLifecycle()
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
+    val allowExternalCovers by viewModel.allowExternalCovers.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.content.cachedAt)
     var details by remember { mutableStateOf<DetailsTarget?>(null) }
 
@@ -287,6 +291,7 @@ private fun FolderTab(viewModel: LibraryViewModel) {
         LibraryDetailsSheet(
             target = target,
             box = activeBox,
+            allowExternalCovers = allowExternalCovers,
             favouriteKeys = favouriteKeys,
             viewModel = viewModel,
             onDismiss = { details = null },
@@ -555,14 +560,15 @@ private fun TrackRow(
 private fun AlbumRow(
     album: LibraryAlbum,
     box: PhonieBox?,
+    allowExternalCovers: Boolean,
     favourite: Boolean,
     onPlay: () -> Unit,
     onToggleFavourite: () -> Unit,
     onDetails: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    val coverUrl = remember(album.coverFile, box?.host) {
-        album.coverFile?.let { file -> box?.coverUrl(file) }
+    val coverUrl = remember(album.coverFile, box?.host, allowExternalCovers) {
+        album.coverFile?.let { ref -> box?.coverUrl(ref, allowExternalCovers) }
     }
 
     Surface(
@@ -714,6 +720,7 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
     val state by viewModel.albumState.collectAsStateWithLifecycle()
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
+    val allowExternalCovers by viewModel.allowExternalCovers.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.cachedAt)
     var details by remember { mutableStateOf<DetailsTarget?>(null) }
 
@@ -724,6 +731,7 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
         LibraryDetailsSheet(
             target = target,
             box = activeBox,
+            allowExternalCovers = allowExternalCovers,
             favouriteKeys = favouriteKeys,
             viewModel = viewModel,
             onDismiss = { details = null },
@@ -751,6 +759,7 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
             AlbumCell(
                 album = album,
                 box = activeBox,
+                allowExternalCovers = allowExternalCovers,
                 favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
                 coverPending = state.coverPending(album),
                 onRequestCover = { viewModel.requestAlbumCover(album) },
@@ -784,6 +793,7 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
 private fun AlbumCell(
     album: LibraryAlbum,
     box: PhonieBox?,
+    allowExternalCovers: Boolean,
     favourite: Boolean,
     coverPending: Boolean,
     onRequestCover: () -> Unit,
@@ -799,8 +809,8 @@ private fun AlbumCell(
         if (album.coverFile == null) onRequestCover()
     }
 
-    val coverUrl = remember(album.coverFile, box?.host) {
-        album.coverFile?.let { file -> box?.coverUrl(file) }
+    val coverUrl = remember(album.coverFile, box?.host, allowExternalCovers) {
+        album.coverFile?.let { ref -> box?.coverUrl(ref, allowExternalCovers) }
     }
 
     Column(
@@ -887,6 +897,7 @@ private sealed interface DetailsTarget {
 private fun LibraryDetailsSheet(
     target: DetailsTarget,
     box: PhonieBox?,
+    allowExternalCovers: Boolean,
     favouriteKeys: Set<String>,
     viewModel: LibraryViewModel,
     onDismiss: () -> Unit,
@@ -927,6 +938,7 @@ private fun LibraryDetailsSheet(
         is DetailsTarget.Album -> AlbumDetailsSheet(
             album = target.album,
             box = box,
+            allowExternalCovers = allowExternalCovers,
             favourite = "album:${target.album.albumArtist}/${target.album.album}" in favouriteKeys,
             onPlay = {
                 onDismiss()
@@ -1029,13 +1041,14 @@ private fun TrackDetailsSheet(
 private fun AlbumDetailsSheet(
     album: LibraryAlbum,
     box: PhonieBox?,
+    allowExternalCovers: Boolean,
     favourite: Boolean,
     onPlay: () -> Unit,
     onToggleFavourite: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val coverUrl = remember(album.coverFile, box?.host) {
-        album.coverFile?.let { file -> box?.coverUrl(file) }
+    val coverUrl = remember(album.coverFile, box?.host, allowExternalCovers) {
+        album.coverFile?.let { ref -> box?.coverUrl(ref, allowExternalCovers) }
     }
 
     DetailsSheet(

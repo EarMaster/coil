@@ -119,4 +119,22 @@ class LibraryParserTest {
         assertEquals(LibraryParser.CoverArt.Missing, LibraryParser.coverArt(parse("null")))
         assertEquals(LibraryParser.CoverArt.Missing, LibraryParser.coverArt(null))
     }
+
+    /**
+     * A provider-neutral box answers for a Spotify track with the artwork's own URL. Keeping
+     * only the last path segment — right for the box's own `cache/hash.jpg` — would reduce it
+     * to a hash, and `Box.coverUrl` would then have no way to tell it was ever external and
+     * would hang it off the box's address, where it 404s.
+     */
+    @Test
+    fun `an absolute url survives whole`() {
+        assertEquals(
+            LibraryParser.CoverArt.Available("https://i.scdn.co/image/ab67616d0000b273"),
+            LibraryParser.coverArt(parse("\"https://i.scdn.co/image/ab67616d0000b273\"")),
+        )
+        assertEquals(
+            LibraryParser.CoverArt.Available("http://cdn.example/art/1.jpg"),
+            LibraryParser.coverArt(parse("\"http://cdn.example/art/1.jpg\"")),
+        )
+    }
 }

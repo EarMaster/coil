@@ -29,6 +29,16 @@ data class AppSettings(
     val dynamicColor: Boolean = false,
     val sessionMode: SessionMode = SessionMode.APP_ONLY,
     val favoritesLayout: FavoritesLayout = FavoritesLayout.GRID,
+    /**
+     * Whether cover art may be fetched from somewhere other than the box.
+     *
+     * A provider-neutral box can answer a cover request with an absolute URL belonging to
+     * the backend the content came from — Spotify hands back `https://i.scdn.co/…` rather
+     * than a name in the box's own cache. Loading one means the phone talks to a third
+     * party, which is the one thing §16 and the Data Safety declaration promise it does
+     * not do, so it stays off until the user says otherwise.
+     */
+    val loadExternalCoverArt: Boolean = false,
     val activeBoxId: String? = null,
     val onboardingComplete: Boolean = false,
 )

@@ -266,6 +266,10 @@ class FakeSettingsRepository(settings: AppSettings = AppSettings()) : SettingsRe
         state.value = state.value.copy(favoritesLayout = layout)
     }
 
+    override suspend fun setLoadExternalCoverArt(enabled: Boolean) {
+        state.value = state.value.copy(loadExternalCoverArt = enabled)
+    }
+
     override suspend fun setOnboardingComplete(complete: Boolean) {
         state.value = state.value.copy(onboardingComplete = complete)
     }

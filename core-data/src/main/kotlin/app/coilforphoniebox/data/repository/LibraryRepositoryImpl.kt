@@ -150,7 +150,7 @@ class LibraryRepositoryImpl @Inject constructor(
             val payload = transport.call(command).getOrNull() ?: return null
 
             when (val art = LibraryParser.coverArt(payload)) {
-                is LibraryParser.CoverArt.Available -> return art.fileName
+                is LibraryParser.CoverArt.Available -> return art.coverRef
 
                 // Nothing to show, and nothing to gain from asking again.
                 LibraryParser.CoverArt.Missing -> return null

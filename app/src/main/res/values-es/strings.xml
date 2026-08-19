@@ -136,6 +136,8 @@
     <string name="settings_dynamic_colour_summary">Sustituye el verde de Coil por colores tomados de tu fondo de pantalla.</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_language_summary">Abre los ajustes de idioma del sistema para Coil.</string>
+    <string name="settings_external_cover_art">Cargar carátulas de servicios externos (p. ej. Spotify)</string>
+    <string name="settings_external_cover_art_summary">Tu teléfono cargará esas carátulas del propio servicio. Si no, Coil solo habla con tu caja y esos álbumes muestran una carátula de sustitución.</string>
 
     <string name="settings_manage_boxes">Gestionar cajas</string>
     <string name="settings_box_address">Dirección</string>

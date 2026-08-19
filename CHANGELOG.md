@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-19
+
 ### Added
 - **Coil now copes with a box that plays from more than one source.** A coming Phoniebox release
   lets a box have a streaming service alongside its own music, and then the album list holds both.

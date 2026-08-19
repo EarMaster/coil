@@ -1,0 +1,3 @@
+Une prochaine version de Phoniebox permettra à votre boîte de lire depuis un service de streaming en plus de sa propre musique. Coil est prêt : la liste des albums affiche les deux, indique la source de chaque entrée et lance le bon album même si le même se trouve des deux côtés.
+
+Les pochettes d'un tel service peuvent aussi s'afficher, si vous l'activez. C'est désactivé par défaut, pour que Coil ne parle qu'à votre boîte.

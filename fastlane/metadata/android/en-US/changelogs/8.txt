@@ -1,0 +1,3 @@
+A coming Phoniebox release lets your box play from a streaming service as well as its own music. Coil is ready for it: the album list shows both, marks which source each entry came from, and starts the right one even when the same record is in both places.
+
+Cover art from such a service can now be shown too, if you switch it on. It stays off by default, so Coil only talks to your box.

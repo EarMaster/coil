@@ -31,10 +31,12 @@ import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.FolderOff
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material.icons.rounded.Star
@@ -58,6 +60,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,9 +69,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.Box as PhonieBox
 import app.coilforphoniebox.domain.model.LibraryAlbum
+import app.coilforphoniebox.domain.model.LibraryContentType
 import app.coilforphoniebox.domain.model.LibraryFolder
+import app.coilforphoniebox.domain.model.LibraryProvider
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.LibraryTrack
 import app.coilforphoniebox.domain.model.PlayTarget
+import app.coilforphoniebox.domain.model.key
 import app.coilforphoniebox.ui.components.ActionMenuItem
 import app.coilforphoniebox.ui.components.CoverArt
 import app.coilforphoniebox.ui.components.DetailRow
@@ -176,6 +183,8 @@ private fun SearchResults(viewModel: LibraryViewModel) {
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
     val allowExternalCovers by viewModel.allowExternalCovers.collectAsStateWithLifecycle()
+    val showSources by viewModel.showSources.collectAsStateWithLifecycle()
+    val sources by viewModel.sources.collectAsStateWithLifecycle()
     var details by remember { mutableStateOf<DetailsTarget?>(null) }
 
     details?.let { target ->
@@ -225,12 +234,14 @@ private fun SearchResults(viewModel: LibraryViewModel) {
 
         if (results.albums.isNotEmpty()) {
             item { ResultHeading(stringResource(R.string.library_tab_albums)) }
-            items(results.albums, key = { "album:${it.albumArtist}|${it.album}" }) { album ->
+            items(results.albums, key = { it.toPlayTarget().key }) { album ->
                 AlbumRow(
                     album = album,
                     box = activeBox,
                     allowExternalCovers = allowExternalCovers,
-                    favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
+                    showSource = showSources,
+                    sources = sources,
+                    favourite = album.toPlayTarget().key in favouriteKeys,
                     onPlay = { viewModel.play(album.toPlayTarget()) },
                     onToggleFavourite = {
                         viewModel.toggleFavorite(
@@ -277,6 +288,8 @@ private fun FolderTab(viewModel: LibraryViewModel) {
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
     val allowExternalCovers by viewModel.allowExternalCovers.collectAsStateWithLifecycle()
+    val showSources by viewModel.showSources.collectAsStateWithLifecycle()
+    val sources by viewModel.sources.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.content.cachedAt)
     var details by remember { mutableStateOf<DetailsTarget?>(null) }
 
@@ -561,6 +574,8 @@ private fun AlbumRow(
     album: LibraryAlbum,
     box: PhonieBox?,
     allowExternalCovers: Boolean,
+    showSource: Boolean,
+    sources: List<LibrarySource>,
     favourite: Boolean,
     onPlay: () -> Unit,
     onToggleFavourite: () -> Unit,
@@ -606,15 +621,29 @@ private fun AlbumRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = album.albumArtist.ifBlank {
-                        stringResource(R.string.library_unknown_artist)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Inline rather than a corner badge: the 38 dp thumbnail beside it has no
+                    // room for one, and the secondary line is free here in a way the grid's
+                    // is not.
+                    if (showSource) {
+                        Icon(
+                            imageVector = albumKindIcon(album.contentType),
+                            contentDescription = albumKindLabel(album.contentType),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .size(13.dp)
+                                .padding(end = 1.dp),
+                        )
+                        Spacer(Modifier.size(4.dp))
+                    }
+                    Text(
+                        text = albumSubtitle(album, showSource, sources),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             if (favourite) {
                 Icon(
@@ -721,6 +750,8 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
     val favouriteKeys by viewModel.favoriteKeys.collectAsStateWithLifecycle()
     val activeBox by viewModel.activeBox.collectAsStateWithLifecycle()
     val allowExternalCovers by viewModel.allowExternalCovers.collectAsStateWithLifecycle()
+    val showSources by viewModel.showSources.collectAsStateWithLifecycle()
+    val sources by viewModel.sources.collectAsStateWithLifecycle()
     val freshness = rememberFreshnessLabel(state.cachedAt)
     var details by remember { mutableStateOf<DetailsTarget?>(null) }
 
@@ -755,12 +786,14 @@ private fun AlbumTab(viewModel: LibraryViewModel) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(state.albums, key = { "${it.albumArtist}|${it.album}" }) { album ->
+        items(state.albums, key = { it.toPlayTarget().key }) { album ->
             AlbumCell(
                 album = album,
                 box = activeBox,
                 allowExternalCovers = allowExternalCovers,
-                favourite = "album:${album.albumArtist}/${album.album}" in favouriteKeys,
+                showSource = showSources,
+                sources = sources,
+                favourite = album.toPlayTarget().key in favouriteKeys,
                 coverPending = state.coverPending(album),
                 onRequestCover = { viewModel.requestAlbumCover(album) },
                 onPlay = { viewModel.play(album.toPlayTarget()) },
@@ -794,6 +827,8 @@ private fun AlbumCell(
     album: LibraryAlbum,
     box: PhonieBox?,
     allowExternalCovers: Boolean,
+    showSource: Boolean,
+    sources: List<LibrarySource>,
     favourite: Boolean,
     coverPending: Boolean,
     onRequestCover: () -> Unit,
@@ -858,6 +893,10 @@ private fun AlbumCell(
                 onDetails = onDetails,
                 modifier = Modifier.align(Alignment.TopEnd),
             )
+            // Bottom left: the two top corners are already the star and the menu.
+            if (showSource) {
+                AlbumKindBadge(album.contentType, Modifier.align(Alignment.BottomStart))
+            }
         }
         Spacer(Modifier.height(6.dp))
         Text(
@@ -867,13 +906,105 @@ private fun AlbumCell(
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = album.albumArtist.ifBlank { stringResource(R.string.library_unknown_artist) },
+            text = albumSubtitle(album, showSource, sources),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Spacer(Modifier.height(4.dp))
+    }
+}
+
+/**
+ * What kind of thing an entry is, as an icon.
+ *
+ * Deliberately **not** a heart or a star for a saved-songs collection: [Icons.Rounded.Star]
+ * already means "one of my favourites" everywhere else on this screen, and a second starry
+ * mark meaning something entirely different would read as the first one.
+ *
+ * An unrecognised kind — a backend Coil has never heard of — falls back to the album icon,
+ * which is what the albums list is mostly made of.
+ */
+private fun albumKindIcon(contentType: String): ImageVector = when (contentType) {
+    LibraryContentType.PLAYLIST -> Icons.Rounded.QueueMusic
+    LibraryContentType.COLLECTION -> Icons.Rounded.LibraryMusic
+    LibraryContentType.TRACK -> Icons.Rounded.MusicNote
+    else -> Icons.Rounded.Album
+}
+
+/** Read out for [albumKindIcon], which is otherwise a mark with no name. */
+@Composable
+private fun albumKindLabel(contentType: String): String = stringResource(
+    when (contentType) {
+        LibraryContentType.PLAYLIST -> R.string.library_kind_playlist
+        LibraryContentType.COLLECTION -> R.string.library_kind_collection
+        LibraryContentType.TRACK -> R.string.library_kind_track
+        else -> R.string.library_kind_album
+    },
+)
+
+/**
+ * What to call the backend an entry came from.
+ *
+ * Only the box's own library is named here. Anything else is called whatever the box calls
+ * it — which for a streaming service is a brand name that should not be translated — and an
+ * unknown backend that never reported a name falls back to its bare id, which is at least
+ * true.
+ */
+@Composable
+private fun providerLabel(provider: String, sources: List<LibrarySource>): String =
+    if (provider == LibraryProvider.MPD) {
+        stringResource(R.string.library_source_local)
+    } else {
+        sources.firstOrNull { it.id == provider }?.label ?: provider
+    }
+
+/**
+ * The artist line, with the source appended where there is more than one to tell apart.
+ *
+ * The source is text rather than a second icon because a provider is a free-form name a box
+ * chooses for itself — a backend Coil has never heard of can still be named, but it cannot be
+ * given an icon that was not shipped.
+ */
+@Composable
+private fun albumSubtitle(
+    album: LibraryAlbum,
+    showSource: Boolean,
+    sources: List<LibrarySource>,
+): String {
+    val artist = album.albumArtist.ifBlank { stringResource(R.string.library_unknown_artist) }
+    if (!showSource) return artist
+
+    val source = providerLabel(album.provider, sources)
+    // A streaming service names itself as the artist of its own saved-songs collection, which
+    // would otherwise read "Spotify · Spotify". Saying it once is saying it.
+    if (artist.equals(source, ignoreCase = true)) return artist
+    return "$artist · $source"
+}
+
+/**
+ * The kind badge, over the artwork.
+ *
+ * On the tile there is nowhere else for it: the two lines underneath are the album and its
+ * artist, and the cover fills the rest. Given a scrim so it stays legible over artwork that
+ * happens to be pale.
+ */
+@Composable
+private fun AlbumKindBadge(contentType: String, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+        modifier = modifier.padding(6.dp),
+    ) {
+        Icon(
+            imageVector = albumKindIcon(contentType),
+            contentDescription = albumKindLabel(contentType),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .padding(3.dp)
+                .size(16.dp),
+        )
     }
 }
 
@@ -939,7 +1070,7 @@ private fun LibraryDetailsSheet(
             album = target.album,
             box = box,
             allowExternalCovers = allowExternalCovers,
-            favourite = "album:${target.album.albumArtist}/${target.album.album}" in favouriteKeys,
+            favourite = target.album.toPlayTarget().key in favouriteKeys,
             onPlay = {
                 onDismiss()
                 viewModel.play(target.album.toPlayTarget())

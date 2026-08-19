@@ -54,6 +54,11 @@
     <string name="library_empty_albums">Todavía no hay álbumes. Si esperabas alguno, pide a la caja que vuelva a leer su biblioteca.</string>
     <string name="library_unknown_album">Álbum desconocido</string>
     <string name="library_unknown_artist">Artista desconocido</string>
+    <string name="library_kind_album">Álbum</string>
+    <string name="library_kind_playlist">Lista de reproducción</string>
+    <string name="library_kind_collection">Colección</string>
+    <string name="library_kind_track">Pista</string>
+    <string name="library_source_local">Local</string>
     <string name="library_updated">Actualizado %1$s</string>
     <string name="library_never_updated">Aún no cargado</string>
     <string name="time_just_now">ahora mismo</string>

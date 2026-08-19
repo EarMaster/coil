@@ -56,6 +56,11 @@
     <string name="library_empty_albums">Nog geen albums. Laat de box haar bibliotheek opnieuw inlezen als je er wel verwacht.</string>
     <string name="library_unknown_album">Onbekend album</string>
     <string name="library_unknown_artist">Onbekende artiest</string>
+    <string name="library_kind_album">Album</string>
+    <string name="library_kind_playlist">Afspeellijst</string>
+    <string name="library_kind_collection">Verzameling</string>
+    <string name="library_kind_track">Nummer</string>
+    <string name="library_source_local">Lokaal</string>
     <string name="library_updated">Bijgewerkt %1$s</string>
     <string name="library_never_updated">Nog niet geladen</string>
     <string name="time_just_now">net nu</string>

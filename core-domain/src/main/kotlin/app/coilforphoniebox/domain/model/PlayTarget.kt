@@ -24,3 +24,18 @@ sealed interface PlayTarget {
     /** A single file, by MPD URL. */
     data class Track(val url: String) : PlayTarget
 }
+
+/**
+ * A stable string identifying this target, for list keys and favourite lookups.
+ *
+ * One definition rather than the same interpolation written at each use, because the album
+ * case has to include the content URI and getting that wrong is not a subtle failure: two
+ * sources offering the same record produce two entries, and a key built from the artist and
+ * album alone makes them collide — which a `LazyVerticalGrid` answers by throwing.
+ */
+val PlayTarget.key: String
+    get() = when (this) {
+        is PlayTarget.Folder -> "folder:$path"
+        is PlayTarget.Album -> "album:$albumArtist/$album/${contentUri.orEmpty()}"
+        is PlayTarget.Track -> "track:$url"
+    }

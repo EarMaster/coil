@@ -225,6 +225,14 @@ class FakeLibraryRepository(
 
     override fun librarySources(boxId: String): Flow<List<LibrarySource>> = sources
 
+    /**
+     * Derived from the albums the same way the real one is, so a fixture cannot claim two
+     * sources while holding entries from one — the golden would then show a state the app
+     * cannot actually reach.
+     */
+    override fun hasMultipleSources(boxId: String): Flow<Boolean> =
+        allAlbums.map { albums -> albums.map { it.provider }.distinct().size > 1 }
+
     override suspend fun refreshAlbums(boxId: String): Result<Unit> = Result.success(Unit)
 
     override suspend fun ensureAlbumCover(album: LibraryAlbum) = Unit

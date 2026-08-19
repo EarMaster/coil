@@ -35,6 +35,16 @@ interface LibraryRepository {
      */
     fun librarySources(boxId: String): Flow<List<LibrarySource>>
 
+    /**
+     * Whether this box's albums came from more than one backend.
+     *
+     * Read from the cached albums rather than from [librarySources], so it is already right
+     * on a cold start — the sources are only known once a refresh has asked, and a UI that
+     * flickered from "one source" to "two" a second after opening would be worse than one
+     * that never mentioned sources at all.
+     */
+    fun hasMultipleSources(boxId: String): Flow<Boolean>
+
     suspend fun refreshAlbums(boxId: String): Result<Unit>
 
     /**

@@ -17,6 +17,11 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
   favourites and home screen shortcuts as well as the library. Without this, starting an album from
   the streaming service would have emptied the queue and played nothing at all. Nothing changes on
   a box with only its own music, and your existing favourites and covers carry over untouched
+- **The library says which source each album came from**, on a box that has more than one. A small
+  icon marks whether an entry is an album, a playlist or a saved-songs collection, and the line
+  under the title names the source — so the same record held both on your box and in a streaming
+  account reads as two entries rather than one mysterious duplicate. A box with only its own music
+  shows none of this, because there it would be the same mark on every row
 - **A setting for cover art that does not live on your box.** Phoniebox is gaining the ability to play
   from a streaming service, and such a service keeps its cover art on its own servers rather than on
   the box. Coil can now show those covers, but only if you ask it to: the switch sits under Appearance

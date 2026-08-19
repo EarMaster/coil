@@ -107,6 +107,9 @@ class LibraryRepositoryImpl @Inject constructor(
     override fun librarySources(boxId: String): Flow<List<LibrarySource>> =
         sourcesByBox.map { it[boxId].orEmpty() }.distinctUntilChanged()
 
+    override fun hasMultipleSources(boxId: String): Flow<Boolean> =
+        dao.observeProviderCount(boxId).map { it > 1 }.distinctUntilChanged()
+
     override suspend fun refreshAlbums(boxId: String): Result<Unit> =
         transport.call(albumListCommand(boxId)).mapCatching { result ->
             val now = System.currentTimeMillis()

@@ -5,8 +5,11 @@ import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
+import app.coilforphoniebox.domain.model.LibraryContentType
 import app.coilforphoniebox.domain.model.LibraryFolder
+import app.coilforphoniebox.domain.model.LibraryProvider
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.LibraryTrack
 import app.coilforphoniebox.domain.model.PlaybackState
 import app.coilforphoniebox.domain.model.PlayerStatus
@@ -170,12 +173,22 @@ object Fixtures {
         durationSeconds = seconds,
     )
 
-    private fun album(artist: String, name: String, cover: String? = null) = LibraryAlbum(
+    private fun album(
+        artist: String,
+        name: String,
+        cover: String? = null,
+        provider: String = LibraryProvider.MPD,
+        contentUri: String? = null,
+        contentType: String = LibraryContentType.ALBUM,
+    ) = LibraryAlbum(
         boxId = livingRoom.id,
         albumArtist = artist,
         album = name,
         coverFile = cover,
         cachedAt = NOW,
+        provider = provider,
+        contentUri = contentUri,
+        contentType = contentType,
     )
 
     /**
@@ -191,6 +204,47 @@ object Fixtures {
         album("Nursery Rhymes", "Ten in the Bed"),
         album("Nursery Rhymes", "Wheels on the Bus", "cover-wheels.jpg"),
         album("Sing-Along", "Songs for the Long Drive Home"),
+    )
+
+    /**
+     * A box with a streaming service alongside its own music — the only state in which the
+     * kind badge and the source name appear at all.
+     *
+     * Deliberately includes the awkward case the whole identity change exists for: "Ein Bär
+     * räumt auf" appears twice, once from each source. It has to stay two tiles, and the two
+     * have to be tellable apart — owning a record on disc *and* having it saved in an account
+     * is ordinary, and the two are started by different calls.
+     */
+    val mixedSourceAlbums = listOf(
+        album("Bärenstark", "Ein Bär räumt auf", "cover-baer.jpg"),
+        album("Detective Stories", "The Missing Key", "cover-missing-key.jpg"),
+        album("Nursery Rhymes", "Wheels on the Bus", "cover-wheels.jpg"),
+        album(
+            artist = "Bärenstark",
+            name = "Ein Bär räumt auf",
+            provider = "spotify",
+            contentUri = "spotify:album:1",
+        ),
+        album(
+            artist = "Nico",
+            name = "Long Drive Home",
+            provider = "spotify",
+            contentUri = "spotify:playlist:2",
+            contentType = LibraryContentType.PLAYLIST,
+        ),
+        album(
+            artist = "Spotify",
+            name = "Liked Songs",
+            provider = "spotify",
+            contentUri = "spotify:collection:tracks",
+            contentType = LibraryContentType.COLLECTION,
+        ),
+    )
+
+    /** What such a box reports for itself; the labels are the box's own English. */
+    val mixedSources = listOf(
+        LibrarySource(id = "mpd", label = "Local"),
+        LibrarySource(id = "spotify", label = "Spotify"),
     )
 
     /** What "the" finds: one hit of each kind, which is the layout worth a golden. */

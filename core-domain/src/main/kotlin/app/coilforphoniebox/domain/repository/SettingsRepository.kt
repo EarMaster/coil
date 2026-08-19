@@ -19,5 +19,7 @@ interface SettingsRepository {
 
     suspend fun setFavoritesLayout(layout: FavoritesLayout)
 
+    suspend fun setLoadExternalCoverArt(enabled: Boolean)
+
     suspend fun setOnboardingComplete(complete: Boolean)
 }

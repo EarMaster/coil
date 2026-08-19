@@ -8,11 +8,14 @@ import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.PlayTarget
+import app.coilforphoniebox.domain.model.key
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.FavoriteRepository
 import app.coilforphoniebox.domain.repository.LibraryRepository
 import app.coilforphoniebox.domain.repository.PlayerRepository
+import app.coilforphoniebox.domain.repository.SettingsRepository
 import app.coilforphoniebox.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,6 +52,7 @@ class LibraryViewModel @Inject constructor(
     private val boxes: BoxRepository,
     private val player: PlayerRepository,
     private val favorites: FavoriteRepository,
+    settings: SettingsRepository,
 ) : ViewModel() {
 
     data class FolderState(
@@ -103,7 +107,42 @@ class LibraryViewModel @Inject constructor(
     val activeBox: StateFlow<Box?> =
         boxes.activeBox.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    /**
+     * Whether a cover the box points at somewhere other than itself may be loaded (§16).
+     *
+     * Travels beside [activeBox] because the two are always needed together: it takes both
+     * to turn a cover reference into a URL, and neither alone is enough.
+     */
+    val allowExternalCovers: StateFlow<Boolean> = settings.settings
+        .map { it.loadExternalCoverArt }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     private val activeBoxId = boxes.activeBox.map { it?.id }.distinctUntilChanged()
+
+    /**
+     * Where each entry came from, and whether that is worth saying at all.
+     *
+     * On a box with a single music source every entry is a local album, so the badge and the
+     * source name would be the same two marks on every row — noise that tells the user
+     * nothing. [showSources] is therefore false on such a box and the library looks exactly
+     * as it always has.
+     *
+     * It comes from the cached albums rather than from [sources], so it is right immediately
+     * on a cold start; [sources] only supplies the *names*, and only once a refresh has asked
+     * the box for them.
+     */
+    val showSources: StateFlow<Boolean> = activeBoxId
+        .flatMapLatest { boxId ->
+            if (boxId == null) flowOf(false) else library.hasMultipleSources(boxId)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val sources: StateFlow<List<LibrarySource>> = activeBoxId
+        .flatMapLatest { boxId ->
+            if (boxId == null) flowOf(emptyList()) else library.librarySources(boxId)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val folderState: StateFlow<FolderState> = combine(
         activeBoxId,
@@ -264,7 +303,7 @@ class LibraryViewModel @Inject constructor(
     fun requestAlbumCover(album: LibraryAlbum) {
         viewModelScope.launch {
             try {
-                library.ensureAlbumCover(album.boxId, album.albumArtist, album.album)
+                library.ensureAlbumCover(album)
             } finally {
                 // Answered, so the cell may now stand something in if it came back empty.
                 // The key carries the box id, which is why nothing needs clearing when the
@@ -309,14 +348,7 @@ class LibraryViewModel @Inject constructor(
         folderRefreshing.value = false
     }
 
-    private fun favoriteKey(favorite: Favorite): String? =
-        favorite.toPlayTarget()?.let { keyFor(it) }
-
-    private fun keyFor(target: PlayTarget): String = when (target) {
-        is PlayTarget.Folder -> "folder:${target.path}"
-        is PlayTarget.Album -> "album:${target.albumArtist}/${target.album}"
-        is PlayTarget.Track -> "track:${target.url}"
-    }
+    private fun favoriteKey(favorite: Favorite): String? = favorite.toPlayTarget()?.key
 
     private companion object {
         /** Short enough to feel live while typing, long enough to skip intermediate words. */
@@ -329,4 +361,7 @@ class LibraryViewModel @Inject constructor(
  * another's. Nothing needs clearing when the active box changes: those are simply other keys.
  */
 private fun coverKeyOf(album: LibraryAlbum): String =
-    "${album.boxId}|${album.albumArtist}|${album.album}"
+    // The content URI belongs here too: two sources offering the same record are two tiles
+    // with two separate lookups, and a shared key would have the second stop waiting the
+    // moment the first was answered — showing a stand-in over artwork still on its way.
+    "${album.boxId}|${album.albumArtist}|${album.album}|${album.contentUri.orEmpty()}"

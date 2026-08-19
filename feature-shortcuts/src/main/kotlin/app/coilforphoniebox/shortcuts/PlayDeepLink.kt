@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
+import app.coilforphoniebox.domain.model.LibraryProvider
 import app.coilforphoniebox.domain.model.PlayTarget
 
 /**
@@ -25,6 +26,18 @@ object PlayDeepLink {
     private const val PARAM_ALBUM = "album"
     private const val PARAM_URL = "url"
     private const val PARAM_FAVORITE = "favorite"
+
+    /**
+     * Which backend owns an album, and that backend's handle for it.
+     *
+     * Written only when they say something, and read with the same defaults as everywhere
+     * else — so a shortcut already sitting on someone's home screen, which has neither
+     * parameter, still parses and still means the local library, which is what it was pinned
+     * for. Without these two a pinned Spotify album would arrive as a bare artist-and-album
+     * pair and be played by the wrong backend.
+     */
+    private const val PARAM_PROVIDER = "provider"
+    private const val PARAM_CONTENT_URI = "contenturi"
 
     private const val TYPE_FOLDER = "folder"
     private const val TYPE_ALBUM = "album"
@@ -49,10 +62,18 @@ object PlayDeepLink {
                 .appendQueryParameter(PARAM_TYPE, TYPE_FOLDER)
                 .appendQueryParameter(PARAM_PATH, favorite.folder ?: return null)
 
-            FavoriteType.ALBUM -> builder
-                .appendQueryParameter(PARAM_TYPE, TYPE_ALBUM)
-                .appendQueryParameter(PARAM_ALBUM_ARTIST, favorite.albumArtist ?: return null)
-                .appendQueryParameter(PARAM_ALBUM, favorite.album ?: return null)
+            FavoriteType.ALBUM -> {
+                builder
+                    .appendQueryParameter(PARAM_TYPE, TYPE_ALBUM)
+                    .appendQueryParameter(PARAM_ALBUM_ARTIST, favorite.albumArtist ?: return null)
+                    .appendQueryParameter(PARAM_ALBUM, favorite.album ?: return null)
+                favorite.contentUri?.takeIf { it.isNotBlank() }?.let {
+                    builder.appendQueryParameter(PARAM_CONTENT_URI, it)
+                }
+                favorite.provider.takeIf { it.isNotBlank() && it != LibraryProvider.MPD }?.let {
+                    builder.appendQueryParameter(PARAM_PROVIDER, it)
+                }
+            }
 
             FavoriteType.TRACK -> builder
                 .appendQueryParameter(PARAM_TYPE, TYPE_TRACK)
@@ -81,7 +102,19 @@ object PlayDeepLink {
             TYPE_ALBUM -> {
                 val artist = uri.getQueryParameter(PARAM_ALBUM_ARTIST)
                 val album = uri.getQueryParameter(PARAM_ALBUM)
-                if (artist != null && album != null) PlayTarget.Album(artist, album) else null
+                if (artist != null && album != null) {
+                    PlayTarget.Album(
+                        albumArtist = artist,
+                        album = album,
+                        provider = uri.getQueryParameter(PARAM_PROVIDER)
+                            ?.takeIf { it.isNotBlank() }
+                            ?: LibraryProvider.MPD,
+                        contentUri = uri.getQueryParameter(PARAM_CONTENT_URI)
+                            ?.takeIf { it.isNotBlank() },
+                    )
+                } else {
+                    null
+                }
             }
 
             TYPE_TRACK -> uri.getQueryParameter(PARAM_URL)?.let { PlayTarget.Track(it) }

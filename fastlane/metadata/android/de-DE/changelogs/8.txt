@@ -1,0 +1,3 @@
+Eine kommende Phoniebox-Version kann neben der eigenen Musik auch von einem Streamingdienst abspielen. Coil ist darauf vorbereitet: Die Albenliste zeigt beides, kennzeichnet die Quelle jedes Eintrags und startet das Richtige, auch wenn dasselbe Album an beiden Stellen liegt.
+
+Cover von so einem Dienst lassen sich jetzt ebenfalls anzeigen, wenn du das einschaltest. Standardmäßig bleibt es aus, damit Coil nur mit deiner Box spricht.

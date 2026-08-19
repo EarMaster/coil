@@ -6,6 +6,7 @@ import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.ui.library.LibraryScreen
 import app.coilforphoniebox.ui.library.LibraryViewModel
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -28,16 +29,18 @@ class LibraryScreenshotTest : ScreenshotTest() {
         albums: List<LibraryAlbum> = Fixtures.albums,
         albumsCachedAt: Long? = Fixtures.cachedThreeDaysAgo,
         searchResults: LibrarySearchResults = Fixtures.searchResults,
+        sources: List<LibrarySource> = emptyList(),
     ) = LibraryViewModel(
         library = FakeLibraryRepository(
             folders = folders,
             albums = albums,
             cachedAt = albumsCachedAt,
             results = searchResults,
-        ),
+        ).also { it.sources.value = sources },
         boxes = FakeBoxRepository(),
         player = FakePlayerRepository(),
         favorites = FakeFavoriteRepository(Fixtures.favorites),
+        settings = FakeSettingsRepository(),
     )
 
     private fun string(id: Int): String = RuntimeEnvironment.getApplication().getString(id)
@@ -89,6 +92,21 @@ class LibraryScreenshotTest : ScreenshotTest() {
         show { LibraryScreen(vm) }
         compose.onNodeWithText(string(R.string.library_tab_albums)).performClick()
         captureRoot("library/albums_light")
+    }
+
+    /**
+     * A box with a streaming service as well as its own music: every tile gains a kind badge
+     * and its source, and the same record from both sources stays two tiles.
+     *
+     * The counterpart is [albums_grid], which must keep showing none of that — on a box with
+     * one source the marks would be identical on every tile and say nothing.
+     */
+    @Test
+    fun albums_grid_with_two_sources() {
+        val vm = viewModel(albums = Fixtures.mixedSourceAlbums, sources = Fixtures.mixedSources)
+        show { LibraryScreen(vm) }
+        compose.onNodeWithText(string(R.string.library_tab_albums)).performClick()
+        captureRoot("library/albums_two_sources_light")
     }
 
     /**

@@ -22,6 +22,17 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    // The exported Room schemas, so `MigrationTestHelper` can build an old database and
+    // migrate it forwards. They live at the module root for KSP's benefit; this makes the
+    // same folder readable from a test.
+    sourceSets["test"].assets.srcDir("$projectDir/schemas")
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 ksp {
@@ -47,4 +58,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Favourites are the one thing here a user cannot get back from the box, so every
+    // schema change is exercised against a real SQLite file rather than reasoned about.
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.robolectric)
 }

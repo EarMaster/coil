@@ -9,6 +9,7 @@ import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.domain.model.FavoritesLayout
+import app.coilforphoniebox.domain.model.LibraryProvider
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
 import app.coilforphoniebox.domain.repository.BackupRepository
@@ -64,6 +65,13 @@ class BackupRepositoryImpl @Inject constructor(
         val album: String? = null,
         /** Added with format version 2, together with `TRACK` favourites. */
         val trackUrl: String? = null,
+        /**
+         * Which backend owns an `ALBUM` favourite, and its handle for it. Absent in a file
+         * written before boxes could have more than one, where the local library is what
+         * every album meant.
+         */
+        val provider: String? = null,
+        val contentUri: String? = null,
         val sortIndex: Int = 0,
         /**
          * Saves the box a round of cover lookups after a reinstall. The name is a hash in
@@ -79,6 +87,11 @@ class BackupRepositoryImpl @Inject constructor(
         val dynamicColor: Boolean = false,
         val sessionMode: String = SessionMode.APP_ONLY.name,
         val favoritesLayout: String = FavoritesLayout.GRID.name,
+        /**
+         * Defaults to false so a backup written before this setting existed imports as
+         * "off" — the safe reading, since the file cannot say the user ever opted in.
+         */
+        val loadExternalCoverArt: Boolean = false,
     )
 
     override suspend fun export(): String {
@@ -103,6 +116,8 @@ class BackupRepositoryImpl @Inject constructor(
                             albumArtist = favorite.albumArtist,
                             album = favorite.album,
                             trackUrl = favorite.trackUrl,
+                            provider = favorite.provider,
+                            contentUri = favorite.contentUri,
                             sortIndex = favorite.sortIndex,
                             coverFile = favorite.coverFile,
                         )
@@ -114,6 +129,7 @@ class BackupRepositoryImpl @Inject constructor(
                 dynamicColor = current.dynamicColor,
                 sessionMode = current.sessionMode.name,
                 favoritesLayout = current.favoritesLayout.name,
+                loadExternalCoverArt = current.loadExternalCoverArt,
             ),
         )
         return codec.encodeToString(file)
@@ -152,7 +168,10 @@ class BackupRepositoryImpl @Inject constructor(
                 val alreadyThere = existingFavorites.any {
                     it.type == type && it.folder == favorite.folder &&
                         it.albumArtist == favorite.albumArtist && it.album == favorite.album &&
-                        it.trackUrl == favorite.trackUrl
+                        it.trackUrl == favorite.trackUrl &&
+                        // Two albums can share a name across backends, so the handle is part
+                        // of what makes an imported favourite the same one.
+                        it.contentUri == favorite.contentUri
                 }
                 if (alreadyThere) continue
 
@@ -165,6 +184,8 @@ class BackupRepositoryImpl @Inject constructor(
                         albumArtist = favorite.albumArtist,
                         album = favorite.album,
                         trackUrl = favorite.trackUrl,
+                        provider = favorite.provider ?: LibraryProvider.MPD,
+                        contentUri = favorite.contentUri,
                         sortIndex = favorite.sortIndex,
                         coverFile = favorite.coverFile,
                     ).toEntity(),
@@ -184,6 +205,7 @@ class BackupRepositoryImpl @Inject constructor(
             FavoritesLayout.entries.firstOrNull { it.name == file.settings.favoritesLayout }
                 ?: FavoritesLayout.GRID,
         )
+        settings.setLoadExternalCoverArt(file.settings.loadExternalCoverArt)
     }
 
     private val codec = Json {

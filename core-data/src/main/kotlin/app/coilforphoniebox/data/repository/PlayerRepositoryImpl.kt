@@ -9,6 +9,7 @@ import app.coilforphoniebox.domain.model.QueueEntry
 import app.coilforphoniebox.domain.model.RepeatMode
 import app.coilforphoniebox.domain.model.SleepTimerStatus
 import app.coilforphoniebox.domain.model.VolumeStatus
+import app.coilforphoniebox.data.settings.SettingsStore
 import app.coilforphoniebox.domain.repository.PlayerRepository
 import app.coilforphoniebox.transport.Commands
 import app.coilforphoniebox.transport.ConnectionManager
@@ -23,12 +24,14 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -48,6 +51,7 @@ import kotlin.math.abs
 @Singleton
 class PlayerRepositoryImpl @Inject constructor(
     private val transport: ConnectionManager,
+    private val settings: SettingsStore,
     @TransportScope private val scope: CoroutineScope,
 ) : PlayerRepository {
 
@@ -66,14 +70,13 @@ class PlayerRepositoryImpl @Inject constructor(
     /** Songs the box has told us have no artwork, so they are not asked about again. */
     private val songsWithoutArt: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
-    private val _coverUrl = MutableStateFlow<String?>(null)
-
     /**
-     * The same cover as [_coverUrl], as the bare file name.
+     * The resolved cover reference for the current song, as the box gave it: a name in its
+     * cover cache, or an absolute URL when the backend serves its own artwork.
      *
-     * Kept beside the URL rather than derived from it: a favourite stores the file name, and
-     * picking it back out of a URL would make [Box.coverUrl] a format two places have to
-     * agree on.
+     * Held rather than derived from the URL, because a favourite stores this and picking it
+     * back out of a URL would make [Box.coverUrl]'s output a format two places have to agree
+     * on.
      */
     private val _coverFile = MutableStateFlow<String?>(null)
 
@@ -87,8 +90,18 @@ class PlayerRepositoryImpl @Inject constructor(
      * controls included — for as long as the lookup takes, or forever if it keeps being
      * restarted. Cover art is the least important thing on the screen; it must never be
      * able to hold up the rest.
+     *
+     * Derived from the resolved reference rather than written beside it, so that turning
+     * [AppSettings.loadExternalCoverArt] on or off re-renders the cover already in hand
+     * instead of waiting for the next song to come round.
      */
-    override val coverUrl: StateFlow<String?> = _coverUrl.asStateFlow()
+    override val coverUrl: StateFlow<String?> = combine(
+        _coverFile,
+        transport.activeBox,
+        settings.settings.map { it.loadExternalCoverArt }.distinctUntilChanged(),
+    ) { coverRef, box, allowExternal ->
+        coverRef?.let { box?.coverUrl(it, allowExternal) }
+    }.stateIn(scope, SharingStarted.Eagerly, null)
 
     /**
      * Set for as long as a lookup is outstanding, so a null [coverUrl] can be read as "no
@@ -231,16 +244,13 @@ class PlayerRepositoryImpl @Inject constructor(
                 if (key != lastKey) {
                     // Showing the previous song's artwork would be worse than showing none.
                     _coverFile.value = null
-                    _coverUrl.value = null
                     lastKey = key
                 }
                 // An idle player is not a lookup in progress. Saying otherwise would leave
                 // the screen on a placeholder waiting for an answer that is not coming.
                 _coverPending.value = file != null && box != null
                 if (file != null && box != null) {
-                    val coverFile = resolveCoverFile(file, box)
-                    _coverFile.value = coverFile
-                    _coverUrl.value = coverFile?.let { box.coverUrl(it) }
+                    _coverFile.value = resolveCoverFile(file, box)
                     // Answered, with or without a cover — either way the wait is over. A
                     // lookup abandoned by `collectLatest` never gets here, which is correct:
                     // the song that replaced it sets this again on its own way through.
@@ -265,8 +275,8 @@ class PlayerRepositoryImpl @Inject constructor(
             val payload = transport.call(Commands.singleCoverArt(file)).getOrNull() ?: return null
             when (val art = LibraryParser.coverArt(payload)) {
                 is LibraryParser.CoverArt.Available -> {
-                    resolvedCovers[key] = art.fileName
-                    return art.fileName
+                    resolvedCovers[key] = art.coverRef
+                    return art.coverRef
                 }
 
                 LibraryParser.CoverArt.Missing -> {

@@ -100,6 +100,20 @@
     <string name="library_empty_albums">No albums yet. Rescan the library on the box if you expect some.</string>
     <string name="library_unknown_album">Unknown album</string>
     <string name="library_unknown_artist">Unknown artist</string>
+    <!--
+      What a library entry is, shown only on a box with more than one music source, where
+      the albums list can also hold playlists. Read out for the small icon that marks it.
+    -->
+    <string name="library_kind_album">Album</string>
+    <string name="library_kind_playlist">Playlist</string>
+    <string name="library_kind_collection">Collection</string>
+    <string name="library_kind_track">Track</string>
+    <!--
+      The box's own music, as opposed to a streaming service. Only the local source is
+      named here: any other one is called whatever the box calls it, which for a streaming
+      service is its brand name and needs no translating.
+    -->
+    <string name="library_source_local">Local</string>
     <!-- Freshness hint under the library list. %1$s is a relative time such as "3 days ago". -->
     <string name="library_updated">Updated %1$s</string>
     <string name="library_never_updated">Not loaded yet</string>
@@ -220,6 +234,8 @@
     <string name="settings_dynamic_colour_summary">Replaces Coil\'s green with colours taken from your wallpaper.</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_summary">Opens the system language settings for Coil.</string>
+    <string name="settings_external_cover_art">Load cover art for external services (e.g. Spotify)</string>
+    <string name="settings_external_cover_art_summary">Lets your phone load those covers from the service itself. Otherwise Coil only talks to your box, and those albums show a stand-in cover.</string>
 
     <!-- Settings: per box -->
     <!-- Row leading to the box management screen; its summary lists the box names. -->

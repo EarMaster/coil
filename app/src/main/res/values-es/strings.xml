@@ -54,6 +54,11 @@
     <string name="library_empty_albums">Todavía no hay álbumes. Si esperabas alguno, pide a la caja que vuelva a leer su biblioteca.</string>
     <string name="library_unknown_album">Álbum desconocido</string>
     <string name="library_unknown_artist">Artista desconocido</string>
+    <string name="library_kind_album">Álbum</string>
+    <string name="library_kind_playlist">Lista de reproducción</string>
+    <string name="library_kind_collection">Colección</string>
+    <string name="library_kind_track">Pista</string>
+    <string name="library_source_local">Local</string>
     <string name="library_updated">Actualizado %1$s</string>
     <string name="library_never_updated">Aún no cargado</string>
     <string name="time_just_now">ahora mismo</string>
@@ -136,6 +141,8 @@
     <string name="settings_dynamic_colour_summary">Sustituye el verde de Coil por colores tomados de tu fondo de pantalla.</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_language_summary">Abre los ajustes de idioma del sistema para Coil.</string>
+    <string name="settings_external_cover_art">Cargar carátulas de servicios externos (p. ej. Spotify)</string>
+    <string name="settings_external_cover_art_summary">Tu teléfono cargará esas carátulas del propio servicio. Si no, Coil solo habla con tu caja y esos álbumes muestran una carátula de sustitución.</string>
 
     <string name="settings_manage_boxes">Gestionar cajas</string>
     <string name="settings_box_address">Dirección</string>

@@ -148,6 +148,55 @@ class CommandsTest {
     }
 
     /**
+     * **The old-box guarantee.** `future3/main`'s `play_album` and `get_album_coverart` take
+     * exactly two arguments, so a `content_uri=` such a box never asked for comes back as
+     * `TypeError: … unexpected keyword argument` and the album simply does not play. A box
+     * like that also never hands out a content URI, so there is never one to send — and the
+     * payload therefore has to stay exactly what it has always been.
+     */
+    @Test
+    fun `a local album sends nothing a pre-provider box would reject`() {
+        val play = Commands.play(PlayTarget.Album("Bibi Blocksberg", "Hexerei"))
+        assertEquals(setOf("albumartist", "album"), play.kwargs.keys)
+
+        val cover = Commands.albumCoverArt("Bibi Blocksberg", "Hexerei")
+        assertEquals(setOf("albumartist", "album"), cover.kwargs.keys)
+    }
+
+    /** An explicit `mpd` is still the default backend, so it too stays off the wire. */
+    @Test
+    fun `naming the default provider adds nothing to the payload`() {
+        val command = Commands.play(
+            PlayTarget.Album("Bibi Blocksberg", "Hexerei", provider = "mpd"),
+        )
+
+        assertEquals(setOf("albumartist", "album"), command.kwargs.keys)
+    }
+
+    /**
+     * With a handle to send, both routing arguments travel — this is what stops the
+     * coordinator falling through to MPD, finding nothing, and clearing the queue.
+     */
+    @Test
+    fun `an album from another backend carries its provider and handle`() {
+        val target = PlayTarget.Album(
+            albumArtist = "Bibi Blocksberg",
+            album = "Hexerei",
+            provider = "spotify",
+            contentUri = "spotify:album:123",
+        )
+
+        val play = Commands.play(target)
+        assertEquals("spotify:album:123", play.kwargs["content_uri"]?.jsonPrimitive?.content)
+        assertEquals("spotify", play.kwargs["provider"]?.jsonPrimitive?.content)
+
+        val cover = Commands.albumCoverArt(target)
+        assertEquals("get_album_coverart", cover.method)
+        assertEquals("spotify:album:123", cover.kwargs["content_uri"]?.jsonPrimitive?.content)
+        assertEquals("spotify", cover.kwargs["provider"]?.jsonPrimitive?.content)
+    }
+
+    /**
      * The distinction that keeps a lost reply from skipping two tracks: absolute commands
      * may be retried, relative ones may not.
      */

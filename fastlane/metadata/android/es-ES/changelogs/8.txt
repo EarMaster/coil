@@ -1,0 +1,3 @@
+Una próxima versión de Phoniebox permitirá que tu caja reproduzca desde un servicio de streaming además de su propia música. Coil ya está preparado: la lista de álbumes muestra ambos, indica de qué fuente viene cada entrada e inicia el correcto aunque el mismo disco esté en los dos sitios.
+
+Las carátulas de ese servicio también pueden mostrarse, si lo activas. Está desactivado por defecto, así Coil solo habla con tu caja.

@@ -2,8 +2,12 @@ package app.coilforphoniebox.transport
 
 import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
+import app.coilforphoniebox.domain.model.LibraryContentType
+import app.coilforphoniebox.domain.model.LibraryProvider
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.LibraryFolder
 import app.coilforphoniebox.domain.model.LibraryTrack
+import app.coilforphoniebox.domain.model.isExternalCoverRef
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -74,6 +78,15 @@ object LibraryParser {
     /**
      * `list_albums` is MPD's `list album group albumartist`, so each entry carries one
      * album artist and either a single album or an array of them.
+     *
+     * A provider-neutral box adds `provider`, `content_uri` and `content_type` to every
+     * entry — MPD's own included — and, once the box has more than one backend, returns all
+     * of their catalogues concatenated. Those three fields are then the only thing telling
+     * two entries apart, so they are read here and kept: **dropping them is what makes
+     * `play_album` fall through to MPD, find nothing, and clear the queue.**
+     *
+     * A box without the provider-neutral player sends none of them, which reads as MPD, no
+     * content URI, and an album — exactly what such a box only ever has.
      */
     fun albums(boxId: String, result: JsonElement?, cachedAt: Long): List<LibraryAlbum> {
         val entries = (result as? JsonArray).orEmpty()
@@ -85,10 +98,26 @@ object LibraryParser {
                     val artist = element.string("albumartist")
                         ?: element.string("artist")
                         ?: ""
+                    val provider = element.string("provider")
+                        ?.takeIf { it.isNotBlank() }
+                        ?: LibraryProvider.MPD
+                    val contentUri = element.string("content_uri")?.takeIf { it.isNotBlank() }
+                    val contentType = element.string("content_type")
+                        ?.takeIf { it.isNotBlank() }
+                        ?: LibraryContentType.ALBUM
+
                     element["album"].asStringList()
                         .filter { it.isNotBlank() }
                         .forEach { album ->
-                            albums += LibraryAlbum(boxId, artist, album, cachedAt = cachedAt)
+                            albums += LibraryAlbum(
+                                boxId = boxId,
+                                albumArtist = artist,
+                                album = album,
+                                cachedAt = cachedAt,
+                                provider = provider,
+                                contentUri = contentUri,
+                                contentType = contentType,
+                            )
                         }
                 }
 
@@ -101,13 +130,41 @@ object LibraryParser {
             }
         }
 
-        return albums.distinctBy { it.albumArtist to it.album }
+        // Keyed on the content URI as well, so a record owned on CD *and* saved on a
+        // streaming service stays two rows. Collapsing them would hide whichever the box
+        // listed second, and the box lists its default backend first.
+        return albums.distinctBy { Triple(it.albumArtist, it.album, it.contentUri) }
     }
+
+    /**
+     * `list_library_sources` returns one `{id, label, views}` per registered backend.
+     *
+     * `views` is not read: it describes how each backend can be browsed, and Coil's own two
+     * tabs already match what the box does — `get_folder_content` is routed to the default
+     * backend whatever else is registered, so the folders tab is local-only by construction.
+     * Parsing a field nothing consumes would only be a second thing to keep true.
+     *
+     * An entry with no `id` is dropped rather than defaulted: the id is what a play call is
+     * routed by, and inventing one would send content to the wrong backend.
+     */
+    fun librarySources(result: JsonElement?): List<LibrarySource> =
+        (result as? JsonArray).orEmpty().mapNotNull { element ->
+            val entry = element as? JsonObject ?: return@mapNotNull null
+            val id = entry.string("id")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            LibrarySource(id = id, label = entry.string("label")?.takeIf { it.isNotBlank() } ?: id)
+        }
 
     /** Outcome of a cover art request. */
     sealed interface CoverArt {
-        /** A file name in the box's cover cache. */
-        data class Available(val fileName: String) : CoverArt
+        /**
+         * Where the artwork is: a file name in the box's cover cache, or an absolute URL
+         * when the backend that owns the content serves its own artwork.
+         *
+         * Not "a file name" any more, which is why it is no longer called one —
+         * [Box.coverUrl] is what decides which of the two this is and whether it may be
+         * loaded at all.
+         */
+        data class Available(val coverRef: String) : CoverArt
 
         /**
          * The box has queued the extraction on its own worker thread and has nothing to
@@ -127,6 +184,12 @@ object LibraryParser {
      *
      * Two sentinel values matter, both from `coverart_cache_manager.py`: `CACHE_PENDING`
      * while extraction is queued, and an empty string for "no artwork".
+     *
+     * **A provider-neutral box can answer with an absolute URL instead**, when the backend
+     * that owns the content serves its own artwork — a Spotify track answers with
+     * `https://i.scdn.co/image/…`. Those are kept whole: taking the last path segment, which
+     * is right for the box's own `some/dir/hash.jpg`, would reduce such a URL to its hash and
+     * leave [Box.coverUrl] no way to tell it was ever external.
      */
     fun coverArt(result: JsonElement?): CoverArt {
         val value = (result as? JsonPrimitive)?.content?.trim()
@@ -135,6 +198,7 @@ object LibraryParser {
         return when {
             value == CACHE_PENDING -> CoverArt.Pending
             value.isBlank() || value == "null" || value == "None" -> CoverArt.Missing
+            value.isExternalCoverRef() -> CoverArt.Available(value)
             else -> CoverArt.Available(value.substringAfterLast('/'))
         }
     }

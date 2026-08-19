@@ -58,6 +58,11 @@
     <string name="library_empty_albums">Aucun album pour le moment. Si vous en attendez, demandez à la box de réanalyser sa bibliothèque.</string>
     <string name="library_unknown_album">Album inconnu</string>
     <string name="library_unknown_artist">Artiste inconnu</string>
+    <string name="library_kind_album">Album</string>
+    <string name="library_kind_playlist">Playlist</string>
+    <string name="library_kind_collection">Collection</string>
+    <string name="library_kind_track">Titre</string>
+    <string name="library_source_local">Local</string>
     <string name="library_updated">Mis à jour %1$s</string>
     <string name="library_never_updated">Pas encore chargé</string>
     <string name="time_just_now">à l\'instant</string>
@@ -140,6 +145,8 @@
     <string name="settings_dynamic_colour_summary">Remplace le vert de Coil par des couleurs tirées de votre fond d\'écran.</string>
     <string name="settings_language">Langue</string>
     <string name="settings_language_summary">Ouvre les réglages de langue du système pour Coil.</string>
+    <string name="settings_external_cover_art">Charger les pochettes des services externes (p. ex. Spotify)</string>
+    <string name="settings_external_cover_art_summary">Votre téléphone charge alors ces pochettes auprès du service lui-même. Sinon, Coil ne parle qu\'à votre boîte, et ces albums affichent une pochette de remplacement.</string>
 
     <string name="settings_manage_boxes">Gérer les box</string>
     <string name="settings_box_address">Adresse</string>

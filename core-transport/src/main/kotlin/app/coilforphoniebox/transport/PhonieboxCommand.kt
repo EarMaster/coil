@@ -1,7 +1,9 @@
 package app.coilforphoniebox.transport
 
+import app.coilforphoniebox.domain.model.LibraryProvider
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.RepeatMode
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -60,10 +62,14 @@ data class PhonieboxCommand(
  * reachable from this app, which limits the damage if the box's unauthenticated RPC
  * port is ever accidentally exposed (§16).
  *
- * Argument names are taken from the plugin signatures in
- * `src/jukebox/components/player/playermpd/__init__.py` and
- * `src/jukebox/components/volume/__init__.py` on `future3/main`, not from the web
- * UI's command table, which omits several of them.
+ * Argument names are taken from the plugin signatures rather than from the web UI's command
+ * table, which omits several of them: `src/jukebox/components/playermpd/__init__.py` and
+ * `src/jukebox/components/volume/__init__.py` on `future3/main`, and
+ * `src/jukebox/components/player/coordinator.py` on `future3/develop`, where the
+ * provider-neutral player replaced `playermpd` (which survives there only as a compatibility
+ * shim). The method names and their meanings are the same on both; what `develop` adds is the
+ * optional `provider` and `content_uri` routing arguments — see [albumKwargs] for why those are
+ * sent only when they say something.
  *
  * **`as_thread` is never sent.** The implementation plan suggests it for slow calls, but
  * `jukebox/plugs.py` starts a daemon thread and returns the `Thread` object rather than
@@ -179,6 +185,43 @@ object Commands {
     )
 
     /**
+     * The backends this box browses with, each `{id, label, views}`.
+     *
+     * Doubles as the capability probe for the whole provider-neutral surface: a box that
+     * answers this has [listLibraryItems] and the `provider`/`content_uri` fields too, and one
+     * that rejects it has none of them. That makes it one question rather than a fallback per
+     * call — see `LibraryRepositoryImpl.ensureLibrarySources`, and [playAt] for the same
+     * rejected-call-as-probe trick.
+     *
+     * Cheap despite the library timeout: the box builds the answer from the backends already
+     * registered in memory rather than reading any catalogue.
+     */
+    val listLibrarySources = player(
+        "list_library_sources",
+        timeoutMillis = PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
+        retryable = true,
+    )
+
+    /**
+     * Everything browsable of the given kinds, across every backend.
+     *
+     * The provider-aware replacement for [listAlbums], which on such a box is the same call
+     * wearing a name that stopped being true once the answer could contain playlists.
+     * [contentTypes] keeps the box from assembling more than the albums tab is going to draw,
+     * which matters on the socket it shares with its card reader (§6).
+     *
+     * Only sent to a box known to have it — see [listLibrarySources].
+     */
+    fun listLibraryItems(contentTypes: List<String>) = player(
+        "list_library_items",
+        kwargs = mapOf(
+            "content_types" to JsonArray(contentTypes.map { JsonPrimitive(it) }),
+        ),
+        timeoutMillis = PhonieboxCommand.LIBRARY_TIMEOUT_MILLIS,
+        retryable = true,
+    )
+
+    /**
      * The box's current MPD queue, one entry per track.
      *
      * The queue is **never published** — `playermpd` only ever sends `playerstatus` — so this
@@ -202,14 +245,19 @@ object Commands {
         retryable = true,
     )
 
-    fun albumCoverArt(albumArtist: String, album: String) = player(
+    fun albumCoverArt(
+        albumArtist: String,
+        album: String,
+        provider: String? = null,
+        contentUri: String? = null,
+    ) = player(
         "get_album_coverart",
-        kwargs = mapOf(
-            "albumartist" to JsonPrimitive(albumArtist),
-            "album" to JsonPrimitive(album),
-        ),
+        kwargs = albumKwargs(albumArtist, album, provider, contentUri),
         retryable = true,
     )
+
+    fun albumCoverArt(album: PlayTarget.Album) =
+        albumCoverArt(album.albumArtist, album.album, album.provider, album.contentUri)
 
     /**
      * Starts the box's MPD database scan. `update_wait` blocks until the scan is
@@ -226,9 +274,11 @@ object Commands {
 
         is PlayTarget.Album -> player(
             "play_album",
-            kwargs = mapOf(
-                "albumartist" to JsonPrimitive(target.albumArtist),
-                "album" to JsonPrimitive(target.album),
+            kwargs = albumKwargs(
+                target.albumArtist,
+                target.album,
+                target.provider,
+                target.contentUri,
             ),
             retryable = true,
         )
@@ -238,6 +288,38 @@ object Commands {
             kwargs = mapOf("song_url" to JsonPrimitive(target.url)),
             retryable = true,
         )
+    }
+
+    /**
+     * `albumartist` and `album`, plus the two routing arguments **only when they say
+     * something**.
+     *
+     * This omission is what keeps Coil working against a box that predates the
+     * provider-neutral player. There, `play_album` and `get_album_coverart` are strictly
+     * two-argument, so an unconditional `content_uri=` would come back as
+     * `TypeError: play_album() got an unexpected keyword argument` — the same rejection
+     * [playAt] relies on as a probe, except here it would be a plain regression. Such a box
+     * also never *returns* a content URI, so there is never one to send and the payload
+     * stays byte-for-byte what it always was.
+     *
+     * `provider` is dropped when it is MPD for the same reason: MPD is the default backend
+     * everywhere, so naming it adds a kwarg without changing where the call lands.
+     *
+     * Omitting rather than sending null is deliberate — the coordinator's own
+     * `args = (…, content_uri) if content_uri else (…)` treats absent and null alike, and an
+     * explicit null would still be an unexpected keyword to an older box.
+     */
+    private fun albumKwargs(
+        albumArtist: String,
+        album: String,
+        provider: String?,
+        contentUri: String?,
+    ): Map<String, JsonElement> = buildMap {
+        put("albumartist", JsonPrimitive(albumArtist))
+        put("album", JsonPrimitive(album))
+        contentUri?.takeIf { it.isNotBlank() }?.let { put("content_uri", JsonPrimitive(it)) }
+        provider?.takeIf { it.isNotBlank() && it != LibraryProvider.MPD }
+            ?.let { put("provider", JsonPrimitive(it)) }
     }
 
     // ---------------------------------------------------------------- volume

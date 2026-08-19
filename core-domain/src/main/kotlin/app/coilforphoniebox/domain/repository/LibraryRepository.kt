@@ -5,6 +5,7 @@ import app.coilforphoniebox.domain.model.LibraryAlbum
 import app.coilforphoniebox.domain.model.LibraryIndexResult
 import app.coilforphoniebox.domain.model.LibraryIndexState
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.PlayTarget
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,25 @@ interface LibraryRepository {
     /** Most recent successful album refresh, for the freshness hint. */
     fun albumsCachedAt(boxId: String): Flow<Long?>
 
+    /**
+     * The backends this box browses with, as it described them; empty until a refresh has
+     * asked, and empty for a box that has no such notion.
+     *
+     * Only good for *naming* a backend. Whether a box has more than one is answered from the
+     * cached albums instead, which survive a cold start where this does not.
+     */
+    fun librarySources(boxId: String): Flow<List<LibrarySource>>
+
+    /**
+     * Whether this box's albums came from more than one backend.
+     *
+     * Read from the cached albums rather than from [librarySources], so it is already right
+     * on a cold start — the sources are only known once a refresh has asked, and a UI that
+     * flickered from "one source" to "two" a second after opening would be worse than one
+     * that never mentioned sources at all.
+     */
+    fun hasMultipleSources(boxId: String): Flow<Boolean>
+
     suspend fun refreshAlbums(boxId: String): Result<Unit>
 
     /**
@@ -32,8 +52,12 @@ interface LibraryRepository {
      *
      * Deliberately per album and on demand: asking for every cover during a refresh
      * would be one RPC per album on a socket the box also uses for card detection.
+     *
+     * Takes the whole album rather than its parts, because the lookup has to be routed and
+     * stored against the full identity — artist and album alone address a different row on a
+     * box with more than one backend.
      */
-    suspend fun ensureAlbumCover(boxId: String, albumArtist: String, album: String)
+    suspend fun ensureAlbumCover(album: LibraryAlbum)
 
     /**
      * Cover file name for [target], from the cache if it is there and from the box if not.

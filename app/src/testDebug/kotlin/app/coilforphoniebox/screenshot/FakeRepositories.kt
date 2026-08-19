@@ -12,6 +12,7 @@ import app.coilforphoniebox.domain.model.LibraryIndexResult
 import app.coilforphoniebox.domain.model.LibraryIndexState
 import app.coilforphoniebox.domain.model.JumpOutcome
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlayerStatus
 import app.coilforphoniebox.domain.model.QueueEntry
@@ -216,9 +217,25 @@ class FakeLibraryRepository(
 
     override fun albumsCachedAt(boxId: String): Flow<Long?> = cachedAt
 
+    /**
+     * Swappable like the rest: a golden of a box with two music sources needs the names to
+     * label them with, and a single-source box reports none.
+     */
+    val sources = MutableStateFlow(emptyList<LibrarySource>())
+
+    override fun librarySources(boxId: String): Flow<List<LibrarySource>> = sources
+
+    /**
+     * Derived from the albums the same way the real one is, so a fixture cannot claim two
+     * sources while holding entries from one — the golden would then show a state the app
+     * cannot actually reach.
+     */
+    override fun hasMultipleSources(boxId: String): Flow<Boolean> =
+        allAlbums.map { albums -> albums.map { it.provider }.distinct().size > 1 }
+
     override suspend fun refreshAlbums(boxId: String): Result<Unit> = Result.success(Unit)
 
-    override suspend fun ensureAlbumCover(boxId: String, albumArtist: String, album: String) = Unit
+    override suspend fun ensureAlbumCover(album: LibraryAlbum) = Unit
 
     /**
      * Null, deliberately: a golden has to be the same picture every run, and a cover that
@@ -264,6 +281,10 @@ class FakeSettingsRepository(settings: AppSettings = AppSettings()) : SettingsRe
 
     override suspend fun setFavoritesLayout(layout: FavoritesLayout) {
         state.value = state.value.copy(favoritesLayout = layout)
+    }
+
+    override suspend fun setLoadExternalCoverArt(enabled: Boolean) {
+        state.value = state.value.copy(loadExternalCoverArt = enabled)
     }
 
     override suspend fun setOnboardingComplete(complete: Boolean) {

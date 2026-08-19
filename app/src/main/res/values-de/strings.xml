@@ -56,6 +56,11 @@
     <string name="library_empty_albums">Noch keine Alben. Wenn du welche erwartest, lass die Box ihre Bibliothek neu einlesen.</string>
     <string name="library_unknown_album">Unbekanntes Album</string>
     <string name="library_unknown_artist">Unbekannte Interpretin oder Interpret</string>
+    <string name="library_kind_album">Album</string>
+    <string name="library_kind_playlist">Playlist</string>
+    <string name="library_kind_collection">Sammlung</string>
+    <string name="library_kind_track">Titel</string>
+    <string name="library_source_local">Lokal</string>
     <string name="library_updated">Aktualisiert %1$s</string>
     <string name="library_never_updated">Noch nicht geladen</string>
     <string name="time_just_now">gerade eben</string>
@@ -135,6 +140,8 @@
     <string name="settings_dynamic_colour_summary">Ersetzt das Grün von Coil durch Farben aus deinem Hintergrundbild.</string>
     <string name="settings_language">Sprache</string>
     <string name="settings_language_summary">Öffnet die Spracheinstellungen des Systems für Coil.</string>
+    <string name="settings_external_cover_art">Cover von externen Diensten laden (z. B. Spotify)</string>
+    <string name="settings_external_cover_art_summary">Dein Telefon lädt diese Cover dann direkt beim Dienst. Sonst spricht Coil nur mit deiner Box, und diese Alben bekommen ein Ersatzcover.</string>
 
     <string name="settings_manage_boxes">Boxen verwalten</string>
     <string name="settings_box_address">Adresse</string>

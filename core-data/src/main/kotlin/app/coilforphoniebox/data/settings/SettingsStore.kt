@@ -29,6 +29,7 @@ class SettingsStore @Inject constructor(
             dynamicColor = prefs[DYNAMIC_COLOR] ?: false,
             sessionMode = prefs[SESSION_MODE].toSessionMode(),
             favoritesLayout = prefs[FAVORITES_LAYOUT].toFavoritesLayout(),
+            loadExternalCoverArt = prefs[LOAD_EXTERNAL_COVER_ART] ?: false,
             activeBoxId = prefs[ACTIVE_BOX_ID],
             onboardingComplete = prefs[ONBOARDING_COMPLETE] ?: false,
         )
@@ -43,6 +44,8 @@ class SettingsStore @Inject constructor(
     suspend fun setSessionMode(mode: SessionMode) = put(SESSION_MODE, mode.name)
 
     suspend fun setFavoritesLayout(layout: FavoritesLayout) = put(FAVORITES_LAYOUT, layout.name)
+
+    suspend fun setLoadExternalCoverArt(enabled: Boolean) = put(LOAD_EXTERNAL_COVER_ART, enabled)
 
     suspend fun setActiveBoxId(boxId: String?) {
         dataStore.edit { prefs ->
@@ -71,6 +74,7 @@ class SettingsStore @Inject constructor(
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val SESSION_MODE = stringPreferencesKey("session_mode")
         val FAVORITES_LAYOUT = stringPreferencesKey("favorites_layout")
+        val LOAD_EXTERNAL_COVER_ART = booleanPreferencesKey("load_external_cover_art")
         val ACTIVE_BOX_ID = stringPreferencesKey("active_box_id")
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
     }

@@ -162,15 +162,19 @@ interface LibraryDao {
     @Transaction
     suspend fun replaceAlbums(boxId: String, albums: List<LibraryAlbumEntity>) {
         // Covers are fetched one at a time as the grid scrolls, so keep the ones already
-        // resolved rather than making the whole grid ask again after every refresh.
-        val existingCovers = coversFor(boxId).associate { (it.albumArtist to it.album) to it.coverFile }
+        // resolved rather than making the whole grid ask again after every refresh. Keyed on
+        // the whole identity: with two backends the artist-and-album pair can name two rows,
+        // and a narrower key would hand one of them the other's artwork.
+        val existingCovers = coversFor(boxId).associate { it.identity() to it.coverFile }
         deleteAlbums(boxId)
         upsertAlbums(
             albums.map { album ->
-                album.copy(coverFile = album.coverFile ?: existingCovers[album.albumArtist to album.album])
+                album.copy(coverFile = album.coverFile ?: existingCovers[album.identity()])
             },
         )
     }
+
+    private fun LibraryAlbumEntity.identity() = Triple(albumArtist, album, contentUri)
 
     @Query("SELECT * FROM library_albums WHERE boxId = :boxId AND coverFile IS NOT NULL")
     suspend fun coversFor(boxId: String): List<LibraryAlbumEntity>
@@ -183,10 +187,29 @@ interface LibraryDao {
 
     @Query(
         "UPDATE library_albums SET coverFile = :coverFile " +
-            "WHERE boxId = :boxId AND albumArtist = :albumArtist AND album = :album",
+            "WHERE boxId = :boxId AND albumArtist = :albumArtist AND album = :album " +
+            "AND contentUri = :contentUri",
     )
-    suspend fun setAlbumCover(boxId: String, albumArtist: String, album: String, coverFile: String)
+    suspend fun setAlbumCover(
+        boxId: String,
+        albumArtist: String,
+        album: String,
+        contentUri: String,
+        coverFile: String,
+    )
 
-    @Query("SELECT * FROM library_albums WHERE boxId = :boxId AND albumArtist = :albumArtist AND album = :album")
-    suspend fun findAlbum(boxId: String, albumArtist: String, album: String): LibraryAlbumEntity?
+    @Query(
+        "SELECT * FROM library_albums WHERE boxId = :boxId AND albumArtist = :albumArtist " +
+            "AND album = :album AND contentUri = :contentUri",
+    )
+    suspend fun findAlbum(
+        boxId: String,
+        albumArtist: String,
+        album: String,
+        contentUri: String,
+    ): LibraryAlbumEntity?
+
+    /** How many distinct backends the cached albums came from; 1 on any single-backend box. */
+    @Query("SELECT COUNT(DISTINCT provider) FROM library_albums WHERE boxId = :boxId")
+    fun observeProviderCount(boxId: String): Flow<Int>
 }

@@ -1,0 +1,3 @@
+Een komende Phoniebox-versie laat je box behalve de eigen muziek ook van een streamingdienst afspelen. Coil is er klaar voor: de albumlijst toont beide, geeft van elke vermelding de bron aan en start de juiste, ook als hetzelfde album op beide plekken staat.
+
+Hoezen van zo'n dienst kunnen nu ook getoond worden, als je dat inschakelt. Standaard staat het uit, zodat Coil alleen met je box praat.

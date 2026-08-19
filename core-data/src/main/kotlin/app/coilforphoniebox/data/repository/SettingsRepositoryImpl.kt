@@ -28,6 +28,9 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setFavoritesLayout(layout: FavoritesLayout) =
         store.setFavoritesLayout(layout)
 
+    override suspend fun setLoadExternalCoverArt(enabled: Boolean) =
+        store.setLoadExternalCoverArt(enabled)
+
     override suspend fun setOnboardingComplete(complete: Boolean) =
         store.setOnboardingComplete(complete)
 }

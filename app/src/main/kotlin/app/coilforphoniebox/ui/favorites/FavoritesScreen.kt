@@ -95,6 +95,7 @@ fun FavoritesScreen(
             FavoriteEntry(
                 favorite = favorite,
                 box = state.activeBox,
+                allowExternalCovers = state.allowExternalCovers,
                 compact = compact,
                 coverPending = state.coverPending(favorite),
                 link = viewModel.linkFor(favorite),
@@ -118,6 +119,7 @@ fun FavoritesScreen(
 private fun FavoriteEntry(
     favorite: Favorite,
     box: PhonieBox?,
+    allowExternalCovers: Boolean,
     compact: Boolean,
     /** Whether this favourite is still waiting to hear whether the box has artwork for it. */
     coverPending: Boolean,
@@ -130,8 +132,8 @@ private fun FavoriteEntry(
     onLinkCopied: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    val coverUrl = remember(favorite.coverFile, box?.host) {
-        favorite.coverFile?.let { file -> box?.coverUrl(file) }
+    val coverUrl = remember(favorite.coverFile, box?.host, allowExternalCovers) {
+        favorite.coverFile?.let { ref -> box?.coverUrl(ref, allowExternalCovers) }
     }
 
     val menuButton: @Composable () -> Unit = {

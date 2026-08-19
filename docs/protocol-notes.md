@@ -1,6 +1,7 @@
 # Phoniebox v3 — protocol reference
 
-Distilled from the source of `MiczFlor/RPi-Jukebox-RFID`, branch `future3/main`.
+Distilled from the source of `MiczFlor/RPi-Jukebox-RFID`, branch `future3/main`, with the
+differences on `future3/develop` called out where they exist — see "More than one player backend".
 Reviewed August 2026. **Everything here should be verified against a running box** before architecture is built on it — see `tools/probe_phoniebox.py`.
 
 ---
@@ -125,6 +126,41 @@ Full reference: `src/webapp/src/commands/index.js` in the Phoniebox repository.
 ### Content — `player.ctrl.*`
 
 `get_folder_content`, `list_albums`, `list_songs_by_artist_and_album(albumartist, album)`, `get_single_coverart`, `get_album_coverart`, `play_folder(folder)`, `play_album(albumartist, album)`, `play_single(song_url)`, `playlistinfo`, `update`, `update_wait`
+
+### More than one player backend — `future3/develop` only
+
+[#2694](https://github.com/MiczFlor/RPi-Jukebox-RFID/pull/2694) ("provider-neutral player and library
+contracts", merged 2026-08-04) replaced `playermpd` with a `PlayerCoordinator` in
+`src/jukebox/components/player/`, which fans the same method names out to any number of registered
+backends. [#2699](https://github.com/MiczFlor/RPi-Jukebox-RFID/pull/2699) adds Spotify as a second
+one; it is `enabled: false` by default, so most boxes still have exactly one.
+
+**`player.ctrl` remains the right address on both branches.** `mpd_plugin.initialize_mpd_player`
+registers with `package = plugs.loaded_as(module)`, and `loaded_as` resolves the **config alias**,
+not the module path — `jukebox.default.yaml` maps `player: playermpd` on `future3/main` and
+`player: player.plugin` on `future3/develop`. Do not read the module rename as an address change.
+
+Where it does matter:
+
+- **`list_albums` concatenates every backend's catalogue** once more than one is registered, and
+  each entry gains `provider`, `content_uri`, `content_type` and `cover_url`. MPD sets all four
+  itself, so this is one contract rather than a Spotify special case. A pre-#2694 box sends none of
+  them, which reads as `mpd` / no URI / `album`.
+- **`content_uri` is load-bearing.** `_content_backend_name(provider, content_uri)` routes on it and
+  falls back to the *default* backend — MPD — when it is absent. `PlayerMPD.play_album` is `clear()`
+  then `findadd` then `play()`, and `findadd` matching nothing is not an error, so an album sent
+  without its URI **empties the queue and plays silence, with no error reply.**
+- **Send `content_uri` and `provider` only when you have them.** On `future3/main`, `play_album` and
+  `get_album_coverart` take exactly two arguments and answer an unexpected keyword with a
+  `TypeError`. Such a box never returns a URI either, so there is never one to send.
+- **`get_single_coverart` can answer with an absolute URL** instead of a name in the box's cover
+  cache, when the backend serves its own artwork — Spotify returns `https://i.scdn.co/image/…`.
+- `list_library_sources` returns `{id, label, views}` per backend, and
+  `list_library_items(provider, content_types)` is the provider-aware replacement for `list_albums`
+  (identical rows today; each backend's implementation delegates to the other). Neither exists
+  before #2694, which makes the former a one-question capability probe for everything above.
+- `provider` is a **free-form string** each backend names itself with at `register_backend`, not a
+  closed set. Echo an unknown one back rather than trying to model it.
 
 `playlistinfo` returns the **current MPD queue**, one object per track with `file`, `pos`, `id`,
 `title`, `artist`, `album`, `track` and `duration`. It is a real `@plugs.tag` method on both

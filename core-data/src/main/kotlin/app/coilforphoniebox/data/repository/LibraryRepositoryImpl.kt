@@ -7,9 +7,11 @@ import app.coilforphoniebox.data.db.toDomain
 import app.coilforphoniebox.data.db.toEntity
 import app.coilforphoniebox.domain.model.FolderContent
 import app.coilforphoniebox.domain.model.LibraryAlbum
+import app.coilforphoniebox.domain.model.LibraryContentType
 import app.coilforphoniebox.domain.model.LibraryIndexResult
 import app.coilforphoniebox.domain.model.LibraryIndexState
 import app.coilforphoniebox.domain.model.LibrarySearchResults
+import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.PlaybackState
 import app.coilforphoniebox.domain.repository.LibraryRepository
@@ -17,16 +19,20 @@ import app.coilforphoniebox.transport.Commands
 import app.coilforphoniebox.transport.ConnectionManager
 import app.coilforphoniebox.transport.LibraryParser
 import app.coilforphoniebox.transport.PhonieboxCommand
+import app.coilforphoniebox.transport.RpcErrorException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,6 +55,23 @@ class LibraryRepositoryImpl @Inject constructor(
      * grid must not turn into fifty queued calls.
      */
     private val coverPermits = Semaphore(permits = 2)
+
+    /**
+     * Whether each box has the provider-neutral library surface — absent while unknown.
+     *
+     * Per box rather than global, because more than one can be configured and they need not
+     * run the same Phoniebox release.
+     */
+    private val providerAware = ConcurrentHashMap<String, Boolean>()
+
+    /**
+     * The backends each box reported, kept in memory rather than in Room.
+     *
+     * Derived state, cheap to ask for again, and only wanted while a screen is up — putting
+     * it in the database would mean another schema version for something that is refetched on
+     * every refresh anyway.
+     */
+    private val sourcesByBox = MutableStateFlow<Map<String, List<LibrarySource>>>(emptyMap())
 
     override fun folderContent(boxId: String, path: String): Flow<FolderContent> = combine(
         dao.observeFolders(boxId, path),
@@ -81,34 +104,92 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override fun albumsCachedAt(boxId: String): Flow<Long?> = dao.observeAlbumsCachedAt(boxId)
 
+    override fun librarySources(boxId: String): Flow<List<LibrarySource>> =
+        sourcesByBox.map { it[boxId].orEmpty() }.distinctUntilChanged()
+
+    override fun hasMultipleSources(boxId: String): Flow<Boolean> =
+        dao.observeProviderCount(boxId).map { it > 1 }.distinctUntilChanged()
+
     override suspend fun refreshAlbums(boxId: String): Result<Unit> =
-        transport.call(Commands.listAlbums).mapCatching { result ->
+        transport.call(albumListCommand(boxId)).mapCatching { result ->
             val now = System.currentTimeMillis()
             val albums = LibraryParser.albums(boxId, result, now)
             dao.replaceAlbums(boxId, albums.map { it.toEntity() })
         }
 
-    override suspend fun ensureAlbumCover(boxId: String, albumArtist: String, album: String) {
-        val existing = dao.findAlbum(boxId, albumArtist, album)
+    /**
+     * `list_library_items` where the box has it, `list_albums` everywhere else.
+     *
+     * On a provider-aware box the two return the same rows today — each backend's
+     * implementation delegates to the other — so this is not about getting different content.
+     * It is about asking for only the kinds the albums tab draws, and about not asking a call
+     * named `list_albums` for a list that can contain playlists.
+     */
+    private suspend fun albumListCommand(boxId: String): PhonieboxCommand =
+        if (ensureLibrarySources(boxId) == true) {
+            Commands.listLibraryItems(ALBUM_CONTENT_TYPES)
+        } else {
+            Commands.listAlbums
+        }
+
+    /**
+     * Whether this box has the provider-neutral library surface, asking it once if unknown.
+     *
+     * `list_library_sources` is the probe for all of it: a box that answers has
+     * `list_library_items` and the per-entry `provider`/`content_uri` fields as well, and one
+     * that rejects it has none of them. So the question is asked once per box rather than a
+     * fallback being written into every call.
+     *
+     * Follows `PlayerRepositoryImpl.playAt`, including the part that is easy to get wrong:
+     * **only an error reply is an answer.** A timeout means the box is off or busy, which says
+     * nothing about its software, and caching "no" from that would strand a perfectly capable
+     * box on the old path until the app restarted. Returns null for that case, and the caller
+     * falls back for this attempt only — `list_albums` exists on every box, so the fallback is
+     * always safe.
+     */
+    private suspend fun ensureLibrarySources(boxId: String): Boolean? {
+        providerAware[boxId]?.let { return it }
+
+        val attempt = transport.call(Commands.listLibrarySources)
+        val verdict = probeVerdict(attempt) ?: return null
+
+        if (verdict) {
+            sourcesByBox.update { it + (boxId to LibraryParser.librarySources(attempt.getOrNull())) }
+        } else {
+            Log.i(TAG, "Box has no provider-neutral library; using list_albums")
+        }
+        providerAware[boxId] = verdict
+        return verdict
+    }
+
+    override suspend fun ensureAlbumCover(album: LibraryAlbum) {
+        val uri = album.contentUri.orEmpty()
+        val existing = dao.findAlbum(album.boxId, album.albumArtist, album.album, uri)
         if (existing == null || existing.coverFile != null) return
 
         coverPermits.withPermit {
             // Another caller may have resolved it while this one waited for a permit.
-            if (dao.findAlbum(boxId, albumArtist, album)?.coverFile != null) return
-            val coverFile = resolveCover(Commands.albumCoverArt(albumArtist, album)) ?: return
-            dao.setAlbumCover(boxId, albumArtist, album, coverFile)
+            if (dao.findAlbum(album.boxId, album.albumArtist, album.album, uri)?.coverFile != null) {
+                return
+            }
+            val coverFile = resolveCover(Commands.albumCoverArt(album.toPlayTarget())) ?: return
+            dao.setAlbumCover(album.boxId, album.albumArtist, album.album, uri, coverFile)
         }
     }
 
     override suspend fun coverFileFor(boxId: String, target: PlayTarget): String? = when (target) {
-        is PlayTarget.Album ->
-            dao.findAlbum(boxId, target.albumArtist, target.album)?.coverFile
+        is PlayTarget.Album -> {
+            val uri = target.contentUri.orEmpty()
+            dao.findAlbum(boxId, target.albumArtist, target.album, uri)?.coverFile
                 ?: coverPermits.withPermit {
-                    resolveCover(Commands.albumCoverArt(target.albumArtist, target.album))
+                    resolveCover(Commands.albumCoverArt(target))
                         // The album grid asks the same question, so answer it here too. A
                         // missing row makes this a no-op rather than an error.
-                        ?.also { dao.setAlbumCover(boxId, target.albumArtist, target.album, it) }
+                        ?.also {
+                            dao.setAlbumCover(boxId, target.albumArtist, target.album, uri, it)
+                        }
                 }
+        }
 
         is PlayTarget.Track -> coverPermits.withPermit { resolveCover(Commands.singleCoverArt(target.url)) }
 
@@ -150,7 +231,7 @@ class LibraryRepositoryImpl @Inject constructor(
             val payload = transport.call(command).getOrNull() ?: return null
 
             when (val art = LibraryParser.coverArt(payload)) {
-                is LibraryParser.CoverArt.Available -> return art.fileName
+                is LibraryParser.CoverArt.Available -> return art.coverRef
 
                 // Nothing to show, and nothing to gain from asking again.
                 LibraryParser.CoverArt.Missing -> return null
@@ -270,6 +351,17 @@ class LibraryRepositoryImpl @Inject constructor(
 
     private companion object {
         const val TAG = "CoilLibrary"
+
+        /**
+         * The kinds the albums tab can draw. Tracks are left out deliberately: a streaming
+         * account's saved songs run to thousands of entries, and the tab shows one tile each.
+         */
+        val ALBUM_CONTENT_TYPES = listOf(
+            LibraryContentType.ALBUM,
+            LibraryContentType.PLAYLIST,
+            LibraryContentType.COLLECTION,
+        )
+
         const val COVER_ATTEMPTS = 3
         const val COVER_RETRY_MILLIS = 1_000L
         const val RESCAN_SETTLE_MILLIS = 3_000L

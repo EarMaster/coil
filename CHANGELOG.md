@@ -9,6 +9,14 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Fixed
+- **The lock screen names the track again.** For a file with no title tag — which is most of a
+  ripped-CD library — the controls in the shade and on the lock screen read "Coil is running"
+  instead of the track, and kept reading it as the box moved through the album, even though the
+  artist and the cover beside it were right all along. An untagged track is now named by its file
+  name there, the same way it already was in the queue and in the library, and the player screen
+  and the mini player name it that way too instead of saying "Unknown title"
+
 ## [1.2.0] - 2026-08-19
 
 ### Added

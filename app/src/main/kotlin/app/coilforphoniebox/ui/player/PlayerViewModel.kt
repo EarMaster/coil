@@ -83,10 +83,11 @@ class PlayerViewModel @Inject constructor(
         /** What stand-in artwork is keyed on while this is playing — see [coverNameOf]. */
         val coverName: String? get() = coverNameOf(status)
 
-        /** Track name as shown in the menu; the tags first, the file name as a fallback. */
-        val trackLabel: String? get() = status.file?.let { file ->
-            status.title?.takeIf { it.isNotBlank() } ?: file.substringAfterLast('/')
-        }
+        /**
+         * Track name as shown in the menu — [PlayerStatus.displayTitle], but only for something
+         * that can actually be starred, which is a file and not a title on its own.
+         */
+        val trackLabel: String? get() = if (status.file != null) status.displayTitle else null
     }
 
     private val messageChannel = MutableSharedFlow<UiMessage>(

@@ -36,6 +36,19 @@ data class PlayerStatus(
     /** Folder the current song sits in, used to offer "save this as a favourite". */
     val folder: String? get() = file?.substringBeforeLast('/', missingDelimiterValue = "")?.ifEmpty { null }
 
+    /**
+     * What to call the current track. Never blank while a file is loaded, which the media session
+     * depends on: media3 posts a notification with no content title for a null one, and the
+     * platform fills that hole with its own "<app> is running".
+     *
+     * The tag first, then the file name — the same fallback `QueueParser` and
+     * [LibraryTrack.displayTitle] apply, and for the same reason: most of a Phoniebox library is
+     * untagged rips, so a missing title tag is the common case rather than the odd one.
+     */
+    val displayTitle: String?
+        get() = title?.takeIf { it.isNotBlank() }
+            ?: file?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+
     companion object {
         val Idle = PlayerStatus()
     }

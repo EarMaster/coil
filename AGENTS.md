@@ -375,11 +375,11 @@ it. It is never published, so it has to be asked for.
 Upstream would close this with two lines — `def play(self, pos=None)` in `player/coordinator.py` and
 the MPD backend. Coil needs no change when it lands: the ladder's first rung starts succeeding.
 
-## The media session, and the four things media3 will not tell you
+## The media session, and the five things media3 will not tell you
 
 `PhonieboxPlayer` is a `SimpleBasePlayer` whose playback happens on the box, and `feature-media`'s
-whole job is translating between the two. Four of media3's contracts are silent when broken — nothing
-logs, nothing throws, a control simply does nothing — and all four were broken at some point:
+whole job is translating between the two. Five of media3's contracts are silent when broken — nothing
+logs, nothing throws, a control simply does nothing — and all five were broken at some point:
 
 - **A session the service was never handed shows no notification.**
   `MediaNotificationManager.updateNotification` asks `isSessionAdded` before anything else, and media3
@@ -401,6 +401,15 @@ logs, nothing throws, a control simply does nothing — and all four were broken
   it was before the command was sent. `PhonieboxPlayer.send` therefore stays pending until the box has
   been told and, where the outcome is published, until it says so — bounded, because `invalidateState`
   is ignored while anything is pending.
+- **A null metadata title is not an empty line.** `DefaultMediaNotificationProvider` reads
+  `displayTitle ?: title` and posts the notification with no content title at all when both are
+  absent, and the platform fills that hole with its own "<app> is running" — which is what the lock
+  screen showed for every untagged rip, artist and cover art beside it perfectly correct. It reads
+  as *stale* metadata rather than missing metadata, because within one untagged album the metadata
+  genuinely never changes: same null title, same albumartist, same folder cover, so
+  `SimpleBasePlayer` has nothing to report and the same wrong line stays up track after track. The
+  playing item's title therefore goes through `PlayerStatus.displayTitle`, which falls back to the
+  file name the way `QueueParser` and `LibraryTrack.displayTitle` already do.
 - **`mediaItemIndex` is a timeline index, not a queue position**, and `C.INDEX_UNSET` means "media3
   resolved this to nothing". Both are read in one place, `seekIntentFor`, whose KDoc carries the
   reasoning; the short version is that a fallback timeline's only index means "the playing song", so

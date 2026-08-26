@@ -343,7 +343,10 @@ class PhonieboxPlayer(
             ?: C.TIME_UNSET
 
         val metadata = MediaMetadata.Builder()
-            .setTitle(status.title)
+            // Not `status.title`: the box leaves the tag out for an untagged rip, and a null title
+            // is not an empty line on the lock screen — media3 posts a notification with no
+            // content title and the platform substitutes "<app> is running" for it.
+            .setTitle(status.displayTitle)
             .setArtist(status.artist)
             .setAlbumTitle(status.album)
             // With more than one box, the lock screen has to make clear which device is

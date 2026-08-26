@@ -70,7 +70,7 @@ fun MiniPlayer(
                 Spacer(Modifier.size(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = status.title ?: stringResource(R.string.player_no_title),
+                        text = status.displayTitle ?: stringResource(R.string.player_no_title),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

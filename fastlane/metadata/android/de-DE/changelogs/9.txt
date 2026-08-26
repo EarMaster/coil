@@ -1,0 +1,1 @@
+Ein Titel ohne Titel-Tag wird auf dem Sperrbildschirm und in der Benachrichtigung jetzt nach seiner Datei benannt. Dort stand vorher „Coil wird ausgeführt“, und das blieb stehen, während die Box durch das Album lief. Der Player und die Mini-Leiste benennen ihn genauso.

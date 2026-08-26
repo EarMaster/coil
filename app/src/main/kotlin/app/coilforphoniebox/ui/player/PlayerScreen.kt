@@ -303,7 +303,7 @@ private fun TitleBlock(
     Row(verticalAlignment = Alignment.Top) {
         Column(Modifier.weight(1f)) {
             Text(
-                text = state.status.title
+                text = state.status.displayTitle
                     ?: if (state.status.hasContent) {
                         stringResource(R.string.player_no_title)
                     } else {

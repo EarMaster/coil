@@ -1,0 +1,1 @@
+Een nummer zonder titeltag krijgt op het vergrendelscherm en in de meldingen nu de naam van zijn bestand. Daar stond eerder de naam van de app, en die bleef staan terwijl de box door het album liep. Het spelerscherm en de mini-balk noemen het net zo.

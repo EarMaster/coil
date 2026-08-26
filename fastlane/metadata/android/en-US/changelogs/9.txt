@@ -1,0 +1,1 @@
+A track with no title tag is now named by its file name on the lock screen and in the notification shade. Those controls used to read "Coil is running" instead, and kept reading it as the box moved through the album. The player screen and the mini player name such a track the same way.

@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-08-27
+
 ### Fixed
 - **The lock screen names the track again.** For a file with no title tag — which is most of a
   ripped-CD library — the controls in the shade and on the lock screen read "Coil is running"

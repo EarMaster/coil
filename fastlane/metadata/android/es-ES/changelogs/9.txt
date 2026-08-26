@@ -1,0 +1,1 @@
+Una pista sin etiqueta de título ahora se nombra por su archivo en la pantalla de bloqueo y en las notificaciones. Antes, esos controles mostraban el nombre de la aplicación, y seguían así mientras la caja avanzaba por el álbum. La pantalla del reproductor y la minibarra la nombran igual.

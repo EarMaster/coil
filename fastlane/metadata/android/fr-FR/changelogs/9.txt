@@ -1,0 +1,1 @@
+Une piste sans balise de titre est désormais nommée d'après son fichier sur l'écran de verrouillage et dans les notifications. Ces commandes affichaient le nom de l'application à la place, et le gardaient pendant que la boîte parcourait l'album. L'écran du lecteur et la mini-barre la nomment de même.

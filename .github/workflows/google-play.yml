@@ -116,3 +116,13 @@ jobs:
           tracks: ${{ inputs.track || 'internal' }}
           whatsNewDirectory: whatsnew/
           mappingFile: release-assets/mapping.txt
+          # Commit the edit without submitting it for review, and press "Send for review" in the
+          # Play Console instead. Without this, `Edits.commit` refuses an app whose changes it may
+          # not submit on its own — "Changes cannot be sent for review automatically. Please set
+          # the query parameter changesNotSentForReview to true" — which is every upload to an app
+          # that has not had a release reviewed yet, and any upload made while a console-side edit
+          # is still pending. The internal track needs no review at all, so nothing is held up
+          # there; a production release is, until someone submits it. Drop this once the listing
+          # has been through review and nothing is pending, if the manual step becomes the bigger
+          # risk of the two.
+          changesNotSentForReview: true

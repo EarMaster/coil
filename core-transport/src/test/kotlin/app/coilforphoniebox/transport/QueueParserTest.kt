@@ -58,7 +58,9 @@ class QueueParserTest {
 
     /**
      * Most of a Phoniebox library is untagged rips, so this is the common case rather than an
-     * edge one — a row with no text at all would be unusable.
+     * edge one — a row with no text at all would be unusable. The tag itself stays null: that
+     * absence is what `PlayerStatus.reconciledWith` reads to catch the box publishing the
+     * previous song's title for this one.
      */
     @Test
     fun `an untagged song falls back to its file name`() {
@@ -66,7 +68,8 @@ class QueueParserTest {
 
         val entry = QueueParser.queue(parse(raw)).single()
 
-        assertEquals("03 - Track.mp3", entry.title)
+        assertNull(entry.title)
+        assertEquals("03 - Track.mp3", entry.displayTitle)
         assertNull(entry.artist)
         assertNull(entry.album)
         assertNull(entry.durationSeconds)

@@ -269,9 +269,10 @@ class PhonieboxPlayer(
         if (index != null) {
             builder.setPlaylist(
                 current.queue.mapIndexed { position, entry ->
-                    // The playing item keeps being built from `playerstatus`: that is the
-                    // authoritative metadata, and the only item there is cover art for. Its
-                    // *identity* stays the queue row's, though — see [uidFor].
+                    // The playing item keeps being built from `playerstatus` — reconciled
+                    // against this very queue on the way in (`PlayerStatus.reconciledWith`),
+                    // and the only item there is cover art for. Its *identity* stays the queue
+                    // row's, though — see [uidFor].
                     if (position == index) {
                         mediaItemFor(current, uid = uidFor(entry))
                     } else {
@@ -315,7 +316,9 @@ class PhonieboxPlayer(
             ?: C.TIME_UNSET
 
         val metadata = MediaMetadata.Builder()
-            .setTitle(entry.title)
+            // `displayTitle`, not the tag: an untagged queue row with no title at all is the
+            // same hole in Android Auto's list that it is on the lock screen.
+            .setTitle(entry.displayTitle)
             .setArtist(entry.artist)
             .setAlbumTitle(entry.album)
             .setIsBrowsable(false)

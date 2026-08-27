@@ -99,6 +99,28 @@ The same REP socket is bound to `inproc`, `tcp` and `ws` simultaneously. Interna
 
 **Parse leniently.** MPD returns some numbers as strings, and depending on content whole fields are missing — with web radio, `duration` and `album` for instance. In kotlinx.serialization use `ignoreUnknownKeys = true` plus custom converters.
 
+**The tags can belong to an earlier song.** `_mpd_status_poll` is
+
+```python
+self.mpd_status.update(self.mpd_retry_with_mutex(self.mpd_client.status))
+self.mpd_status.update(self.mpd_retry_with_mutex(self.mpd_client.currentsong))
+```
+
+against a `self.mpd_status = {}` created once in `__init__` and never cleared — identical in
+`components/playermpd/__init__.py` on `future3/main` and `components/player/backends/mpd.py` on
+`future3/develop`, and the `player.ctrl.playerstatus` RPC returns that same dict. MPD omits a tag a
+file has no value for instead of sending it empty, and `dict.update` only overwrites, so **`title`,
+`artist`, `album` and friends persist from the last song that had them**: an untagged rip — most of
+a Phoniebox library — is published under the previous album's name, and a stopped box keeps the
+last song entirely (`currentsong` returns `{}`). `file`, `state`, `song`/`pos`, `songid` and the
+counters are current; everything else is a maybe.
+
+There is no flag for it in the payload, and no way to tell a genuinely unchanged tag from a stale
+one — within an album it is unchanged either way. `playlistinfo` is the way out: it is not merged
+like this, so the row whose `file` matches `playerstatus.file` is the authoritative account of that
+song's tags, and a tag absent there cannot belong to it. The exception is web radio, where ICY
+metadata reaches `currentsong` live and the queue row still names the station.
+
 ### Last value cache
 
 The publishing server retains the most recent state. When a new subscriber connects, the complete current state is resent automatically.

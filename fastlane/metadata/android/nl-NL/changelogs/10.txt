@@ -1,0 +1,1 @@
+Een nummer zonder eigen tags staat niet langer onder de naam van een eerder album. De box geeft titel, artiest en album van het laatste getagde nummer door aan alle volgende; Coil vergelijkt wat er speelt nu met de wachtrij van de box, zodat de speler, de wachtrij, de mini-balk en het vergrendelscherm het juiste album noemen.

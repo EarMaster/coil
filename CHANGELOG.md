@@ -9,6 +9,18 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-08-27
+
+### Fixed
+- **The album line names the album that is playing.** A track with no tags of its own was shown
+  under the title, artist and album of the last tagged track the box had played — a rip from one
+  album sitting under another album's name, with an artist beside it that happened to be right.
+  The box publishes it that way: it merges each song's tags into one record it never clears, so a
+  song with nothing to say inherits whatever the one before it said. Coil now checks the playing
+  song's tags against the box's queue, which answers per song, and shows the file name for a track
+  the queue says has no title — on the player screen, in the mini player, in the queue and on the
+  lock screen alike
+
 ## [1.2.1] - 2026-08-27
 
 ### Fixed

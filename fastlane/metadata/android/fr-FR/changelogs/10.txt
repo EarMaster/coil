@@ -1,0 +1,1 @@
+Une piste sans balises n'apparaît plus sous le nom d'un album précédent. La boîte transmet le titre, l'artiste et l'album de la dernière piste balisée à toutes les suivantes ; Coil compare désormais la lecture à la file d'attente de la boîte, afin que le lecteur, la file, la mini-barre et l'écran de verrouillage nomment le bon album.

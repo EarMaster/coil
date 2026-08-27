@@ -41,10 +41,11 @@ object QueueParser {
                 // it is there, because that is what `playerstatus` will be compared against.
                 position = entry.anyInt("pos", "Pos") ?: index,
                 url = url,
-                // Most of a Phoniebox library is untagged rips, so the title tag is missing
-                // far more often than not. The file name is what the library rows show for
-                // exactly the same reason (`LibraryParser` keeps the entry's `name`).
-                title = entry.anyString("title", "Title") ?: url.substringAfterLast('/'),
+                // Left null when the file has no title tag, which is most of a Phoniebox
+                // library: `QueueEntry.displayTitle` puts the file name on screen, and
+                // `PlayerStatus.reconciledWith` needs to be able to see that the tag is
+                // absent — that is what tells it the box is publishing a stale one.
+                title = entry.anyString("title", "Title"),
                 // `albumartist` is the better label within one folder — `artist` is
                 // per-track and can differ track by track, same as in `playerstatus`.
                 artist = entry.anyString("albumartist", "AlbumArtist", "artist", "Artist"),

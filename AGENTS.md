@@ -73,7 +73,13 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
   handles only the AAB, mapping and release notes. The track reaches that action as `tracks` — the
   singular `track` is deprecated there, and setting both is a hard error. This workflow's own input
   stays singular because it passes exactly one, and it defaults twice over: the action uploads to
-  **production** when neither input is given, which is not a default to reach by accident.
+  **production** when neither input is given, which is not a default to reach by accident. It also
+  passes `changesNotSentForReview: true`, because `Edits.commit` refuses to commit an edit it may
+  not submit for review itself — "Changes cannot be sent for review automatically. Please set the
+  query parameter changesNotSentForReview to true", which is every upload to an app that has not
+  had a release reviewed yet, and any upload racing a pending console-side edit. The cost is that
+  a production upload waits for someone to press **Send for review** in the Play Console; the
+  internal track needs no review, so nothing waits there.
 - `pages.yml` — deploys `docs/pages/` via Jekyll to GitHub Pages on push to `main` (path-filtered
   to `docs/pages/**`). GitHub Pages must be enabled in repo settings with source "GitHub Actions",
   the custom domain must be set there, and `coilforphoniebox.app` DNS must point at GitHub Pages.
@@ -171,6 +177,19 @@ server in this repo.
 - Parse `playerstatus` leniently (`ignoreUnknownKeys = true`, tolerate stringified numbers and
   missing fields like `duration`/`album` on web radio streams). Field names are not a stable
   contract upstream.
+- **`playerstatus` tags belong to some earlier song, not necessarily this one.** The box builds
+  the payload as `self.mpd_status.update(status())` then `.update(currentsong())` into a dict
+  created once at startup and never cleared — `playermpd/__init__.py` on `future3/main`, the same
+  code in `player/backends/mpd.py` on `future3/develop`. MPD *omits* the tags a file has no value
+  for rather than sending them empty, and `dict.update` only overwrites, so an untagged track
+  inherits the `title`, `artist` and `album` of the last tagged one the box played and keeps them
+  for the whole album. `file`, `pos`, `songid`, `state` and the counters are always current; every
+  tag is suspect. **`playlistinfo` is not merged like that** — each row is MPD's own answer for
+  that file — so the queue row matching `playerstatus.file` is the only account of what the
+  playing song is really tagged with, which is what `PlayerStatus.reconciledWith` reads it for —
+  applied once, in `PlayerRepositoryImpl.status`, so the three surfaces that show a title cannot
+  disagree. Do not "fix" a screen by reading `status.title` or `status.album`
+  directly: the repository hands out the reconciled status and the raw one is a bug.
 - **Never send `as_thread`.** `jukebox/plugs.py` starts a daemon thread and returns the `Thread`
   object instead of the function's result, so any call carrying it answers with something
   unusable — it is fire-and-forget only. The implementation plan §6.2 recommends it for slow
@@ -409,7 +428,10 @@ logs, nothing throws, a control simply does nothing — and all five were broken
   genuinely never changes: same null title, same albumartist, same folder cover, so
   `SimpleBasePlayer` has nothing to report and the same wrong line stays up track after track. The
   playing item's title therefore goes through `PlayerStatus.displayTitle`, which falls back to the
-  file name the way `QueueParser` and `LibraryTrack.displayTitle` already do.
+  file name the way `QueueEntry` and `LibraryTrack` do with theirs. Half the report was literally
+  stale metadata, though, and from the box rather than from media3: an untagged track that follows
+  a tagged one is *published* under the earlier one's title and album — see the `playerstatus`
+  tags bullet under "Protocol essentials", and `PlayerStatus.reconciledWith`, which stops it.
 - **`mediaItemIndex` is a timeline index, not a queue position**, and `C.INDEX_UNSET` means "media3
   resolved this to nothing". Both are read in one place, `seekIntentFor`, whose KDoc carries the
   reasoning; the short version is that a fallback timeline's only index means "the playing song", so

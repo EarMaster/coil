@@ -73,13 +73,17 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
   handles only the AAB, mapping and release notes. The track reaches that action as `tracks` — the
   singular `track` is deprecated there, and setting both is a hard error. This workflow's own input
   stays singular because it passes exactly one, and it defaults twice over: the action uploads to
-  **production** when neither input is given, which is not a default to reach by accident. It also
-  passes `changesNotSentForReview: true`, because `Edits.commit` refuses to commit an edit it may
-  not submit for review itself — "Changes cannot be sent for review automatically. Please set the
-  query parameter changesNotSentForReview to true", which is every upload to an app that has not
-  had a release reviewed yet, and any upload racing a pending console-side edit. The cost is that
-  a production upload waits for someone to press **Send for review** in the Play Console; the
-  internal track needs no review, so nothing waits there.
+  **production** when neither input is given, which is not a default to reach by accident. It
+  leaves `changesNotSentForReview` at its default (false): this app sends changes for review
+  automatically, and `Edits.commit` then rejects the parameter outright — "Changes are sent for
+  review automatically. The query parameter changesNotSentForReview must not be set." Setting it
+  to `true` is only correct for an app in the opposite state, which refuses with "Changes cannot
+  be sent for review automatically. Please set the query parameter changesNotSentForReview to
+  true" (an app whose first release has not been reviewed, or an upload racing a pending
+  console-side edit). The two states are mutually exclusive, so the flag must never be left on
+  speculatively — v1.2.2's deploy failed at the commit step that way, with the AAB already
+  uploaded. A failed commit abandons the edit, so the same `versionCode` can be re-uploaded by
+  re-dispatching the workflow with the same tag.
 - `pages.yml` — deploys `docs/pages/` via Jekyll to GitHub Pages on push to `main` (path-filtered
   to `docs/pages/**`). GitHub Pages must be enabled in repo settings with source "GitHub Actions",
   the custom domain must be set there, and `coilforphoniebox.app` DNS must point at GitHub Pages.

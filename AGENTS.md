@@ -73,7 +73,13 @@ condensed map of it, not a replacement. See "Implementation status" for what is 
   handles only the AAB, mapping and release notes. The track reaches that action as `tracks` — the
   singular `track` is deprecated there, and setting both is a hard error. This workflow's own input
   stays singular because it passes exactly one, and it defaults twice over: the action uploads to
-  **production** when neither input is given, which is not a default to reach by accident.
+  **production** when neither input is given, which is not a default to reach by accident. It also
+  passes `changesNotSentForReview: true`, because `Edits.commit` refuses to commit an edit it may
+  not submit for review itself — "Changes cannot be sent for review automatically. Please set the
+  query parameter changesNotSentForReview to true", which is every upload to an app that has not
+  had a release reviewed yet, and any upload racing a pending console-side edit. The cost is that
+  a production upload waits for someone to press **Send for review** in the Play Console; the
+  internal track needs no review, so nothing waits there.
 - `pages.yml` — deploys `docs/pages/` via Jekyll to GitHub Pages on push to `main` (path-filtered
   to `docs/pages/**`). GitHub Pages must be enabled in repo settings with source "GitHub Actions",
   the custom domain must be set there, and `coilforphoniebox.app` DNS must point at GitHub Pages.

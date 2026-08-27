@@ -18,10 +18,14 @@ data class QueueEntry(
     /** MPD URL of the song, relative to the box's music library root. */
     val url: String,
     /**
-     * What to show. Falls back to the file name when the song carries no title tag, which is
-     * what the library rows do too — a row with no text at all would be unusable.
+     * The title tag, and null when the file has none — which is most of a Phoniebox library.
+     *
+     * Nullable rather than pre-filled with the file name because absence is information:
+     * [PlayerStatus.reconciledWith] reads these three tags as *the* account of what this file
+     * is tagged with, and a fallback baked in here would make an untagged song indistinguishable
+     * from one tagged with its own file name. [displayTitle] is what goes on screen.
      */
-    val title: String,
+    val title: String? = null,
     val artist: String? = null,
     val album: String? = null,
     val durationSeconds: Double? = null,
@@ -30,4 +34,13 @@ data class QueueEntry(
      * media session needs for a timeline item's UID. Null when the box did not send one.
      */
     val songId: String? = null,
-)
+) {
+    /**
+     * What to show. Falls back to the file name the way [LibraryTrack.displayTitle] and
+     * [PlayerStatus.displayTitle] do, and for the same reason: a row with no text at all would
+     * be unusable, and a media3 item with no title at all is what the platform answers with
+     * "<app> is running".
+     */
+    val displayTitle: String
+        get() = title?.takeIf { it.isNotBlank() } ?: url.substringAfterLast('/')
+}

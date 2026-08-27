@@ -171,6 +171,19 @@ server in this repo.
 - Parse `playerstatus` leniently (`ignoreUnknownKeys = true`, tolerate stringified numbers and
   missing fields like `duration`/`album` on web radio streams). Field names are not a stable
   contract upstream.
+- **`playerstatus` tags belong to some earlier song, not necessarily this one.** The box builds
+  the payload as `self.mpd_status.update(status())` then `.update(currentsong())` into a dict
+  created once at startup and never cleared — `playermpd/__init__.py` on `future3/main`, the same
+  code in `player/backends/mpd.py` on `future3/develop`. MPD *omits* the tags a file has no value
+  for rather than sending them empty, and `dict.update` only overwrites, so an untagged track
+  inherits the `title`, `artist` and `album` of the last tagged one the box played and keeps them
+  for the whole album. `file`, `pos`, `songid`, `state` and the counters are always current; every
+  tag is suspect. **`playlistinfo` is not merged like that** — each row is MPD's own answer for
+  that file — so the queue row matching `playerstatus.file` is the only account of what the
+  playing song is really tagged with, which is what `PlayerStatus.reconciledWith` reads it for —
+  applied once, in `PlayerRepositoryImpl.status`, so the three surfaces that show a title cannot
+  disagree. Do not "fix" a screen by reading `status.title` or `status.album`
+  directly: the repository hands out the reconciled status and the raw one is a bug.
 - **Never send `as_thread`.** `jukebox/plugs.py` starts a daemon thread and returns the `Thread`
   object instead of the function's result, so any call carrying it answers with something
   unusable — it is fire-and-forget only. The implementation plan §6.2 recommends it for slow
@@ -409,7 +422,10 @@ logs, nothing throws, a control simply does nothing — and all five were broken
   genuinely never changes: same null title, same albumartist, same folder cover, so
   `SimpleBasePlayer` has nothing to report and the same wrong line stays up track after track. The
   playing item's title therefore goes through `PlayerStatus.displayTitle`, which falls back to the
-  file name the way `QueueParser` and `LibraryTrack.displayTitle` already do.
+  file name the way `QueueEntry` and `LibraryTrack` do with theirs. Half the report was literally
+  stale metadata, though, and from the box rather than from media3: an untagged track that follows
+  a tagged one is *published* under the earlier one's title and album — see the `playerstatus`
+  tags bullet under "Protocol essentials", and `PlayerStatus.reconciledWith`, which stops it.
 - **`mediaItemIndex` is a timeline index, not a queue position**, and `C.INDEX_UNSET` means "media3
   resolved this to nothing". Both are read in one place, `seekIntentFor`, whose KDoc carries the
   reasoning; the short version is that a fallback timeline's only index means "the playing song", so

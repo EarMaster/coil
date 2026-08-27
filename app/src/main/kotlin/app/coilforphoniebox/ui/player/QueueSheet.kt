@@ -226,7 +226,7 @@ private fun QueueRow(
 
         Column(Modifier.weight(1f)) {
             Text(
-                text = entry.title,
+                text = entry.displayTitle,
                 style = MaterialTheme.typography.bodyLarge,
                 color = colour,
                 fontWeight = if (playing) FontWeight.Medium else null,

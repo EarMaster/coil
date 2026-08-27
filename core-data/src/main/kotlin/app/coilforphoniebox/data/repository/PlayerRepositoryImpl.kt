@@ -55,7 +55,30 @@ class PlayerRepositoryImpl @Inject constructor(
     @TransportScope private val scope: CoroutineScope,
 ) : PlayerRepository {
 
-    override val status: Flow<PlayerStatus> = transport.status
+    /**
+     * Declared before [status], which reads it: a property initialiser that runs before the
+     * property it names has been assigned sees null, and Kotlin does not warn about it.
+     */
+    private val _queue = MutableStateFlow<List<QueueEntry>>(emptyList())
+
+    override val queue: StateFlow<List<QueueEntry>> = _queue.asStateFlow()
+
+    /**
+     * The published status with the current song's tags checked against the queue — see
+     * [PlayerStatus.reconciledWith] for what the box gets wrong and why the queue knows better.
+     *
+     * Done here rather than in each of the three places that show a title, so that the media
+     * session, the player screen and the mini player cannot disagree about what is playing.
+     * Only [transport] is read raw, by the queue resolver below: it looks at the length and the
+     * file, neither of which this touches, and feeding it this flow instead would be a loop.
+     */
+    override val status: Flow<PlayerStatus> =
+        combine(transport.status, _queue) { status, queue -> status.reconciledWith(queue) }
+            // The queue arrives on its own schedule and usually changes nothing here, while the
+            // status arrives four times a second — without this every queue fetch would wake
+            // every screen for an identical value.
+            .distinctUntilChanged()
+
     override val volume: Flow<VolumeStatus> = transport.volume
     override val connectionState: Flow<ConnectionState> = transport.connection
     override val boxVersion: Flow<String?> = transport.boxVersion
@@ -113,10 +136,6 @@ class PlayerRepositoryImpl @Inject constructor(
     override val coverPending: StateFlow<Boolean> = _coverPending.asStateFlow()
 
     override fun currentCoverFile(): String? = _coverFile.value
-
-    private val _queue = MutableStateFlow<List<QueueEntry>>(emptyList())
-
-    override val queue: StateFlow<List<QueueEntry>> = _queue.asStateFlow()
 
     private val _queueLoading = MutableStateFlow(false)
 

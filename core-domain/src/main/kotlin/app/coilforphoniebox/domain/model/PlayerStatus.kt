@@ -49,6 +49,42 @@ data class PlayerStatus(
         get() = title?.takeIf { it.isNotBlank() }
             ?: file?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
 
+    /**
+     * The same status with [title], [artist] and [album] checked against the box's queue —
+     * because `playerstatus` carries the *previous* song's tags for a song that has none.
+     *
+     * The box builds that payload as `mpd_status.update(status())` then
+     * `.update(currentsong())` into one dictionary it created at startup and never clears
+     * (`playermpd/__init__.py`, and the same code in the provider-neutral player). MPD omits
+     * the tags a file does not have rather than sending them empty, so a `dict.update` only
+     * ever *overwrites* tags — an untagged track inherits the title, artist and album of the
+     * last tagged one the box played, and keeps them for the whole album. Which is why a rip
+     * with no tags shows up under some other album's name, its own artist beside it: the
+     * artist happened to be overwritten and the album did not.
+     *
+     * `playlistinfo` is not merged like that — each entry is MPD's own answer for that file —
+     * so the queue row matching [file] is the only account of what this song is really tagged
+     * with, and a tag missing there cannot belong to this song.
+     *
+     * Two things it deliberately does not do:
+     * - **Streams keep the published tags.** ICY metadata reaches `currentsong` live while the
+     *   cached queue row still describes the station, so there the payload is the fresher of
+     *   the two.
+     * - **An unmatched file is left alone.** The queue is fetched once per queue change, so
+     *   between a card tap and the answer the new song is in no cached row; the previous tags
+     *   stay up for that second rather than blinking out on every tagged album too.
+     */
+    fun reconciledWith(queue: List<QueueEntry>): PlayerStatus {
+        val file = file ?: return this
+        if (file.contains("://")) return this
+        val entry = queue.firstOrNull { it.url == file } ?: return this
+
+        val reconciled = copy(title = entry.title, artist = entry.artist, album = entry.album)
+        // The same instance when the box was right, so the four-a-second status path stays
+        // free of copies nothing downstream can tell apart.
+        return if (reconciled == this) this else reconciled
+    }
+
     companion object {
         val Idle = PlayerStatus()
     }

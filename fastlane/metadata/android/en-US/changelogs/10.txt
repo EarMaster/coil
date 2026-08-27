@@ -1,0 +1,1 @@
+A track with no tags of its own is no longer shown under an earlier album's name. The box passes on the last tagged track's title, artist and album to every untagged one after it; Coil now checks what is playing against the box's own queue, so the player, the queue, the mini player and the lock screen all name the right album.

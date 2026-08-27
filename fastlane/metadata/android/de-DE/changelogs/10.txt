@@ -1,0 +1,1 @@
+Ein Titel ohne eigene Tags erscheint nicht mehr unter dem Namen eines früheren Albums. Die Box reicht Titel, Interpret und Album des letzten getaggten Stücks an alle folgenden weiter; Coil gleicht das Laufende jetzt mit der Warteschlange der Box ab, sodass Player, Warteschlange, Mini-Leiste und Sperrbildschirm das richtige Album nennen.

@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-08-27
+
 ### Fixed
 - **The album line names the album that is playing.** A track with no tags of its own was shown
   under the title, artist and album of the last tagged track the box had played — a rip from one

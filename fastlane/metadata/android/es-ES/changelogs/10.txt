@@ -1,0 +1,1 @@
+Una pista sin etiquetas propias ya no aparece bajo el nombre de un álbum anterior. La caja pasa el título, el artista y el álbum de la última pista etiquetada a todas las siguientes; Coil ahora contrasta lo que suena con la cola de la caja, para que el reproductor, la cola, la minibarra y la pantalla de bloqueo nombren el álbum correcto.

@@ -7,6 +7,7 @@ import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 import app.coilforphoniebox.domain.model.ConnectionTestResult
 import app.coilforphoniebox.domain.model.FavoritesLayout
+import app.coilforphoniebox.domain.model.FavoritesSort
 import app.coilforphoniebox.domain.model.PlayerStatus
 import app.coilforphoniebox.domain.repository.BoxRepository
 import app.coilforphoniebox.domain.repository.LibraryRepository
@@ -153,5 +154,16 @@ class AppViewModel @Inject constructor(
             FavoritesLayout.LIST -> FavoritesLayout.GRID
         }
         viewModelScope.launch { settings.setFavoritesLayout(next) }
+    }
+
+    /**
+     * Chooses what order the favourites tab shows.
+     *
+     * Here for the same reason as [toggleFavoritesLayout]: the control is in the top bar and
+     * the choice is stored. Unlike the layout it is not a toggle — the two orders are not
+     * opposites of one shape, and "sorted A–Z" has to be readable as the state it is in.
+     */
+    fun setFavoritesSort(sort: FavoritesSort) {
+        viewModelScope.launch { settings.setFavoritesSort(sort) }
     }
 }

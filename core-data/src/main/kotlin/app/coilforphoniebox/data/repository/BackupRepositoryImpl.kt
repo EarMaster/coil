@@ -9,6 +9,7 @@ import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.domain.model.FavoritesLayout
+import app.coilforphoniebox.domain.model.FavoritesSort
 import app.coilforphoniebox.domain.model.LibraryProvider
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
@@ -87,6 +88,7 @@ class BackupRepositoryImpl @Inject constructor(
         val dynamicColor: Boolean = false,
         val sessionMode: String = SessionMode.APP_ONLY.name,
         val favoritesLayout: String = FavoritesLayout.GRID.name,
+        val favoritesSort: String = FavoritesSort.MANUAL.name,
         /**
          * Defaults to false so a backup written before this setting existed imports as
          * "off" — the safe reading, since the file cannot say the user ever opted in.
@@ -129,6 +131,7 @@ class BackupRepositoryImpl @Inject constructor(
                 dynamicColor = current.dynamicColor,
                 sessionMode = current.sessionMode.name,
                 favoritesLayout = current.favoritesLayout.name,
+                favoritesSort = current.favoritesSort.name,
                 loadExternalCoverArt = current.loadExternalCoverArt,
             ),
         )
@@ -205,6 +208,10 @@ class BackupRepositoryImpl @Inject constructor(
             FavoritesLayout.entries.firstOrNull { it.name == file.settings.favoritesLayout }
                 ?: FavoritesLayout.GRID,
         )
+        settings.setFavoritesSort(
+            FavoritesSort.entries.firstOrNull { it.name == file.settings.favoritesSort }
+                ?: FavoritesSort.MANUAL,
+        )
         settings.setLoadExternalCoverArt(file.settings.loadExternalCoverArt)
     }
 
@@ -219,9 +226,10 @@ class BackupRepositoryImpl @Inject constructor(
          * an older build would import a `TRACK` row without its URL, which is a
          * favourite that cannot play. Refusing the file says so instead.
          *
-         * `coverFile` and `favoritesLayout` arrived later and deliberately did *not* bump
-         * it: an older build that drops them loses a cover it can resolve again from the
-         * box and a layout preference, not the ability to play anything.
+         * `coverFile`, `favoritesLayout` and `favoritesSort` arrived later and deliberately
+         * did *not* bump it: an older build that drops them loses a cover it can resolve
+         * again from the box and two view preferences for one tab, not the ability to play
+         * anything.
          */
         const val FORMAT_VERSION = 2
     }

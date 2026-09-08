@@ -2,6 +2,7 @@ package app.coilforphoniebox.domain.repository
 
 import app.coilforphoniebox.domain.model.AppSettings
 import app.coilforphoniebox.domain.model.FavoritesLayout
+import app.coilforphoniebox.domain.model.FavoritesSort
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +19,8 @@ interface SettingsRepository {
     suspend fun setSessionMode(mode: SessionMode)
 
     suspend fun setFavoritesLayout(layout: FavoritesLayout)
+
+    suspend fun setFavoritesSort(sort: FavoritesSort)
 
     suspend fun setLoadExternalCoverArt(enabled: Boolean)
 

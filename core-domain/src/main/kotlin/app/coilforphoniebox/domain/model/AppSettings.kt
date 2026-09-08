@@ -22,6 +22,20 @@ enum class SessionMode { OFF, APP_ONLY, AUTOMATIC }
  */
 enum class FavoritesLayout { GRID, LIST }
 
+/**
+ * What order the favourites tab shows its entries in.
+ *
+ * [MANUAL] is the default: the arrangement the user made with move up and move down, which
+ * before any move is the order they were saved in. It stays the default because a wall of
+ * covers is something a parent arranges — the most-played tile goes top left — and an update
+ * that reshuffled that arrangement would take work away rather than add any.
+ *
+ * [NAME] sorts by label instead, for a collection large enough that finding a title matters
+ * more than where it sits. It does not touch [Favorite.sortIndex], so switching back to
+ * [MANUAL] brings the arrangement back exactly as it was.
+ */
+enum class FavoritesSort { MANUAL, NAME }
+
 /** Global settings. Everything box-specific lives on [Box] instead (§7.2). */
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -29,6 +43,7 @@ data class AppSettings(
     val dynamicColor: Boolean = false,
     val sessionMode: SessionMode = SessionMode.APP_ONLY,
     val favoritesLayout: FavoritesLayout = FavoritesLayout.GRID,
+    val favoritesSort: FavoritesSort = FavoritesSort.MANUAL,
     /**
      * Whether cover art may be fetched from somewhere other than the box.
      *

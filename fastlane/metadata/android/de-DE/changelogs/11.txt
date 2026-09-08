@@ -1,0 +1,1 @@
+Favoriten lassen sich jetzt von A–Z sortieren. Oben im Favoriten-Tab sitzt neben dem Umschalter für die Ansicht eine Schaltfläche zum Sortieren, in der die aktuelle Reihenfolge angehakt ist: die eigene Anordnung oder alphabetisch. Sortieren lässt die eigene Anordnung unberührt – zurückgeschaltet steht sie wieder genau so da.

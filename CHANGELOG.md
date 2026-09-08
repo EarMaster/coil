@@ -9,6 +9,17 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-09-08
+
+### Added
+- **Favourites can be sorted A–Z.** The tab showed them in the order they were saved and nothing
+  in the top bar said otherwise, so a collection that had grown past a screenful had no way to be
+  scanned by name — the only way to move a tile was two entries buried in its own ⋮ menu, one step
+  at a time. A sort action now sits beside the layout switch, with the current order ticked: the
+  hand-made arrangement, or alphabetical. Sorting leaves the arrangement untouched, so switching
+  back brings it out exactly as it was, and move up and move down are offered only while the tab
+  is in that order — where they can actually be seen to work
+
 ## [1.2.2] - 2026-08-27
 
 ### Fixed

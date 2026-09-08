@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.coilforphoniebox.domain.model.AppSettings
 import app.coilforphoniebox.domain.model.FavoritesLayout
+import app.coilforphoniebox.domain.model.FavoritesSort
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +30,7 @@ class SettingsStore @Inject constructor(
             dynamicColor = prefs[DYNAMIC_COLOR] ?: false,
             sessionMode = prefs[SESSION_MODE].toSessionMode(),
             favoritesLayout = prefs[FAVORITES_LAYOUT].toFavoritesLayout(),
+            favoritesSort = prefs[FAVORITES_SORT].toFavoritesSort(),
             loadExternalCoverArt = prefs[LOAD_EXTERNAL_COVER_ART] ?: false,
             activeBoxId = prefs[ACTIVE_BOX_ID],
             onboardingComplete = prefs[ONBOARDING_COMPLETE] ?: false,
@@ -44,6 +46,8 @@ class SettingsStore @Inject constructor(
     suspend fun setSessionMode(mode: SessionMode) = put(SESSION_MODE, mode.name)
 
     suspend fun setFavoritesLayout(layout: FavoritesLayout) = put(FAVORITES_LAYOUT, layout.name)
+
+    suspend fun setFavoritesSort(sort: FavoritesSort) = put(FAVORITES_SORT, sort.name)
 
     suspend fun setLoadExternalCoverArt(enabled: Boolean) = put(LOAD_EXTERNAL_COVER_ART, enabled)
 
@@ -69,11 +73,15 @@ class SettingsStore @Inject constructor(
     private fun String?.toFavoritesLayout(): FavoritesLayout =
         this?.let { name -> FavoritesLayout.entries.firstOrNull { it.name == name } } ?: FavoritesLayout.GRID
 
+    private fun String?.toFavoritesSort(): FavoritesSort =
+        this?.let { name -> FavoritesSort.entries.firstOrNull { it.name == name } } ?: FavoritesSort.MANUAL
+
     private companion object {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val SESSION_MODE = stringPreferencesKey("session_mode")
         val FAVORITES_LAYOUT = stringPreferencesKey("favorites_layout")
+        val FAVORITES_SORT = stringPreferencesKey("favorites_sort")
         val LOAD_EXTERNAL_COVER_ART = booleanPreferencesKey("load_external_cover_art")
         val ACTIVE_BOX_ID = stringPreferencesKey("active_box_id")
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")

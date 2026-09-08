@@ -1,0 +1,1 @@
+Ahora los favoritos se pueden ordenar de la A a la Z. En la parte superior de la pestaña Favoritos, junto al selector de vista, hay un botón de orden con la opción actual marcada: tu propia disposición o el orden alfabético. Ordenar no altera tu disposición: al volver, la encontrarás igual.

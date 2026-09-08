@@ -1,0 +1,1 @@
+Favourites can now be sorted A–Z. A sort button sits at the top of the Favourites tab, next to the layout switch, with the current order ticked: your own arrangement, or alphabetical. Sorting leaves your arrangement untouched, so switching back brings it out exactly as you left it.

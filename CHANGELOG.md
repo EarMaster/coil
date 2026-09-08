@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-09-08
+
 ### Added
 - **Favourites can be sorted A–Z.** The tab showed them in the order they were saved and nothing
   in the top bar said otherwise, so a collection that had grown past a screenful had no way to be

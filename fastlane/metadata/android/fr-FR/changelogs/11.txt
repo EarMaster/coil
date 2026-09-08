@@ -1,0 +1,1 @@
+Les favoris peuvent désormais être triés de A à Z. Un bouton de tri se trouve en haut de l'onglet Favoris, à côté du sélecteur d'affichage, avec l'ordre actuel coché : votre propre classement ou l'ordre alphabétique. Le tri ne touche pas à votre classement : en y revenant, vous le retrouvez tel quel.

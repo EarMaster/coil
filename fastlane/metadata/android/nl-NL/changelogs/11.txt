@@ -1,0 +1,1 @@
+Favorieten kunnen nu op A–Z worden gesorteerd. Boven in het tabblad Favorieten staat naast de weergaveknop een sorteerknop, met de huidige volgorde aangevinkt: je eigen volgorde of alfabetisch. Sorteren laat je eigen volgorde ongemoeid – schakel je terug, dan staat alles er weer precies zo bij.

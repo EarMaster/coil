@@ -48,20 +48,24 @@ import app.coilforphoniebox.domain.model.Box as PhonieBox
 import app.coilforphoniebox.domain.model.Favorite
 import app.coilforphoniebox.domain.model.FavoriteType
 import app.coilforphoniebox.domain.model.FavoritesLayout
+import app.coilforphoniebox.domain.model.FavoritesSort
+import app.coilforphoniebox.domain.model.ordered
 import app.coilforphoniebox.ui.components.CoverArt
 import app.coilforphoniebox.ui.components.EmptyState
 import app.coilforphoniebox.ui.components.shareLink
 
 /**
- * The favourites tab, in one of two layouts (§7.2).
+ * The favourites tab, in one of two layouts (§7.2) and one of two orders.
  *
- * [layout] comes from settings via the shell rather than from this screen's own view model,
- * because the control that changes it lives in the top bar — one preference, one owner.
+ * [layout] and [sort] come from settings via the shell rather than from this screen's own
+ * view model, because the controls that change them live in the top bar — one preference,
+ * one owner.
  */
 @Composable
 fun FavoritesScreen(
     viewModel: FavoritesViewModel,
     layout: FavoritesLayout,
+    sort: FavoritesSort,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -80,6 +84,13 @@ fun FavoritesScreen(
     // item block — which keeps the two from drifting apart in what they can do.
     val compact = layout == FavoritesLayout.LIST
 
+    val entries = remember(state.favorites, sort) { state.favorites.ordered(sort) }
+
+    // Move up and move down are offered only while the list is in the user's own order.
+    // Sorted alphabetically they would write a new arrangement nobody can see, and read as
+    // broken — the tile would not budge.
+    val movable = sort == FavoritesSort.MANUAL
+
     LazyVerticalGrid(
         columns = if (compact) GridCells.Fixed(1) else GridCells.Adaptive(minSize = 148.dp),
         contentPadding = if (compact) PaddingValues(vertical = 8.dp) else PaddingValues(12.dp),
@@ -87,7 +98,7 @@ fun FavoritesScreen(
         verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 12.dp),
         modifier = modifier,
     ) {
-        items(state.favorites, key = { it.id }) { favorite ->
+        items(entries, key = { it.id }) { favorite ->
             // Cover art is fetched for the entries that are actually on screen, never for
             // the whole table at once — see FavoritesViewModel.ensureCover.
             LaunchedEffect(favorite.id, favorite.coverFile) { viewModel.ensureCover(favorite) }
@@ -102,7 +113,11 @@ fun FavoritesScreen(
                 onPlay = { viewModel.play(favorite) },
                 onRemove = { viewModel.remove(favorite) },
                 onPin = { coverUrl -> viewModel.requestPin(favorite, coverUrl) },
-                onMove = { up -> viewModel.move(favorite, up) },
+                onMove = if (movable) {
+                    { up -> viewModel.move(favorite, up) }
+                } else {
+                    null
+                },
                 onLinkCopied = viewModel::onLinkCopied,
             )
         }
@@ -128,7 +143,8 @@ private fun FavoriteEntry(
     onPlay: () -> Unit,
     onRemove: () -> Unit,
     onPin: (String?) -> Unit,
-    onMove: (Boolean) -> Unit,
+    /** Null while the tab is sorted rather than hand-arranged — see [FavoritesScreen]. */
+    onMove: ((Boolean) -> Unit)?,
     onLinkCopied: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -254,7 +270,7 @@ private fun FavoriteMenu(
     label: String,
     link: String?,
     onPin: () -> Unit,
-    onMove: (Boolean) -> Unit,
+    onMove: ((Boolean) -> Unit)?,
     onRemove: () -> Unit,
     onLinkCopied: () -> Unit,
 ) {
@@ -290,20 +306,22 @@ private fun FavoriteMenu(
                 },
             )
         }
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_move_up)) },
-            onClick = {
-                onDismiss()
-                onMove(true)
-            },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_move_down)) },
-            onClick = {
-                onDismiss()
-                onMove(false)
-            },
-        )
+        if (onMove != null) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_move_up)) },
+                onClick = {
+                    onDismiss()
+                    onMove(true)
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_move_down)) },
+                onClick = {
+                    onDismiss()
+                    onMove(false)
+                },
+            )
+        }
         DropdownMenuItem(
             text = { Text(stringResource(R.string.action_remove)) },
             onClick = {

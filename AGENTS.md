@@ -627,7 +627,8 @@ Three levels, and the distinction matters:
   Kotlin 2.0.21 cannot read. Upgrading it means upgrading Kotlin and the Compose compiler too.
 
 Covered so far: the whole app on three devices (player light and dark, library, favourites in both
-layouts, settings top and lower half, box management, one box's page, offline, onboarding), the
+layouts and sorted A–Z, settings top and lower half, box management, one box's page, offline,
+onboarding), the
 player screen (playing, paused, idle, web radio, sleep timer, a cover still resolving, light and
 dark), the library screen
 (folders, tracks, albums, search, no results, empty, light and dark) and the chrome components.
@@ -636,8 +637,10 @@ The favourites goldens carry **two entries with a `coverFile` and one without**,
 matter: a cover from the box has to render, and a favourite it has no artwork for has to get the
 stand-in the app picks from its own set. `favourites_compact_*` reaches the list layout by *clicking* the top bar
 action rather than presetting the stored preference, so a toggle that stopped switching fails the
-test instead of quietly capturing the same picture twice. `Fixtures.albums` does the same for the
-album grid, four of six with artwork.
+test instead of quietly capturing the same picture twice. `favourites_sorted_*` reaches A–Z the
+same way, through the top bar menu — and `Fixtures.favorites` is deliberately saved in an order
+that is *not* alphabetical, so a sort that stopped sorting cannot keep that picture either.
+`Fixtures.albums` does the same for the album grid, four of six with artwork.
 
 `StoreFixtures.favorites` carries covers on three of four, and the fourth now draws a stand-in
 rather than a placeholder icon — no tile in that listing image can come out empty any more. The mix
@@ -982,6 +985,21 @@ still needs doing, in rough order of importance:
   action the other has. It also rides in the settings backup, which did **not** bump
   `FORMAT_VERSION`: an older build that drops the field loses a layout preference, not the ability
   to play anything. Same for the `coverFile` now exported per favourite.
+- **The favourites tab also has two orders, and that switch is in the top bar as well.**
+  `FavoritesSort` in `AppSettings` is either `MANUAL` — the arrangement made with move up and move
+  down, which before any move is the order things were saved in — or `NAME`. `MANUAL` stays the
+  default: a wall of covers is something a parent arranges, and an update that reshuffled it would
+  take work away. Decisions worth keeping: sorting **never writes `sortIndex`**, so switching back
+  to `MANUAL` brings the arrangement out exactly as it was; move up and move down are offered only
+  while the tab is in `MANUAL` (`FavoriteEntry.onMove` is nullable for it), because in a sorted
+  list they would write an arrangement nobody can see and read as a tile that refuses to budge;
+  the order is applied by `List<Favorite>.ordered` in `core-domain` rather than by a second DAO
+  query, which keeps one `ORDER BY` in `FavoriteDao` and puts the collation somewhere testable;
+  and it collates with `java.text.Collator`, not `compareTo` — the app ships in five languages and
+  `"Ärger" > "Zug"` is true of every code-point comparison and of no user's expectation. Unlike
+  the layout it is a **menu with the current order ticked, not a toggle**: the shape on screen
+  answers "what is it now?" by itself, but a grid sorted A–Z and one a user happened to arrange
+  that way look identical. It rides in the settings backup on the same terms as the layout.
 - **Long press in the library opens a context menu, it does not toggle a favourite.** The plan (§14,
   phase 2) has long press as the way to favourite something, which is undiscoverable and was the
   only way to do it. Every library row and album cell now carries a ⋮ button, and both it and a long

@@ -47,4 +47,40 @@ class FavoriteTest {
         )
         assertNull(Favorite(boxId = "b", label = "x", type = FavoriteType.TRACK).toPlayTarget())
     }
+
+    /**
+     * The manual order is whatever the caller was handed — the repository has already sorted
+     * on `sortIndex`, and sorting again here would only be a chance to disagree with it.
+     */
+    @Test
+    fun `the manual order is left exactly as it arrived`() {
+        val list = listOf(named("Zebra"), named("Apple"), named("Möwe"))
+
+        assertEquals(list, list.ordered(FavoritesSort.MANUAL))
+    }
+
+    @Test
+    fun `sorting by name ignores case`() {
+        val labels = listOf(named("zebra"), named("Apple"), named("bear"))
+            .ordered(FavoritesSort.NAME)
+            .map { it.label }
+
+        assertEquals(listOf("Apple", "bear", "zebra"), labels)
+    }
+
+    /**
+     * The app ships in five languages, so an umlaut has to sort where a reader expects it and
+     * not after Z, which is where every code-point comparison puts it.
+     */
+    @Test
+    fun `sorting by name collates accented letters with their base letter`() {
+        val labels = listOf(named("Zug"), named("Ärger"), named("Boot"))
+            .ordered(FavoritesSort.NAME)
+            .map { it.label }
+
+        assertEquals(listOf("Ärger", "Boot", "Zug"), labels)
+    }
+
+    private fun named(label: String) =
+        Favorite(boxId = "box-1", label = label, type = FavoriteType.FOLDER, folder = label)
 }

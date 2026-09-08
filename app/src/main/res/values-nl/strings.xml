@@ -91,6 +91,9 @@
     <string name="shortcut_pin_unsupported">Deze launcher ondersteunt geen snelkoppelingen op het startscherm.</string>
     <string name="action_favourites_show_list">Als lijst weergeven</string>
     <string name="action_favourites_show_grid">Als hoezen weergeven</string>
+    <string name="action_favourites_sort">Favorieten sorteren</string>
+    <string name="favourites_sort_manual">Eigen volgorde</string>
+    <string name="favourites_sort_name">A–Z</string>
 
     <string name="boxes_title">Boxen</string>
     <string name="boxes_switch">Andere box kiezen</string>

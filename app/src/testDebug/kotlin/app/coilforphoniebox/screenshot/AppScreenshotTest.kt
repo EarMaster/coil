@@ -102,6 +102,23 @@ abstract class AppScreenshotTest : ScreenshotTest() {
         captureRoot("app/favourites_compact_$device")
     }
 
+    /**
+     * The same favourites in alphabetical order, reached through the top bar menu rather than
+     * by presetting the stored preference — for the same reason as `favourites_compact_*`.
+     * The fixture's three labels sort into a different order than they were saved in, so a
+     * sort that stopped sorting cannot quietly keep this picture.
+     */
+    @Test
+    fun favourites_sorted() {
+        showApp()
+        navigateTo(R.string.nav_favourites)
+        compose.onNodeWithContentDescription(string(R.string.action_favourites_sort)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText(string(R.string.favourites_sort_name)).performClick()
+        compose.waitForIdle()
+        captureRoot("app/favourites_sorted_$device")
+    }
+
     @Test
     fun settings() {
         showApp()

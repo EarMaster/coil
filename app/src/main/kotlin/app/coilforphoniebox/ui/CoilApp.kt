@@ -1,18 +1,23 @@
 package app.coilforphoniebox.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.automirrored.rounded.ViewList
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,6 +50,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.FavoritesLayout
+import app.coilforphoniebox.domain.model.FavoritesSort
 import app.coilforphoniebox.ui.boxes.AddBoxScreen
 import app.coilforphoniebox.ui.boxes.AddBoxViewModel
 import app.coilforphoniebox.ui.boxes.BoxDetailScreen
@@ -143,10 +151,16 @@ fun CoilApp(appViewModel: AppViewModel) {
                         }
                     }
                 },
-                // Only the favourites tab has anything to put here. The action shows what a
-                // tap would switch *to*, so the icon and its label describe the same thing.
+                // Only the favourites tab has anything to put here: how its entries are
+                // ordered, and what shape they take. The layout action shows what a tap would
+                // switch *to*, so the icon and its label describe the same thing.
                 actions = {
                     if (currentRoute == Destination.FAVOURITES.route) {
+                        FavoritesSortAction(
+                            current = state.settings.favoritesSort,
+                            onSelect = appViewModel::setFavoritesSort,
+                        )
+
                         val list = state.settings.favoritesLayout == FavoritesLayout.LIST
                         IconButton(onClick = appViewModel::toggleFavoritesLayout) {
                             Icon(
@@ -213,7 +227,11 @@ fun CoilApp(appViewModel: AppViewModel) {
                 composable(Destination.FAVOURITES.route) {
                     val viewModel = hiltViewModel<FavoritesViewModel>()
                     SnackbarMessages(viewModel.messages, snackbarHostState)
-                    FavoritesScreen(viewModel, layout = state.settings.favoritesLayout)
+                    FavoritesScreen(
+                        viewModel = viewModel,
+                        layout = state.settings.favoritesLayout,
+                        sort = state.settings.favoritesSort,
+                    )
                 }
 
                 composable(Destination.SETTINGS.route) {
@@ -275,6 +293,55 @@ fun CoilApp(appViewModel: AppViewModel) {
         )
     }
 }
+
+/**
+ * The favourites tab's order, as a menu rather than a toggle.
+ *
+ * A toggle can only say what a tap switches *to*, which works for the layout — the shape on
+ * screen answers "and what is it now?" by itself. Order cannot: a grid sorted A–Z and a grid
+ * a user happens to have arranged that way look identical, so the state has to be written
+ * down. Hence a menu, with the current order ticked.
+ */
+@Composable
+private fun FavoritesSortAction(current: FavoritesSort, onSelect: (FavoritesSort) -> Unit) {
+    var menuOpen by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { menuOpen = true }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.Sort,
+                contentDescription = stringResource(R.string.action_favourites_sort),
+            )
+        }
+
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            FavoritesSort.entries.forEach { sort ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(sort.labelRes)) },
+                    // The tick is decorative; `selected` is what makes the choice audible,
+                    // and a menu whose state only exists as a picture is no state at all.
+                    leadingIcon = {
+                        if (sort == current) {
+                            Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
+                        }
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onSelect(sort)
+                    },
+                    modifier = Modifier.semantics { selected = sort == current },
+                )
+            }
+        }
+    }
+}
+
+@get:StringRes
+private val FavoritesSort.labelRes: Int
+    get() = when (this) {
+        FavoritesSort.MANUAL -> R.string.favourites_sort_manual
+        FavoritesSort.NAME -> R.string.favourites_sort_name
+    }
 
 @Composable
 private fun BottomBar(navController: NavHostController, selected: Destination?) {

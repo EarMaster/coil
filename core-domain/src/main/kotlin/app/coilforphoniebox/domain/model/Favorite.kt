@@ -1,5 +1,7 @@
 package app.coilforphoniebox.domain.model
 
+import java.text.Collator
+
 enum class FavoriteType { FOLDER, ALBUM, TRACK }
 
 /**
@@ -83,4 +85,21 @@ data class Favorite(
                 )
             }
     }
+}
+
+/**
+ * The same favourites in the order [sort] asks for.
+ *
+ * [FavoritesSort.MANUAL] is the list as it arrives from the database, which is already the
+ * user's own order — the repository sorts on `sortIndex`, so re-sorting here would only be
+ * a chance to disagree with it.
+ *
+ * The alphabetical case uses a [Collator] rather than comparing strings: the app ships in
+ * five languages, and `"Ärger" > "Zug"` is true of every code-point comparison and of no
+ * user's expectation. The collator is built per call because it is not thread safe, and
+ * sorting a favourites list is not something that happens in a loop.
+ */
+fun List<Favorite>.ordered(sort: FavoritesSort): List<Favorite> = when (sort) {
+    FavoritesSort.MANUAL -> this
+    FavoritesSort.NAME -> sortedWith(compareBy(Collator.getInstance()) { it.label })
 }

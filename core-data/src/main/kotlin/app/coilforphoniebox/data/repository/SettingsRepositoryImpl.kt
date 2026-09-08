@@ -3,6 +3,7 @@ package app.coilforphoniebox.data.repository
 import app.coilforphoniebox.data.settings.SettingsStore
 import app.coilforphoniebox.domain.model.AppSettings
 import app.coilforphoniebox.domain.model.FavoritesLayout
+import app.coilforphoniebox.domain.model.FavoritesSort
 import app.coilforphoniebox.domain.model.SessionMode
 import app.coilforphoniebox.domain.model.ThemeMode
 import app.coilforphoniebox.domain.repository.SettingsRepository
@@ -27,6 +28,8 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setFavoritesLayout(layout: FavoritesLayout) =
         store.setFavoritesLayout(layout)
+
+    override suspend fun setFavoritesSort(sort: FavoritesSort) = store.setFavoritesSort(sort)
 
     override suspend fun setLoadExternalCoverArt(enabled: Boolean) =
         store.setLoadExternalCoverArt(enabled)

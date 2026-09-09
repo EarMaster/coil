@@ -81,6 +81,29 @@ class FavoriteTest {
         assertEquals(listOf("Ärger", "Boot", "Zug"), labels)
     }
 
+    @Test
+    fun `sorting by name descending is the ascending order reversed`() {
+        val list = listOf(named("zebra"), named("Apple"), named("bear"))
+
+        assertEquals(
+            list.ordered(FavoritesSort.NAME).map { it.label }.reversed(),
+            list.ordered(FavoritesSort.NAME_DESC).map { it.label },
+        )
+    }
+
+    /**
+     * The reversed order has to collate too, and not merely reverse a code-point sort: an
+     * umlaut belongs beside its base letter from either end.
+     */
+    @Test
+    fun `sorting by name descending collates accented letters with their base letter`() {
+        val labels = listOf(named("Ärger"), named("Zug"), named("Boot"))
+            .ordered(FavoritesSort.NAME_DESC)
+            .map { it.label }
+
+        assertEquals(listOf("Zug", "Boot", "Ärger"), labels)
+    }
+
     private fun named(label: String) =
         Favorite(boxId = "box-1", label = label, type = FavoriteType.FOLDER, folder = label)
 }

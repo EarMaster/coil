@@ -160,8 +160,9 @@ class AppViewModel @Inject constructor(
      * Chooses what order the favourites tab shows.
      *
      * Here for the same reason as [toggleFavoritesLayout]: the control is in the top bar and
-     * the choice is stored. Unlike the layout it is not a toggle — the two orders are not
-     * opposites of one shape, and "sorted A–Z" has to be readable as the state it is in.
+     * the choice is stored. Unlike the layout it takes the order it should switch to rather
+     * than cycling one itself — the three orders are not a ring, and which one follows the
+     * current one is a question about the menu's rows, so it is answered there.
      */
     fun setFavoritesSort(sort: FavoritesSort) {
         viewModelScope.launch { settings.setFavoritesSort(sort) }

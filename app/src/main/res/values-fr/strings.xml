@@ -99,6 +99,7 @@
     <string name="action_favourites_sort">Trier les favoris</string>
     <string name="favourites_sort_manual">Ordre personnalisé</string>
     <string name="favourites_sort_name">A–Z</string>
+    <string name="favourites_sort_name_desc">Z–A</string>
 
     <string name="boxes_title">Box</string>
     <string name="boxes_switch">Changer de box</string>

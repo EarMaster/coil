@@ -55,7 +55,7 @@ import app.coilforphoniebox.ui.components.EmptyState
 import app.coilforphoniebox.ui.components.shareLink
 
 /**
- * The favourites tab, in one of two layouts (§7.2) and one of two orders.
+ * The favourites tab, in one of two layouts (§7.2) and one of three orders.
  *
  * [layout] and [sort] come from settings via the shell rather than from this screen's own
  * view model, because the controls that change them live in the top bar — one preference,

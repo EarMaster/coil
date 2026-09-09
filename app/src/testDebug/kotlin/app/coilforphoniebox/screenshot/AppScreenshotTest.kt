@@ -1,5 +1,6 @@
 package app.coilforphoniebox.screenshot
 
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -117,6 +118,36 @@ abstract class AppScreenshotTest : ScreenshotTest() {
         compose.onNodeWithText(string(R.string.favourites_sort_name)).performClick()
         compose.waitForIdle()
         captureRoot("app/favourites_sorted_$device")
+    }
+
+    /**
+     * Choosing the alphabetical order again reverses it.
+     *
+     * Asserted rather than captured, unlike every other test here: what this checks is the
+     * menu's wiring, and a golden taken with the menu closed would look right even if the
+     * second tap did nothing at all. The reversed *list* is covered where the ordering
+     * lives, in `FavoriteTest`; what is left to get wrong is the row — whether tapping a
+     * ticked entry reverses rather than re-selects, and whether it then says so.
+     */
+    @Test
+    fun favourites_sort_reverses_when_chosen_again() {
+        showApp()
+        navigateTo(R.string.nav_favourites)
+
+        compose.onNodeWithContentDescription(string(R.string.action_favourites_sort)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText(string(R.string.favourites_sort_name)).performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithContentDescription(string(R.string.action_favourites_sort)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText(string(R.string.favourites_sort_name)).performClick()
+        compose.waitForIdle()
+
+        // The entry now reads as the order it put the list in, and still holds the tick.
+        compose.onNodeWithContentDescription(string(R.string.action_favourites_sort)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText(string(R.string.favourites_sort_name_desc)).assertIsSelected()
     }
 
     @Test

@@ -177,10 +177,14 @@
     <string name="action_favourites_show_grid">Show as covers</string>
     <!-- The other top bar action on the favourites tab: a menu naming the order the entries
          are in, with the current one ticked. "Custom order" is the arrangement made with move
-         up and move down, which starts out as the order things were saved in. -->
+         up and move down, which starts out as the order things were saved in. The two
+         alphabetical labels share one menu entry, which reverses when it is chosen again, so
+         each label has to read as the order the list is in and not as an instruction. Keep
+         them as short as this: they sit in a dropdown beside a tick and an arrow. -->
     <string name="action_favourites_sort">Sort favourites</string>
     <string name="favourites_sort_manual">Custom order</string>
     <string name="favourites_sort_name">A–Z</string>
+    <string name="favourites_sort_name_desc">Z–A</string>
 
     <!-- Box switcher and box management -->
     <string name="boxes_title">Boxes</string>

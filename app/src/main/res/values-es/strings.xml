@@ -95,6 +95,7 @@
     <string name="action_favourites_sort">Ordenar favoritos</string>
     <string name="favourites_sort_manual">Orden personalizado</string>
     <string name="favourites_sort_name">A–Z</string>
+    <string name="favourites_sort_name_desc">Z–A</string>
 
     <string name="boxes_title">Cajas</string>
     <string name="boxes_switch">Cambiar de caja</string>

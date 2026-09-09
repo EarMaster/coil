@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-09-09
+
 ### Added
 - **The alphabetical order reverses.** Choosing A–Z again turns it into Z–A, the gesture a sort
   control answers to nearly everywhere else, and choosing it once more turns it back. The entry

@@ -1,0 +1,1 @@
+Ahora el orden alfabético se puede invertir. Si vuelves a elegir A–Z en el menú de orden de Favoritos, pasa a Z–A; si lo eliges otra vez, regresa al anterior. La opción lleva el nombre del orden en el que está tu lista realmente: una pestaña ordenada de la Z a la A lo indica.

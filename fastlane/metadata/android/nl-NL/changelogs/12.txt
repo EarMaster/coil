@@ -1,0 +1,1 @@
+De alfabetische volgorde kan nu worden omgekeerd. Kies je A–Z opnieuw in het sorteermenu van Favorieten, dan wordt het Z–A; kies je het nog een keer, dan gaat het terug. De optie is benoemd naar de volgorde waarin je lijst werkelijk staat: een tabblad op Z–A geeft dat aan.

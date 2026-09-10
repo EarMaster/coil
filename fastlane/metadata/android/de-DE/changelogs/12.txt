@@ -1,0 +1,1 @@
+Die alphabetische Reihenfolge lässt sich jetzt umkehren. Wird A–Z im Sortiermenü der Favoriten erneut gewählt, wird daraus Z–A; noch einmal gewählt, geht es zurück. Der Eintrag ist mit der Reihenfolge beschriftet, in der die Liste tatsächlich steht – ein Tab, der Z–A sortiert ist, sagt das auch.

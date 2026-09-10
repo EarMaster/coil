@@ -1,0 +1,1 @@
+The alphabetical order now reverses. Choose A–Z again in the Favourites sort menu and it becomes Z–A; choose it once more and it turns back. The entry is labelled with the order your list is actually in, so a tab sorted Z–A says so.

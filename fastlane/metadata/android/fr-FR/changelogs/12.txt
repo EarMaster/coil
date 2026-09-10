@@ -1,0 +1,1 @@
+L'ordre alphabétique peut désormais être inversé. En choisissant à nouveau A–Z dans le menu de tri des favoris, il devient Z–A ; en le choisissant encore une fois, il revient. L'entrée porte le nom de l'ordre dans lequel votre liste se trouve réellement : un onglet trié de Z à A l'indique.

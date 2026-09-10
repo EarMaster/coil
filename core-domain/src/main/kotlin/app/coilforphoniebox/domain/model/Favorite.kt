@@ -94,12 +94,18 @@ data class Favorite(
  * user's own order — the repository sorts on `sortIndex`, so re-sorting here would only be
  * a chance to disagree with it.
  *
- * The alphabetical case uses a [Collator] rather than comparing strings: the app ships in
+ * The alphabetical cases use a [Collator] rather than comparing strings: the app ships in
  * five languages, and `"Ärger" > "Zug"` is true of every code-point comparison and of no
  * user's expectation. The collator is built per call because it is not thread safe, and
  * sorting a favourites list is not something that happens in a loop.
+ *
+ * [FavoritesSort.NAME_DESC] reverses that same comparator rather than sorting by a second
+ * one, so Z–A is exactly A–Z read backwards — including where the collator puts an umlaut.
  */
 fun List<Favorite>.ordered(sort: FavoritesSort): List<Favorite> = when (sort) {
     FavoritesSort.MANUAL -> this
-    FavoritesSort.NAME -> sortedWith(compareBy(Collator.getInstance()) { it.label })
+    FavoritesSort.NAME -> sortedWith(byLabel())
+    FavoritesSort.NAME_DESC -> sortedWith(byLabel().reversed())
 }
+
+private fun byLabel(): Comparator<Favorite> = compareBy(Collator.getInstance()) { it.label }

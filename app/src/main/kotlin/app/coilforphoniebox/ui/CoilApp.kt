@@ -9,6 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.automirrored.rounded.ViewList
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.LibraryMusic
@@ -301,10 +303,18 @@ fun CoilApp(appViewModel: AppViewModel) {
  * screen answers "and what is it now?" by itself. Order cannot: a grid sorted A–Z and a grid
  * a user happens to have arranged that way look identical, so the state has to be written
  * down. Hence a menu, with the current order ticked.
+ *
+ * The three orders are two entries, not three: the alphabetical one reverses when it is
+ * chosen again, which is the gesture a sort control has almost everywhere else. That would
+ * normally be the thing this menu exists to avoid — a tap whose result is invisible — so the
+ * entry is written to answer both questions at once: its label *is* the direction, so the
+ * ticked row reads "Z–A" once reversed instead of leaving the user to infer it.
  */
 @Composable
 private fun FavoritesSortAction(current: FavoritesSort, onSelect: (FavoritesSort) -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
+    val descending = current == FavoritesSort.NAME_DESC
+    val alphabetical = current == FavoritesSort.NAME || descending
 
     Box {
         IconButton(onClick = { menuOpen = true }) {
@@ -315,33 +325,68 @@ private fun FavoritesSortAction(current: FavoritesSort, onSelect: (FavoritesSort
         }
 
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            FavoritesSort.entries.forEach { sort ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(sort.labelRes)) },
-                    // The tick is decorative; `selected` is what makes the choice audible,
-                    // and a menu whose state only exists as a picture is no state at all.
-                    leadingIcon = {
-                        if (sort == current) {
-                            Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
-                        }
-                    },
-                    onClick = {
-                        menuOpen = false
-                        onSelect(sort)
-                    },
-                    modifier = Modifier.semantics { selected = sort == current },
-                )
-            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.favourites_sort_manual)) },
+                // The tick is decorative; `selected` is what makes the choice audible,
+                // and a menu whose state only exists as a picture is no state at all.
+                leadingIcon = {
+                    if (!alphabetical) {
+                        Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
+                    }
+                },
+                onClick = {
+                    menuOpen = false
+                    onSelect(FavoritesSort.MANUAL)
+                },
+                modifier = Modifier.semantics { selected = !alphabetical },
+            )
+
+            // One entry for both directions, because choosing the alphabetical order again
+            // is how a list gets reversed nearly everywhere else. The label carries the
+            // direction rather than a fixed "A–Z" plus an arrow: it reads as the state it is
+            // in — "Z–A", ticked — and as what a tap does from the other order, which is
+            // what an order that looks identical on screen to a hand-made one needs. The
+            // arrow is the affordance for tapping a row that is already ticked, and is
+            // decorative for the same reason the tick is.
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        stringResource(
+                            if (descending) R.string.favourites_sort_name_desc
+                            else R.string.favourites_sort_name,
+                        ),
+                    )
+                },
+                leadingIcon = {
+                    if (alphabetical) {
+                        Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
+                    }
+                },
+                trailingIcon = {
+                    if (alphabetical) {
+                        Icon(
+                            imageVector = if (descending) {
+                                Icons.Rounded.ArrowDownward
+                            } else {
+                                Icons.Rounded.ArrowUpward
+                            },
+                            contentDescription = null,
+                        )
+                    }
+                },
+                onClick = {
+                    menuOpen = false
+                    // From the manual order, the first tap sorts A–Z; from A–Z it reverses.
+                    onSelect(
+                        if (current == FavoritesSort.NAME) FavoritesSort.NAME_DESC
+                        else FavoritesSort.NAME,
+                    )
+                },
+                modifier = Modifier.semantics { selected = alphabetical },
+            )
         }
     }
 }
-
-@get:StringRes
-private val FavoritesSort.labelRes: Int
-    get() = when (this) {
-        FavoritesSort.MANUAL -> R.string.favourites_sort_manual
-        FavoritesSort.NAME -> R.string.favourites_sort_name
-    }
 
 @Composable
 private fun BottomBar(navController: NavHostController, selected: Destination?) {

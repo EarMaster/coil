@@ -9,6 +9,13 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Added
+- **The alphabetical order reverses.** Choosing A–Z again turns it into Z–A, the gesture a sort
+  control answers to nearly everywhere else, and choosing it once more turns it back. The entry
+  is labelled with the order the list is actually in rather than with a fixed "A–Z", so a tab
+  sorted Z–A says so instead of leaving it to be worked out from the tiles — which matters here,
+  where a sorted arrangement and a hand-made one look identical
+
 ## [1.2.3] - 2026-09-08
 
 ### Added

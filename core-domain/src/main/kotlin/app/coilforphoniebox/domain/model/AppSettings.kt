@@ -33,8 +33,13 @@ enum class FavoritesLayout { GRID, LIST }
  * [NAME] sorts by label instead, for a collection large enough that finding a title matters
  * more than where it sits. It does not touch [Favorite.sortIndex], so switching back to
  * [MANUAL] brings the arrangement back exactly as it was.
+ *
+ * [NAME_DESC] is the same order reversed, reached by choosing the alphabetical entry again.
+ * It is a third value rather than a `descending` flag beside the enum so that the order
+ * stays *one* setting: one DataStore key, one field in the backup file, and a `when` the
+ * compiler can still check is exhaustive.
  */
-enum class FavoritesSort { MANUAL, NAME }
+enum class FavoritesSort { MANUAL, NAME, NAME_DESC }
 
 /** Global settings. Everything box-specific lives on [Box] instead (§7.2). */
 data class AppSettings(

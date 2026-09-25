@@ -96,6 +96,13 @@ import kotlinx.coroutines.flow.emptyFlow
 private const val TAB_FOLDERS = 0
 private const val TAB_ALBUMS = 1
 
+/**
+ * A row's title wraps once before it ellipsises. Library names are long and differ at the end
+ * — `Folge 12` from `Folge 13`, part one from part two — and one line cut exactly that off.
+ * Two lines, not a marquee as in the player: a screenful of rows scrolling at once is noise.
+ */
+private const val ROW_TITLE_LINES = 2
+
 /** Room for both tab labels in the longest launch locale, beside the search field. */
 private val COMPACT_TABS_WIDTH = 280.dp
 
@@ -518,7 +525,7 @@ private fun FolderRow(
             Text(
                 text = folder.displayName,
                 style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
+                maxLines = ROW_TITLE_LINES,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
@@ -585,7 +592,7 @@ private fun TrackRow(
             Text(
                 text = track.displayTitle,
                 style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
+                maxLines = ROW_TITLE_LINES,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
@@ -666,7 +673,7 @@ private fun AlbumRow(
                 Text(
                     text = album.album.ifBlank { stringResource(R.string.library_unknown_album) },
                     style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
+                    maxLines = ROW_TITLE_LINES,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {

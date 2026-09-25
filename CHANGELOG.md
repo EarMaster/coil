@@ -13,6 +13,9 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 - **No more bar across the top.** The box name and the favourites' sort and layout buttons are
   now the first row of each screen, and scroll out of the way with the list, so the content gets
   that space back. In landscape the row sits beside the navigation rail rather than above it.
+- **Long names in lists wrap instead of being cut off.** Folders, tracks and albums in the
+  library, and favourites in the list layout, now use a second line before shortening a name,
+  so the part that tells "Folge 12" from "Folge 13" stays visible.
 
 ### Fixed
 - **Landscape keeps clear of the camera.** With the phone on its side, the navigation rail and

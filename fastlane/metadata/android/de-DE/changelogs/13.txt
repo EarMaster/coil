@@ -1,0 +1,1 @@
+Querformat funktioniert jetzt richtig: Die Navigation wandert an den Rand, sodass Bibliothek, Favoriten und Einstellungen den Großteil des Bildschirms bekommen. Lange Titel laufen durch, statt abgeschnitten zu werden. Und ein zweites Tippen auf „Bibliothek“ springt direkt zur Suche.

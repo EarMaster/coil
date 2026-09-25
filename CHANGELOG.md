@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-09-25
+
 ### Added
 - **Tap Library twice to search.** Tapping the library tab while already in the library jumps
   to the search field and raises the keyboard, so searching is a double tap from anywhere in

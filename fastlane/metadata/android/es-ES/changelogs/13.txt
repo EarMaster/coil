@@ -1,0 +1,1 @@
+El modo horizontal ya funciona bien: la navegación pasa al lateral, así que la biblioteca, los favoritos y los ajustes aprovechan casi toda la pantalla. Los títulos largos se desplazan en lugar de cortarse. Y al tocar «Biblioteca» por segunda vez se abre directamente la búsqueda.

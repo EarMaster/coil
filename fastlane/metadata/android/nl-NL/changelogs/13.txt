@@ -1,0 +1,1 @@
+Liggend werkt nu goed: de navigatie verhuist naar de zijkant, zodat de bibliotheek, favorieten en instellingen het grootste deel van het scherm krijgen. Lange titels scrollen in plaats van afgekapt te worden. En nog een keer op Bibliotheek tikken springt meteen naar zoeken.

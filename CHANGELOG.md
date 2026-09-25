@@ -9,6 +9,8 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.6] - 2026-09-25
+
 ### Changed
 - **No more bar across the top.** The box name and the favourites' sort and layout buttons are
   now the first row of each screen, and scroll out of the way with the list, so the content gets

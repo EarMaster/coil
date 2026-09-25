@@ -1,0 +1,1 @@
+Más espacio para tu biblioteca: la barra superior desaparece y el nombre de la caja ahora se desplaza con la lista. Los nombres largos en las listas pasan a una segunda línea en lugar de cortarse. En horizontal, ya nada queda oculto bajo la cámara frontal.

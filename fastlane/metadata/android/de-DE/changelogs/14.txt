@@ -1,0 +1,1 @@
+Mehr Platz für deine Bibliothek: Die Leiste oben ist weg, der Name der Box scrollt jetzt mit der Liste weg. Lange Namen in Listen werden auf eine zweite Zeile umbrochen, statt abgeschnitten zu werden. Im Querformat verschwindet nichts mehr unter der Frontkamera.

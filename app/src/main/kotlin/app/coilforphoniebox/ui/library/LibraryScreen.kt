@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -60,7 +61,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +80,7 @@ import app.coilforphoniebox.domain.model.LibrarySource
 import app.coilforphoniebox.domain.model.LibraryTrack
 import app.coilforphoniebox.domain.model.PlayTarget
 import app.coilforphoniebox.domain.model.key
+import app.coilforphoniebox.ui.isCompactHeight
 import app.coilforphoniebox.ui.components.ActionMenuItem
 import app.coilforphoniebox.ui.components.CoverArt
 import app.coilforphoniebox.ui.components.DetailRow
@@ -85,19 +90,37 @@ import app.coilforphoniebox.ui.components.FavoriteMenuItem
 import app.coilforphoniebox.ui.components.formatDuration
 import app.coilforphoniebox.ui.components.formatNumber
 import app.coilforphoniebox.ui.components.rememberFreshnessLabel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 private const val TAB_FOLDERS = 0
 private const val TAB_ALBUMS = 1
+
+/** Room for both tab labels in the longest launch locale, beside the search field. */
+private val COMPACT_TABS_WIDTH = 280.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
     viewModel: LibraryViewModel,
     modifier: Modifier = Modifier,
+    /** Fires when the library tab is tapped again from inside the library. */
+    searchRequests: Flow<Unit> = emptyFlow(),
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(TAB_FOLDERS) }
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searching = query.isNotEmpty()
+    val searchFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    // Tapping the tab you are already on has nothing left to navigate to, so it goes to the
+    // one thing on this screen worth jumping to: the search field, keyboard up.
+    LaunchedEffect(searchRequests) {
+        searchRequests.collect {
+            searchFocus.requestFocus()
+            keyboard?.show()
+        }
+    }
 
     // Back leaves search before it does anything else, so a query is never something the user
     // has to undo by hand. The two handlers are mutually exclusive, so their order is moot.
@@ -106,32 +129,55 @@ fun LibraryScreen(
     // undoes it rather than dropping out of the library entirely.
     BackHandler(enabled = !searching && selectedTab != TAB_FOLDERS) { selectedTab = TAB_FOLDERS }
 
-    Column(modifier.fillMaxSize()) {
+    // In a short window the search field and the tab row share one line: stacked, the two of
+    // them and the breadcrumb were most of what a landscape phone could show, and there is
+    // width to spare for both.
+    val compactHeight = isCompactHeight()
+
+    val searchField: @Composable (Modifier) -> Unit = { fieldModifier ->
         SearchField(
             query = query,
             onQueryChange = viewModel::onSearchQueryChange,
             onClear = viewModel::clearSearch,
+            focusRequester = searchFocus,
+            modifier = fieldModifier,
         )
+    }
 
-        // The tabs are a way of browsing, and searching is not browsing: with a query up,
-        // folders, albums and tracks all appear in one list and the tab row would only pose a
-        // question with no answer.
+    // The tabs are a way of browsing, and searching is not browsing: with a query up,
+    // folders, albums and tracks all appear in one list and the tab row would only pose a
+    // question with no answer.
+    val tabs: @Composable (Modifier) -> Unit = { tabsModifier ->
+        if (!searching) {
+            PrimaryTabRow(selectedTabIndex = selectedTab, modifier = tabsModifier) {
+                Tab(
+                    selected = selectedTab == TAB_FOLDERS,
+                    onClick = { selectedTab = TAB_FOLDERS },
+                    text = { Text(stringResource(R.string.library_tab_folders)) },
+                )
+                Tab(
+                    selected = selectedTab == TAB_ALBUMS,
+                    onClick = { selectedTab = TAB_ALBUMS },
+                    text = { Text(stringResource(R.string.library_tab_albums)) },
+                )
+            }
+        }
+    }
+
+    Column(modifier.fillMaxSize()) {
+        if (compactHeight) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                searchField(Modifier.weight(1f))
+                tabs(Modifier.width(COMPACT_TABS_WIDTH))
+            }
+        } else {
+            searchField(Modifier.fillMaxWidth())
+            tabs(Modifier)
+        }
+
         if (searching) {
             SearchResults(viewModel)
             return@Column
-        }
-
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
-            Tab(
-                selected = selectedTab == TAB_FOLDERS,
-                onClick = { selectedTab = TAB_FOLDERS },
-                text = { Text(stringResource(R.string.library_tab_folders)) },
-            )
-            Tab(
-                selected = selectedTab == TAB_ALBUMS,
-                onClick = { selectedTab = TAB_ALBUMS },
-                text = { Text(stringResource(R.string.library_tab_albums)) },
-            )
         }
 
         when (selectedTab) {
@@ -146,6 +192,8 @@ private fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
+    focusRequester: FocusRequester,
+    modifier: Modifier = Modifier,
 ) {
     OutlinedTextField(
         value = query,
@@ -164,9 +212,9 @@ private fun SearchField(
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+        modifier = modifier
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .focusRequester(focusRequester),
     )
 }
 

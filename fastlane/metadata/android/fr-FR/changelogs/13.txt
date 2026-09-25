@@ -1,0 +1,1 @@
+Le mode paysage fonctionne enfin correctement : la navigation passe sur le côté, et la bibliothèque, les favoris et les réglages profitent de presque tout l’écran. Les titres longs défilent au lieu d’être coupés. Et un second appui sur « Bibliothèque » ouvre directement la recherche.

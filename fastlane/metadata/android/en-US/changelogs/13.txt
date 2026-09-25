@@ -1,0 +1,1 @@
+Landscape works properly now: navigation moves to the side, so the library, favourites and settings get most of the screen. Long titles scroll instead of being cut off. And tapping Library a second time jumps straight to search.

@@ -512,6 +512,9 @@ box switched off — and is not a thin wrapper around something the box does.
   Known limit: `ß` is not decomposed, so "Strasse" does not find "Straße".
 - Contains-matching cannot use an index, so the DAO queries carry a `LIMIT` instead of an index.
   Wildcards in the query are escaped — `100%` is a search, not a match-everything.
+- **Tapping the library tab while already in the library focuses the search field** and raises
+  the keyboard — the "double tap Library to search" gesture. It travels as a `SharedFlow` event
+  from `CoilApp` rather than as state, so returning to the tab later never replays it.
 - **What is searchable is what has been fetched**: all albums once the album tab has loaded, plus
   folders and tracks from levels that were opened. The empty state says so rather than implying the
   library is empty.
@@ -537,7 +540,7 @@ Three levels, and the distinction matters:
 
 - **`app/`** — the whole `CoilApp` scaffold with a screen inside it: top bar with the box
   indicator, bottom navigation, mini player, offline banner. This is what the app looks like.
-  Captured on **three device profiles** (`_phone`, `_small`, `_tablet`), so the goldens say
+  Captured on **four device profiles** (`_phone`, `_small`, `_landscape`, `_tablet`), so the goldens say
   something about layout and not only about colour.
 - **`player/`, `library/`** — one screen on its own, for states that would be tedious to reach
   through the whole app: web radio with no duration, a running sleep timer, search with and
@@ -626,7 +629,7 @@ Three levels, and the distinction matters:
 - **Roborazzi is pinned at 1.60.0** because 1.61.0 and later carry Kotlin 2.3 metadata that
   Kotlin 2.0.21 cannot read. Upgrading it means upgrading Kotlin and the Compose compiler too.
 
-Covered so far: the whole app on three devices (player light and dark, library, favourites in both
+Covered so far: the whole app on four devices (player light and dark, library, favourites in both
 layouts and sorted A–Z, settings top and lower half, box management, one box's page, offline,
 onboarding), the
 player screen (playing, paused, idle, web radio, sleep timer, a cover still resolving, light and
@@ -925,6 +928,15 @@ still needs doing, in rough order of importance:
    screen whose entire job is the transport controls. Library, favourites and settings are still
    single-column and merely stretch, which reads as roomy rather than broken — see
    `app/library_tablet.png`.
+
+   **A short window is handled separately, by the scaffold.** Below 480 dp of height (Material's
+   compact height class — a phone on its side, a split-screen half; `isCompactHeight()` in
+   `CoilApp.kt`) the bottom navigation bar becomes a `NavigationRail` at the side, the top bar
+   drops to 48 dp, and the mini player sits under the screen rather than under the rail.
+   Stacked, the three bars took two thirds of a landscape phone and the library showed no rows
+   at all. Two screens adapt on their own through the same check: the library puts its search
+   field and Folders/Albums tabs on one line, and the favourites grid uses smaller tiles so a
+   whole row fits. See `app/*_landscape.png`.
 6. **Android 16's local network restriction will eventually break Coil outright.** Access to
    local-network addresses — which is every socket this app opens, plus `NsdManager` discovery and
    the HTTP cover fetches — will require the `NEARBY_WIFI_DEVICES` permission, granted by the user

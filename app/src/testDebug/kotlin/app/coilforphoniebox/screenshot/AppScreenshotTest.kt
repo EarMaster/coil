@@ -259,3 +259,14 @@ class SmallPhoneAppScreenshotTest : AppScreenshotTest() {
 class TabletAppScreenshotTest : AppScreenshotTest() {
     override val device = "tablet"
 }
+
+/**
+ * A phone on its side: plenty of width and barely any height. This is where a top bar, a mini
+ * player and a bottom navigation bar stacked on top of each other left the screen between them
+ * a sliver, so the scaffold moves the navigation into a rail here — see `CoilApp`.
+ */
+@HiltAndroidTest
+@Config(qualifiers = "w800dp-h360dp-normal-long-notround-land-xhdpi-keyshidden-nonav")
+class LandscapePhoneAppScreenshotTest : AppScreenshotTest() {
+    override val device = "landscape"
+}

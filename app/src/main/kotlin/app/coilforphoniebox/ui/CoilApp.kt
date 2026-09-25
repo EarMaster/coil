@@ -3,7 +3,12 @@ package app.coilforphoniebox.ui
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -25,10 +30,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
@@ -71,6 +80,7 @@ import app.coilforphoniebox.ui.player.PlayerViewModel
 import app.coilforphoniebox.ui.settings.SettingsScreen
 import app.coilforphoniebox.ui.settings.SettingsViewModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 private enum class Destination(
     val route: String,
@@ -108,6 +118,9 @@ fun CoilApp(appViewModel: AppViewModel) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
     var switcherOpen by remember { mutableStateOf(false) }
+    // A tap on the library tab while already in the library is a request to search. An event
+    // rather than state, so coming back to the tab later does not replay it.
+    val librarySearchRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
 
     // Nothing in the app is usable without a box, so a first launch is the add-box screen
     // and nothing else — no feature tour, no carousel (§11.2).
@@ -125,6 +138,27 @@ fun CoilApp(appViewModel: AppViewModel) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val selectedDestination = owningDestination(currentRoute)
+    val compactHeight = isCompactHeight()
+
+    val onNavigate: (Destination) -> Unit = { destination ->
+        if (destination == selectedDestination && destination == Destination.LIBRARY) {
+            librarySearchRequests.tryEmit(Unit)
+        }
+        navController.navigateSingleTop(destination.route)
+    }
+
+    val miniPlayer: @Composable () -> Unit = {
+        if (state.showMiniPlayer && currentRoute != Destination.PLAYER.route) {
+            MiniPlayer(
+                status = state.status,
+                coverUrl = state.coverUrl,
+                coverName = state.coverName,
+                coverPending = state.coverPending,
+                onClick = { navController.navigateSingleTop(Destination.PLAYER.route) },
+                onToggle = appViewModel::togglePlayback,
+            )
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -179,100 +213,119 @@ fun CoilApp(appViewModel: AppViewModel) {
                         }
                     }
                 },
+                // A phone on its side has height to spare nowhere, and the bar is mostly empty
+                // space around one pill — so it gives back a quarter of itself there.
+                expandedHeight = if (compactHeight) {
+                    COMPACT_TOP_BAR_HEIGHT
+                } else {
+                    TopAppBarDefaults.TopAppBarExpandedHeight
+                },
             )
         },
         bottomBar = {
-            Column {
-                if (state.showMiniPlayer && currentRoute != Destination.PLAYER.route) {
-                    MiniPlayer(
-                        status = state.status,
-                        coverUrl = state.coverUrl,
-                        coverName = state.coverName,
-                        coverPending = state.coverPending,
-                        onClick = { navController.navigateSingleTop(Destination.PLAYER.route) },
-                        onToggle = appViewModel::togglePlayback,
-                    )
+            if (!compactHeight) {
+                Column {
+                    miniPlayer()
+                    BottomBar(selected = selectedDestination, onNavigate = onNavigate)
                 }
-                BottomBar(navController = navController, selected = selectedDestination)
             }
         },
     ) { padding ->
-        Column(
+        // In a short window the navigation moves to a rail at the side. Stacked, the top bar,
+        // the mini player and a bottom bar took two thirds of a landscape phone's height and
+        // left the library without a single visible row; width is what such a window has, so
+        // that is where the navigation goes. The mini player stays at the bottom, under the
+        // screen rather than under the rail, so it lines up with what it belongs to.
+        Row(
             Modifier
                 .padding(padding)
                 .fillMaxSize(),
         ) {
-            if (state.isOffline) {
-                OfflineBanner(
-                    text = stringResource(R.string.offline_banner),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
+            if (compactHeight) {
+                SideRail(selected = selectedDestination, onNavigate = onNavigate)
             }
 
-            NavHost(
-                navController = navController,
-                startDestination = Destination.PLAYER.route,
-                modifier = Modifier.fillMaxSize(),
+            Column(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
             ) {
-                composable(Destination.PLAYER.route) {
-                    val viewModel = hiltViewModel<PlayerViewModel>()
-                    SnackbarMessages(viewModel.messages, snackbarHostState)
-                    PlayerScreen(viewModel)
-                }
-
-                composable(Destination.LIBRARY.route) {
-                    val viewModel = hiltViewModel<LibraryViewModel>()
-                    SnackbarMessages(viewModel.messages, snackbarHostState)
-                    LibraryScreen(viewModel)
-                }
-
-                composable(Destination.FAVOURITES.route) {
-                    val viewModel = hiltViewModel<FavoritesViewModel>()
-                    SnackbarMessages(viewModel.messages, snackbarHostState)
-                    FavoritesScreen(
-                        viewModel = viewModel,
-                        layout = state.settings.favoritesLayout,
-                        sort = state.settings.favoritesSort,
+                if (state.isOffline) {
+                    OfflineBanner(
+                        text = stringResource(R.string.offline_banner),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )
                 }
 
-                composable(Destination.SETTINGS.route) {
-                    val viewModel = hiltViewModel<SettingsViewModel>()
-                    SnackbarMessages(viewModel.messages, snackbarHostState)
-                    SettingsScreen(
-                        viewModel = viewModel,
-                        onAddBox = { navController.navigate(ROUTE_ADD_BOX) },
-                        onManageBoxes = { navController.navigate(ROUTE_BOXES) },
-                    )
+                NavHost(
+                    navController = navController,
+                    startDestination = Destination.PLAYER.route,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                ) {
+                    composable(Destination.PLAYER.route) {
+                        val viewModel = hiltViewModel<PlayerViewModel>()
+                        SnackbarMessages(viewModel.messages, snackbarHostState)
+                        PlayerScreen(viewModel)
+                    }
+
+                    composable(Destination.LIBRARY.route) {
+                        val viewModel = hiltViewModel<LibraryViewModel>()
+                        SnackbarMessages(viewModel.messages, snackbarHostState)
+                        LibraryScreen(viewModel, searchRequests = librarySearchRequests)
+                    }
+
+                    composable(Destination.FAVOURITES.route) {
+                        val viewModel = hiltViewModel<FavoritesViewModel>()
+                        SnackbarMessages(viewModel.messages, snackbarHostState)
+                        FavoritesScreen(
+                            viewModel = viewModel,
+                            layout = state.settings.favoritesLayout,
+                            sort = state.settings.favoritesSort,
+                        )
+                    }
+
+                    composable(Destination.SETTINGS.route) {
+                        val viewModel = hiltViewModel<SettingsViewModel>()
+                        SnackbarMessages(viewModel.messages, snackbarHostState)
+                        SettingsScreen(
+                            viewModel = viewModel,
+                            onAddBox = { navController.navigate(ROUTE_ADD_BOX) },
+                            onManageBoxes = { navController.navigate(ROUTE_BOXES) },
+                        )
+                    }
+
+                    composable(ROUTE_BOXES) {
+                        val viewModel = hiltViewModel<BoxesViewModel>()
+                        SnackbarMessages(viewModel.messages, snackbarHostState)
+                        BoxesScreen(
+                            viewModel = viewModel,
+                            onOpenBox = { boxId -> navController.navigate(boxDetailRoute(boxId)) },
+                            onAddBox = { navController.navigate(ROUTE_ADD_BOX) },
+                        )
+                    }
+
+                    composable(ROUTE_BOX_DETAIL) { entry ->
+                        val viewModel = hiltViewModel<BoxesViewModel>()
+                        SnackbarMessages(viewModel.messages, snackbarHostState)
+                        BoxDetailScreen(
+                            viewModel = viewModel,
+                            boxId = entry.arguments?.getString(ARG_BOX_ID).orEmpty(),
+                            onRemoved = { navController.popBackStack() },
+                        )
+                    }
+
+                    composable(ROUTE_ADD_BOX) {
+                        AddBoxScreen(
+                            viewModel = hiltViewModel<AddBoxViewModel>(),
+                            onSaved = { navController.popBackStack() },
+                            onCancel = { navController.popBackStack() },
+                        )
+                    }
                 }
 
-                composable(ROUTE_BOXES) {
-                    val viewModel = hiltViewModel<BoxesViewModel>()
-                    SnackbarMessages(viewModel.messages, snackbarHostState)
-                    BoxesScreen(
-                        viewModel = viewModel,
-                        onOpenBox = { boxId -> navController.navigate(boxDetailRoute(boxId)) },
-                        onAddBox = { navController.navigate(ROUTE_ADD_BOX) },
-                    )
-                }
-
-                composable(ROUTE_BOX_DETAIL) { entry ->
-                    val viewModel = hiltViewModel<BoxesViewModel>()
-                    SnackbarMessages(viewModel.messages, snackbarHostState)
-                    BoxDetailScreen(
-                        viewModel = viewModel,
-                        boxId = entry.arguments?.getString(ARG_BOX_ID).orEmpty(),
-                        onRemoved = { navController.popBackStack() },
-                    )
-                }
-
-                composable(ROUTE_ADD_BOX) {
-                    AddBoxScreen(
-                        viewModel = hiltViewModel<AddBoxViewModel>(),
-                        onSaved = { navController.popBackStack() },
-                        onCancel = { navController.popBackStack() },
-                    )
-                }
+                if (compactHeight) miniPlayer()
             }
         }
     }
@@ -389,18 +442,55 @@ private fun FavoritesSortAction(current: FavoritesSort, onSelect: (FavoritesSort
 }
 
 @Composable
-private fun BottomBar(navController: NavHostController, selected: Destination?) {
+private fun BottomBar(selected: Destination?, onNavigate: (Destination) -> Unit) {
     NavigationBar {
         Destination.entries.forEach { destination ->
             NavigationBarItem(
                 selected = selected == destination,
-                onClick = { navController.navigateSingleTop(destination.route) },
+                onClick = { onNavigate(destination) },
                 icon = { Icon(imageVector = destination.icon, contentDescription = null) },
                 label = { Text(stringResource(destination.label)) },
             )
         }
     }
 }
+
+/**
+ * The same four destinations as [BottomBar], down the side of a short window.
+ *
+ * Takes no insets of its own: it sits inside the scaffold's content, whose padding already
+ * keeps it clear of the system bars and a side-mounted cutout.
+ */
+@Composable
+private fun SideRail(selected: Destination?, onNavigate: (Destination) -> Unit) {
+    NavigationRail(
+        windowInsets = WindowInsets(0, 0, 0, 0),
+        modifier = Modifier.fillMaxHeight(),
+    ) {
+        Spacer(Modifier.weight(1f))
+        Destination.entries.forEach { destination ->
+            NavigationRailItem(
+                selected = selected == destination,
+                onClick = { onNavigate(destination) },
+                icon = { Icon(imageVector = destination.icon, contentDescription = null) },
+                label = { Text(stringResource(destination.label)) },
+            )
+        }
+        Spacer(Modifier.weight(1f))
+    }
+}
+
+/**
+ * Whether the window is short enough that the navigation belongs at the side: a phone in
+ * landscape, or a split-screen half. The window, not the device — `screenHeightDp` follows
+ * multi-window — and the same 480 dp line Material draws between compact and medium height.
+ */
+@Composable
+internal fun isCompactHeight(): Boolean =
+    LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP
+
+private const val COMPACT_HEIGHT_DP = 480
+private val COMPACT_TOP_BAR_HEIGHT = 48.dp
 
 /** Shows one-off view model messages, which arrive as string resources rather than text. */
 @Composable

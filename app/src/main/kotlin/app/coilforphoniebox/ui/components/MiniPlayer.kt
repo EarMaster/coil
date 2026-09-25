@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.coilforphoniebox.R
 import app.coilforphoniebox.domain.model.PlayerStatus
@@ -73,7 +72,9 @@ fun MiniPlayer(
                         text = status.displayTitle ?: stringResource(R.string.player_no_title),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        // Scrolls rather than truncates, like the player's own title: this
+                        // row is the only place the title is visible from the other tabs.
+                        modifier = Modifier.scrollingText(),
                     )
                     val subtitle = status.artist ?: status.album
                     if (subtitle != null) {
@@ -82,7 +83,7 @@ fun MiniPlayer(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.scrollingText(),
                         )
                     }
                 }

@@ -9,6 +9,22 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-09-25
+
+### Added
+- **Tap Library twice to search.** Tapping the library tab while already in the library jumps
+  to the search field and raises the keyboard, so searching is a double tap from anywhere in
+  the app.
+
+### Changed
+- **Landscape is usable.** With the phone on its side, the navigation moves to a rail at the
+  side and the top bar slims down, so the library, favourites and settings get most of the
+  screen instead of a sliver between three stacked bars. The library puts its search field and
+  tabs on one line there, and favourites use smaller tiles so a whole row fits.
+- **Long titles scroll instead of being cut off.** The player and the mini player show the title
+  and artist on one line that scrolls when it does not fit, fading out at the edge, so the end of
+  a long chapter or movement name is no longer lost behind an ellipsis.
+
 ## [1.2.4] - 2026-09-09
 
 ### Added

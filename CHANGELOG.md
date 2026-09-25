@@ -14,6 +14,11 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
   to the search field and raises the keyboard, so searching is a double tap from anywhere in
   the app.
 
+### Changed
+- **Long titles scroll instead of being cut off.** The player and the mini player show the title
+  and artist on one line that scrolls when it does not fit, fading out at the edge, so the end of
+  a long chapter or movement name is no longer lost behind an ellipsis.
+
 ## [1.2.4] - 2026-09-09
 
 ### Added

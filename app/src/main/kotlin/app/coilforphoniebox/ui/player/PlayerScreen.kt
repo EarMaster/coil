@@ -66,7 +66,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,6 +76,7 @@ import app.coilforphoniebox.ui.components.CoverArt
 import app.coilforphoniebox.ui.components.FavoriteMenuItem
 import app.coilforphoniebox.ui.components.formatDuration
 import app.coilforphoniebox.ui.components.formatNumber
+import app.coilforphoniebox.ui.components.scrollingText
 
 /**
  * The start screen: cover, title, progress, transport, volume.
@@ -293,7 +293,13 @@ private fun WidePlayer(
     }
 }
 
-/** Title, artist and album, with the favourite star beside them. */
+/**
+ * Title, artist and album, with the favourite star beside them.
+ *
+ * One line each that scrolls when it does not fit, rather than two lines and an ellipsis:
+ * audiobook chapters and classical movements routinely run past two lines, and the part cut
+ * off is usually the part that tells one track from the next.
+ */
 @Composable
 private fun TitleBlock(
     state: PlayerViewModel.State,
@@ -310,8 +316,8 @@ private fun TitleBlock(
                         stringResource(R.string.player_nothing_playing)
                     },
                 style = style,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+                maxLines = 1,
+                modifier = Modifier.scrollingText(),
             )
             val subtitle = listOfNotNull(state.status.artist, state.status.album)
                 .distinct()
@@ -323,8 +329,8 @@ private fun TitleBlock(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    modifier = Modifier.scrollingText(),
                 )
             }
         }

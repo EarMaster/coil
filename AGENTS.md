@@ -937,6 +937,13 @@ still needs doing, in rough order of importance:
    at all. Two screens adapt on their own through the same check: the library puts its search
    field and Folders/Albums tabs on one line, and the favourites grid uses smaller tiles so a
    whole row fits. See `app/*_landscape.png`.
+
+   **The scaffold's insets include the display cutout.** `ScaffoldDefaults.contentWindowInsets`
+   is the system bars only, and on a phone on its side the front camera is at one *end* of the
+   window, where no system bar is — so the rail's labels and the grid's edge ran under it. The
+   scaffold now takes `systemBars.union(displayCutout)`; deliberately not `safeDrawing`, which
+   would also pull in the IME and lift the mini player over the keyboard. The goldens cannot see
+   any of this: Robolectric simulates a window with no cutout.
 6. **Android 16's local network restriction will eventually break Coil outright.** Access to
    local-network addresses — which is every socket this app opens, plus `NsdManager` discovery and
    the HTTP cover fetches — will require the `NEARBY_WIFI_DEVICES` permission, granted by the user

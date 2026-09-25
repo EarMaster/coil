@@ -9,6 +9,10 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Fixed
+- **Landscape keeps clear of the camera.** With the phone on its side, the navigation rail and
+  the edge of the screen's content no longer run under the front camera cutout.
+
 ## [1.2.5] - 2026-09-25
 
 ### Added

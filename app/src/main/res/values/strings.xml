@@ -17,7 +17,7 @@
     <string name="nav_library">Library</string>
     <string name="nav_favourites">Favourites</string>
     <string name="nav_settings">Settings</string>
-    <!-- Spoken label of the top bar's back arrow, on the screens reached from settings. -->
+    <!-- Spoken label of the header's back arrow, on the screens reached from settings. -->
     <string name="action_back">Back</string>
 
     <!-- Player screen -->
@@ -171,11 +171,11 @@
     <string name="action_move_up">Move up</string>
     <string name="action_move_down">Move down</string>
     <string name="shortcut_pin_unsupported">This launcher does not support home screen shortcuts.</string>
-    <!-- Top bar action on the favourites tab. Each label names the layout a tap switches
+    <!-- Header action on the favourites tab. Each label names the layout a tap switches
          to, not the one on screen. -->
     <string name="action_favourites_show_list">Show as list</string>
     <string name="action_favourites_show_grid">Show as covers</string>
-    <!-- The other top bar action on the favourites tab: a menu naming the order the entries
+    <!-- The other header action on the favourites tab: a menu naming the order the entries
          are in, with the current one ticked. "Custom order" is the arrangement made with move
          up and move down, which starts out as the order things were saved in. The two
          alphabetical labels share one menu entry, which reverses when it is chosen again, so

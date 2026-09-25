@@ -22,7 +22,7 @@ import javax.inject.Inject
  * The app as it is actually seen: `CoilApp`'s scaffold with a screen inside it.
  *
  * The screen-level goldens deliberately capture screens on their own, which leaves out
- * everything the scaffold draws — the top bar with the box indicator, the bottom navigation,
+ * everything the scaffold draws — the header row with the box indicator, the bottom navigation,
  * the mini player and the offline banner. These capture the assembled thing instead, so a
  * golden of the player starts at the title bar the way the app does.
  *
@@ -90,7 +90,7 @@ abstract class AppScreenshotTest : ScreenshotTest() {
     }
 
     /**
-     * The same favourites as rows, reached the way a user reaches them: the top bar action on
+     * The same favourites as rows, reached the way a user reaches them: the header action on
      * that tab. Clicking it rather than presetting the stored layout keeps the control itself
      * in the picture — a toggle that stopped switching would fail here.
      */
@@ -104,7 +104,7 @@ abstract class AppScreenshotTest : ScreenshotTest() {
     }
 
     /**
-     * The same favourites in alphabetical order, reached through the top bar menu rather than
+     * The same favourites in alphabetical order, reached through the header menu rather than
      * by presetting the stored preference — for the same reason as `favourites_compact_*`.
      * The fixture's three labels sort into a different order than they were saved in, so a
      * sort that stopped sorting cannot quietly keep this picture.
@@ -209,7 +209,7 @@ abstract class AppScreenshotTest : ScreenshotTest() {
     }
 
     /**
-     * Box configured, box not answering: the offline banner under the top bar, and the
+     * Box configured, box not answering: the offline banner under the header, and the
      * indicator's dot gone grey. Both live in the scaffold and appear in no screen golden.
      */
     @Test

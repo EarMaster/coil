@@ -1,0 +1,1 @@
+Plus de place pour votre bibliothèque : la barre du haut disparaît et le nom de la box défile désormais avec la liste. Les noms longs dans les listes passent sur une deuxième ligne au lieu d'être coupés. En paysage, plus rien ne se cache sous la caméra frontale.

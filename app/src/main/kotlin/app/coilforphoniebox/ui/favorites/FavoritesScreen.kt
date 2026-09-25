@@ -59,7 +59,7 @@ import app.coilforphoniebox.ui.isCompactHeight
  * The favourites tab, in one of two layouts (§7.2) and one of three orders.
  *
  * [layout] and [sort] come from settings via the shell rather than from this screen's own
- * view model, because the controls that change them live in the top bar — one preference,
+ * view model, because the controls that change them live in the shell's header — one preference,
  * one owner.
  */
 @Composable
@@ -227,7 +227,9 @@ private fun FavoriteCell(
 
 /**
  * The compact row, for a collection that has outgrown a screenful of tiles: the same cover
- * at thumbnail size, and the label on one line so four times as many fit.
+ * at thumbnail size, and the label beside it so four times as many fit. The label wraps once
+ * rather than cutting off at one line, since a long name usually differs from its neighbours
+ * at the end; a two-line label still fits inside the thumbnail's height.
  */
 @Composable
 private fun FavoriteRow(
@@ -258,7 +260,7 @@ private fun FavoriteRow(
         Text(
             text = favorite.label,
             style = MaterialTheme.typography.bodyLarge,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .weight(1f)

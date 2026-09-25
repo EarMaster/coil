@@ -1,0 +1,1 @@
+More room for your library: the bar across the top is gone, and the box name now scrolls away with the list. Long names in lists wrap onto a second line instead of being cut off. In landscape, nothing hides under the front camera any more.

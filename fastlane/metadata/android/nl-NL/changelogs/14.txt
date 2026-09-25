@@ -1,0 +1,1 @@
+Meer ruimte voor je bibliotheek: de balk bovenaan is weg en de naam van de box scrolt nu mee met de lijst. Lange namen in lijsten lopen door op een tweede regel in plaats van afgekapt te worden. In liggende stand verdwijnt niets meer onder de voorcamera.

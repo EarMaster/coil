@@ -4,12 +4,17 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
@@ -22,10 +27,8 @@ import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
@@ -36,15 +39,23 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -81,6 +92,7 @@ import app.coilforphoniebox.ui.settings.SettingsScreen
 import app.coilforphoniebox.ui.settings.SettingsViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlin.math.roundToInt
 
 private enum class Destination(
     val route: String,
@@ -111,7 +123,6 @@ private fun owningDestination(route: String?): Destination? = when (route) {
     else -> Destination.entries.firstOrNull { it.route == route }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoilApp(appViewModel: AppViewModel) {
     val state by appViewModel.state.collectAsStateWithLifecycle()
@@ -160,68 +171,20 @@ fun CoilApp(appViewModel: AppViewModel) {
         }
     }
 
+    // Only the screens pushed on top of a tab get a back arrow. The tabs themselves are not a
+    // stack, so a back arrow there would be a lie.
+    val onTab = Destination.entries.any { it.route == currentRoute }
+    val header = remember { CollapsingHeaderState() }
+    header.enabled = onTab
+    // A screen starts with its header showing, including the one navigated back to.
+    LaunchedEffect(currentRoute) { header.expand() }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    BoxIndicator(
-                        activeBox = state.activeBox,
-                        connection = state.connection,
-                        switchable = state.boxes.size > 1,
-                        onClick = {
-                            switcherOpen = true
-                            appViewModel.probeBoxes()
-                        },
-                    )
-                },
-                // Only for the screens that are pushed on top of a tab. The tabs themselves
-                // are not a stack, so a back arrow there would be a lie.
-                navigationIcon = {
-                    if (currentRoute != null && Destination.entries.none { it.route == currentRoute }) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                                contentDescription = stringResource(R.string.action_back),
-                            )
-                        }
-                    }
-                },
-                // Only the favourites tab has anything to put here: how its entries are
-                // ordered, and what shape they take. The layout action shows what a tap would
-                // switch *to*, so the icon and its label describe the same thing.
-                actions = {
-                    if (currentRoute == Destination.FAVOURITES.route) {
-                        FavoritesSortAction(
-                            current = state.settings.favoritesSort,
-                            onSelect = appViewModel::setFavoritesSort,
-                        )
-
-                        val list = state.settings.favoritesLayout == FavoritesLayout.LIST
-                        IconButton(onClick = appViewModel::toggleFavoritesLayout) {
-                            Icon(
-                                imageVector = if (list) {
-                                    Icons.Rounded.GridView
-                                } else {
-                                    Icons.AutoMirrored.Rounded.ViewList
-                                },
-                                contentDescription = stringResource(
-                                    if (list) R.string.action_favourites_show_grid
-                                    else R.string.action_favourites_show_list,
-                                ),
-                            )
-                        }
-                    }
-                },
-                // A phone on its side has height to spare nowhere, and the bar is mostly empty
-                // space around one pill — so it gives back a quarter of itself there.
-                expandedHeight = if (compactHeight) {
-                    COMPACT_TOP_BAR_HEIGHT
-                } else {
-                    TopAppBarDefaults.TopAppBarExpandedHeight
-                },
-            )
-        },
+        // The display cutout as well as the system bars. The default is the system bars only,
+        // which on a phone on its side put the rail's labels and the edge of the grid under
+        // the front camera — the cutout is at one end of a landscape window, not at the top.
+        contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout),
         bottomBar = {
             if (!compactHeight) {
                 Column {
@@ -245,11 +208,61 @@ fun CoilApp(appViewModel: AppViewModel) {
                 SideRail(selected = selectedDestination, onNavigate = onNavigate)
             }
 
+            // No app bar above all this: the box pill is something a user reads now and then and
+            // switches almost never, which did not earn a full-width band across the top of
+            // every screen. It is the first row of the content instead — beside the rail rather
+            // than above it — and on a tab it scrolls away with the content, like a list's first
+            // item would.
             Column(
                 Modifier
                     .weight(1f)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    .nestedScroll(header.connection),
             ) {
+                CollapsingHeader(header) {
+                    AppHeader(
+                        compact = compactHeight,
+                        onBack = if (onTab) null else ({ navController.popBackStack() }),
+                        indicator = {
+                            BoxIndicator(
+                                activeBox = state.activeBox,
+                                connection = state.connection,
+                                switchable = state.boxes.size > 1,
+                                onClick = {
+                                    switcherOpen = true
+                                    appViewModel.probeBoxes()
+                                },
+                            )
+                        },
+                        // Only the favourites tab has anything to put here: how its entries are
+                        // ordered, and what shape they take. The layout action shows what a tap
+                        // would switch *to*, so the icon and its label describe the same thing.
+                        actions = {
+                            if (currentRoute == Destination.FAVOURITES.route) {
+                                FavoritesSortAction(
+                                    current = state.settings.favoritesSort,
+                                    onSelect = appViewModel::setFavoritesSort,
+                                )
+
+                                val list = state.settings.favoritesLayout == FavoritesLayout.LIST
+                                IconButton(onClick = appViewModel::toggleFavoritesLayout) {
+                                    Icon(
+                                        imageVector = if (list) {
+                                            Icons.Rounded.GridView
+                                        } else {
+                                            Icons.AutoMirrored.Rounded.ViewList
+                                        },
+                                        contentDescription = stringResource(
+                                            if (list) R.string.action_favourites_show_grid
+                                            else R.string.action_favourites_show_list,
+                                        ),
+                                    )
+                                }
+                            }
+                        },
+                    )
+                }
+
                 if (state.isOffline) {
                     OfflineBanner(
                         text = stringResource(R.string.offline_banner),
@@ -481,6 +494,98 @@ private fun SideRail(selected: Destination?, onNavigate: (Destination) -> Unit) 
 }
 
 /**
+ * The row that replaced the app bar: back arrow (on a pushed screen), box pill, and the current
+ * screen's actions at the far end. Left-aligned rather than centred, because it now sits at the
+ * top of the content and lines up with what is under it.
+ */
+@Composable
+private fun AppHeader(
+    compact: Boolean,
+    onBack: (() -> Unit)?,
+    indicator: @Composable () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(if (compact) COMPACT_HEADER_HEIGHT else HEADER_HEIGHT)
+            .padding(start = if (onBack == null) 12.dp else 4.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (onBack != null) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = stringResource(R.string.action_back),
+                )
+            }
+        }
+
+        // The slot takes all the width the actions leave, so a long box name truncates inside
+        // the pill instead of pushing them off the edge; the pill itself keeps its own size.
+        Box(Modifier.weight(1f)) { indicator() }
+        actions()
+    }
+}
+
+/**
+ * How far [CollapsingHeader] has scrolled out of view, driven by the content's own scrolling.
+ *
+ * It collapses before the content scrolls and only comes back once the content is at its top
+ * again — so it moves exactly as the first item of the list under it would, whichever lazy
+ * list, grid or scrolling column a screen happens to be built from. That is why this lives in
+ * the shell rather than as a first item in each screen: the library alone has four scrolling
+ * containers, and a header copied into each would be four headers to keep alike.
+ */
+@Stable
+private class CollapsingHeaderState {
+    /** From 0 (fully shown) down to minus the header's height (gone). */
+    var offset by mutableFloatStateOf(0f)
+        private set
+
+    /** Measured, not state: nothing is drawn from it, and writing state in layout would loop. */
+    var height = 0f
+
+    /** Off on pushed screens, whose back arrow should not scroll out of reach. */
+    var enabled = true
+
+    fun expand() {
+        offset = 0f
+    }
+
+    val connection = object : NestedScrollConnection {
+        // Upward: the header goes first, then the content.
+        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset =
+            if (available.y < 0f) consume(available.y) else Offset.Zero
+
+        // Downward: only what the content had no use for, i.e. once it is back at its top.
+        override fun onPostScroll(
+            consumed: Offset,
+            available: Offset,
+            source: NestedScrollSource,
+        ): Offset = if (available.y > 0f) consume(available.y) else Offset.Zero
+    }
+
+    private fun consume(delta: Float): Offset {
+        if (!enabled) return Offset.Zero
+        val before = offset
+        offset = (offset + delta).coerceIn(-height, 0f)
+        return Offset(0f, offset - before)
+    }
+}
+
+/** Lays [content] out at its full height and shows as much of it as [state] allows. */
+@Composable
+private fun CollapsingHeader(state: CollapsingHeaderState, content: @Composable () -> Unit) {
+    Layout(content = content, modifier = Modifier.clipToBounds()) { measurables, constraints ->
+        val placeable = measurables.single().measure(constraints.copy(minHeight = 0))
+        state.height = placeable.height.toFloat()
+        val offset = state.offset.roundToInt().coerceAtLeast(-placeable.height)
+        layout(placeable.width, placeable.height + offset) { placeable.place(0, offset) }
+    }
+}
+
+/**
  * Whether the window is short enough that the navigation belongs at the side: a phone in
  * landscape, or a split-screen half. The window, not the device — `screenHeightDp` follows
  * multi-window — and the same 480 dp line Material draws between compact and medium height.
@@ -490,7 +595,10 @@ internal fun isCompactHeight(): Boolean =
     LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP
 
 private const val COMPACT_HEIGHT_DP = 480
-private val COMPACT_TOP_BAR_HEIGHT = 48.dp
+private val HEADER_HEIGHT = 56.dp
+
+// A phone on its side has height to spare nowhere, so the header gives some back there.
+private val COMPACT_HEADER_HEIGHT = 48.dp
 
 /** Shows one-off view model messages, which arrive as string resources rather than text. */
 @Composable

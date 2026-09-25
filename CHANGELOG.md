@@ -9,6 +9,11 @@ automatically from the `## [x.y.z]` heading matching `versionName` in `app/build
 
 ## [Unreleased]
 
+### Changed
+- **No more bar across the top.** The box name and the favourites' sort and layout buttons are
+  now the first row of each screen, and scroll out of the way with the list, so the content gets
+  that space back. In landscape the row sits beside the navigation rail rather than above it.
+
 ### Fixed
 - **Landscape keeps clear of the camera.** With the phone on its side, the navigation rail and
   the edge of the screen's content no longer run under the front camera cutout.

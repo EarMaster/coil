@@ -144,7 +144,7 @@ class AppViewModel @Inject constructor(
     /**
      * Switches the favourites tab between covers and rows.
      *
-     * Lives here rather than in `FavoritesViewModel` because the control is in the top bar,
+     * Lives here rather than in `FavoritesViewModel` because the control is in the shell's header,
      * which the shell owns — and it is a stored preference, so the tab comes back the way it
      * was left.
      */
@@ -159,7 +159,7 @@ class AppViewModel @Inject constructor(
     /**
      * Chooses what order the favourites tab shows.
      *
-     * Here for the same reason as [toggleFavoritesLayout]: the control is in the top bar and
+     * Here for the same reason as [toggleFavoritesLayout]: the control is in the header and
      * the choice is stored. Unlike the layout it takes the order it should switch to rather
      * than cycling one itself — the three orders are not a ring, and which one follows the
      * current one is a question about the menu's rows, so it is answered there.

@@ -39,7 +39,8 @@ import app.coilforphoniebox.ui.components.SectionDivider
  * Its own screen rather than a stretch of the settings list: the box rows used to sit between
  * global settings and the active box's fields, which read as one long list where picking a box,
  * adding a box and editing a box were three neighbouring things that happened to look alike.
- * Tapping a row here opens that box; switching boxes stays where it always was, in the top bar.
+ * Tapping a row here opens that box; switching boxes stays where it always was, in the
+ * header's box pill.
  */
 @Composable
 fun BoxesScreen(

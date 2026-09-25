@@ -36,7 +36,7 @@ import app.coilforphoniebox.domain.model.Box
 import app.coilforphoniebox.domain.model.ConnectionState
 
 /**
- * Top bar element for the active box.
+ * Header element for the active box.
  *
  * With exactly one box configured this collapses to a plain connection indicator: no
  * one should pay UI complexity for a feature they do not use (§7.5). German and Dutch

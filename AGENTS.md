@@ -538,8 +538,8 @@ Roborazzi writes and compares the files. No emulator, no device, no box.
 
 Three levels, and the distinction matters:
 
-- **`app/`** — the whole `CoilApp` scaffold with a screen inside it: top bar with the box
-  indicator, bottom navigation, mini player, offline banner. This is what the app looks like.
+- **`app/`** — the whole `CoilApp` scaffold with a screen inside it: the header row with
+  the box indicator, bottom navigation, mini player, offline banner. This is what the app looks like.
   Captured on **four device profiles** (`_phone`, `_small`, `_landscape`, `_tablet`), so the goldens say
   something about layout and not only about colour.
 - **`player/`, `library/`** — one screen on its own, for states that would be tedious to reach
@@ -638,10 +638,10 @@ dark), the library screen
 
 The favourites goldens carry **two entries with a `coverFile` and one without**, because both halves
 matter: a cover from the box has to render, and a favourite it has no artwork for has to get the
-stand-in the app picks from its own set. `favourites_compact_*` reaches the list layout by *clicking* the top bar
+stand-in the app picks from its own set. `favourites_compact_*` reaches the list layout by *clicking* the header
 action rather than presetting the stored preference, so a toggle that stopped switching fails the
 test instead of quietly capturing the same picture twice. `favourites_sorted_*` reaches A–Z the
-same way, through the top bar menu — and `Fixtures.favorites` is deliberately saved in an order
+same way, through the header's menu — and `Fixtures.favorites` is deliberately saved in an order
 that is *not* alphabetical, so a sort that stopped sorting cannot keep that picture either.
 `Fixtures.albums` does the same for the album grid, four of six with artwork.
 
@@ -931,12 +931,22 @@ still needs doing, in rough order of importance:
 
    **A short window is handled separately, by the scaffold.** Below 480 dp of height (Material's
    compact height class — a phone on its side, a split-screen half; `isCompactHeight()` in
-   `CoilApp.kt`) the bottom navigation bar becomes a `NavigationRail` at the side, the top bar
-   drops to 48 dp, and the mini player sits under the screen rather than under the rail.
+   `CoilApp.kt`) the bottom navigation bar becomes a `NavigationRail` at the side, the header
+   row drops to 48 dp, and the mini player sits under the screen rather than under the rail.
    Stacked, the three bars took two thirds of a landscape phone and the library showed no rows
    at all. Two screens adapt on their own through the same check: the library puts its search
    field and Folders/Albums tabs on one line, and the favourites grid uses smaller tiles so a
    whole row fits. See `app/*_landscape.png`.
+
+   **There is no app bar.** The box pill, a pushed screen's back arrow and the favourites'
+   actions are one `AppHeader` row at the top of the content column — beside the rail, not above
+   it — because a full-width band for a pill that is switched almost never was the biggest
+   single cost on a landscape phone. On a tab it collapses with the content through
+   `CollapsingHeaderState`, a `NestedScrollConnection` on the shell's content column: it goes
+   before the content on the way up and comes back only once the content is at its top, i.e.
+   exactly like a first list item. It is done in the shell on purpose — the library alone has
+   four scrolling containers, and a header item copied into each would drift. On a pushed screen
+   it stays put, so the back arrow cannot scroll out of reach.
 
    **The scaffold's insets include the display cutout.** `ScaffoldDefaults.contentWindowInsets`
    is the system bars only, and on a phone on its side the front camera is at one *end* of the
@@ -975,13 +985,13 @@ still needs doing, in rough order of importance:
   - Both screens address a box **by id** (`BoxesViewModel`), not through "the active box". Renaming
     or re-addressing a non-active box no longer requires switching to it — on the settings screen
     that was impossible, since every field there described whichever box was active.
-  - Switching boxes stays in the top bar only, and a box row *opens* the box rather than selecting
+  - Switching boxes stays in the header's box pill only, and a box row *opens* the box rather than selecting
     it. A box page for the non-active box offers "Switch to this box"; the active one just says so.
   - The library actions (rescan, the search crawl) stay in settings, because they run against the
     active box — on a box page, three of four pages could not offer them honestly.
   - The rows both screens are built from live in `ui/components/SettingsRows.kt`, so box management
     looks like the screen it was reached from.
-  - Sub-screens of a tab (box management, a box, add-box) get a back arrow in the top bar and keep
+  - Sub-screens of a tab (box management, a box, add-box) get a back arrow in the header and keep
     the settings tab lit — see `owningDestination` in `CoilApp`.
 - Adding a box deliberately does **not** make it active: nothing should tear down a live connection
   the user did not ask to change.
@@ -993,18 +1003,18 @@ still needs doing, in rough order of importance:
   `core-data/.../db/Migrations.kt` — no destructive fallback, favourites are the one thing here that
   cannot be rebuilt from the box), a `track` variant of the `coil://play` deep link, and settings
   backup **format version 2**.
-- **The favourites tab has two layouts, and the switch is in the top bar.** `FavoritesLayout` in
+- **The favourites tab has two layouts, and the switch is in the header.** `FavoritesLayout` in
   `AppSettings` chooses between the cover grid (the default — §7.2's point is a target a child can
   aim at without reading) and a compact row list for a collection that has outgrown a screenful of
   tiles. Consequences worth keeping: the preference is owned by `AppViewModel` and passed *into*
-  `FavoritesScreen`, because the control lives in the shell's top bar and one preference should have
-  one owner; the top bar's `actions` slot is per destination, so anything added there must stay
+  `FavoritesScreen`, because the control lives in the shell's header row and one preference should have
+  one owner; the header's `actions` slot is per destination, so anything added there must stay
   conditional on the route the way this is; and both layouts share one `LazyVerticalGrid` —
   `GridCells.Fixed(1)` is the list — plus one `FavoriteEntry`, so neither shape can quietly lose an
   action the other has. It also rides in the settings backup, which did **not** bump
   `FORMAT_VERSION`: an older build that drops the field loses a layout preference, not the ability
   to play anything. Same for the `coverFile` now exported per favourite.
-- **The favourites tab also has two orders, and that switch is in the top bar as well.**
+- **The favourites tab also has two orders, and that switch is in the header as well.**
   `FavoritesSort` in `AppSettings` is either `MANUAL` — the arrangement made with move up and move
   down, which before any move is the order things were saved in — or `NAME`. `MANUAL` stays the
   default: a wall of covers is something a parent arranges, and an update that reshuffled it would

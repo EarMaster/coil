@@ -59,7 +59,7 @@ import app.coilforphoniebox.ui.isCompactHeight
  * The favourites tab, in one of two layouts (§7.2) and one of three orders.
  *
  * [layout] and [sort] come from settings via the shell rather than from this screen's own
- * view model, because the controls that change them live in the top bar — one preference,
+ * view model, because the controls that change them live in the shell's header — one preference,
  * one owner.
  */
 @Composable

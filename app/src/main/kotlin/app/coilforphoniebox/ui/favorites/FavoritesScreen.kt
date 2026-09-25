@@ -53,6 +53,7 @@ import app.coilforphoniebox.domain.model.ordered
 import app.coilforphoniebox.ui.components.CoverArt
 import app.coilforphoniebox.ui.components.EmptyState
 import app.coilforphoniebox.ui.components.shareLink
+import app.coilforphoniebox.ui.isCompactHeight
 
 /**
  * The favourites tab, in one of two layouts (§7.2) and one of three orders.
@@ -91,8 +92,13 @@ fun FavoritesScreen(
     // broken — the tile would not budge.
     val movable = sort == FavoritesSort.MANUAL
 
+    // Tiles are square, so their height follows the width they are given. In a short window
+    // the usual size filled the whole screen with one row of tiles cut off at the label;
+    // smaller tiles keep a whole row, name and all, in view.
+    val tileSize = if (isCompactHeight()) COMPACT_TILE_MIN_SIZE else TILE_MIN_SIZE
+
     LazyVerticalGrid(
-        columns = if (compact) GridCells.Fixed(1) else GridCells.Adaptive(minSize = 148.dp),
+        columns = if (compact) GridCells.Fixed(1) else GridCells.Adaptive(minSize = tileSize),
         contentPadding = if (compact) PaddingValues(vertical = 8.dp) else PaddingValues(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 12.dp),
@@ -342,3 +348,6 @@ private val Favorite.placeholderIcon: ImageVector
         FavoriteType.ALBUM -> Icons.Rounded.Album
         FavoriteType.TRACK -> Icons.Rounded.MusicNote
     }
+
+private val TILE_MIN_SIZE = 148.dp
+private val COMPACT_TILE_MIN_SIZE = 112.dp

@@ -512,6 +512,9 @@ box switched off — and is not a thin wrapper around something the box does.
   Known limit: `ß` is not decomposed, so "Strasse" does not find "Straße".
 - Contains-matching cannot use an index, so the DAO queries carry a `LIMIT` instead of an index.
   Wildcards in the query are escaped — `100%` is a search, not a match-everything.
+- **Tapping the library tab while already in the library focuses the search field** and raises
+  the keyboard — the "double tap Library to search" gesture. It travels as a `SharedFlow` event
+  from `CoilApp` rather than as state, so returning to the tab later never replays it.
 - **What is searchable is what has been fetched**: all albums once the album tab has loaded, plus
   folders and tracks from levels that were opened. The empty state says so rather than implying the
   library is empty.

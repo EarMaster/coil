@@ -60,7 +60,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -85,6 +88,8 @@ import app.coilforphoniebox.ui.components.FavoriteMenuItem
 import app.coilforphoniebox.ui.components.formatDuration
 import app.coilforphoniebox.ui.components.formatNumber
 import app.coilforphoniebox.ui.components.rememberFreshnessLabel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 private const val TAB_FOLDERS = 0
 private const val TAB_ALBUMS = 1
@@ -94,10 +99,23 @@ private const val TAB_ALBUMS = 1
 fun LibraryScreen(
     viewModel: LibraryViewModel,
     modifier: Modifier = Modifier,
+    /** Fires when the library tab is tapped again from inside the library. */
+    searchRequests: Flow<Unit> = emptyFlow(),
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(TAB_FOLDERS) }
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searching = query.isNotEmpty()
+    val searchFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    // Tapping the tab you are already on has nothing left to navigate to, so it goes to the
+    // one thing on this screen worth jumping to: the search field, keyboard up.
+    LaunchedEffect(searchRequests) {
+        searchRequests.collect {
+            searchFocus.requestFocus()
+            keyboard?.show()
+        }
+    }
 
     // Back leaves search before it does anything else, so a query is never something the user
     // has to undo by hand. The two handlers are mutually exclusive, so their order is moot.
@@ -111,6 +129,7 @@ fun LibraryScreen(
             query = query,
             onQueryChange = viewModel::onSearchQueryChange,
             onClear = viewModel::clearSearch,
+            focusRequester = searchFocus,
         )
 
         // The tabs are a way of browsing, and searching is not browsing: with a query up,
@@ -146,6 +165,7 @@ private fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
+    focusRequester: FocusRequester,
 ) {
     OutlinedTextField(
         value = query,
@@ -166,7 +186,8 @@ private fun SearchField(
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .focusRequester(focusRequester),
     )
 }
 

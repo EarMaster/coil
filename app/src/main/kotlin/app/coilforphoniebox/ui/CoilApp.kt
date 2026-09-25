@@ -71,6 +71,7 @@ import app.coilforphoniebox.ui.player.PlayerViewModel
 import app.coilforphoniebox.ui.settings.SettingsScreen
 import app.coilforphoniebox.ui.settings.SettingsViewModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 private enum class Destination(
     val route: String,
@@ -108,6 +109,9 @@ fun CoilApp(appViewModel: AppViewModel) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
     var switcherOpen by remember { mutableStateOf(false) }
+    // A tap on the library tab while already in the library is a request to search. An event
+    // rather than state, so coming back to the tab later does not replay it.
+    val librarySearchRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
 
     // Nothing in the app is usable without a box, so a first launch is the add-box screen
     // and nothing else — no feature tour, no carousel (§11.2).
@@ -193,7 +197,13 @@ fun CoilApp(appViewModel: AppViewModel) {
                         onToggle = appViewModel::togglePlayback,
                     )
                 }
-                BottomBar(navController = navController, selected = selectedDestination)
+                BottomBar(
+                    navController = navController,
+                    selected = selectedDestination,
+                    onReselect = { destination ->
+                        if (destination == Destination.LIBRARY) librarySearchRequests.tryEmit(Unit)
+                    },
+                )
             }
         },
     ) { padding ->
@@ -223,7 +233,7 @@ fun CoilApp(appViewModel: AppViewModel) {
                 composable(Destination.LIBRARY.route) {
                     val viewModel = hiltViewModel<LibraryViewModel>()
                     SnackbarMessages(viewModel.messages, snackbarHostState)
-                    LibraryScreen(viewModel)
+                    LibraryScreen(viewModel, searchRequests = librarySearchRequests)
                 }
 
                 composable(Destination.FAVOURITES.route) {
@@ -389,12 +399,19 @@ private fun FavoritesSortAction(current: FavoritesSort, onSelect: (FavoritesSort
 }
 
 @Composable
-private fun BottomBar(navController: NavHostController, selected: Destination?) {
+private fun BottomBar(
+    navController: NavHostController,
+    selected: Destination?,
+    onReselect: (Destination) -> Unit,
+) {
     NavigationBar {
         Destination.entries.forEach { destination ->
             NavigationBarItem(
                 selected = selected == destination,
-                onClick = { navController.navigateSingleTop(destination.route) },
+                onClick = {
+                    if (selected == destination) onReselect(destination)
+                    navController.navigateSingleTop(destination.route)
+                },
                 icon = { Icon(imageVector = destination.icon, contentDescription = null) },
                 label = { Text(stringResource(destination.label)) },
             )
